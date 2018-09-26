@@ -1,7 +1,7 @@
 package inputs
 
 import (
-	"deviceAgent.General/interfaces"
+	"deviceAdaptor"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -17,7 +17,7 @@ func (m *MockPlugin) SampleConfig() string {
 	return ` sampleVar = 'foo'`
 }
 
-func (m *MockPlugin) Gather(_a0 interfaces.Accumulator) error {
+func (m *MockPlugin) Gather(_a0 deviceAgent.Accumulator) error {
 	ret := m.Called(_a0)
 	return ret.Error(0)
 }

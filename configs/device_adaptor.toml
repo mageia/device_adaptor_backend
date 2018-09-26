@@ -1,0 +1,30 @@
+#title = "Deivce Adaptor Configuration"
+
+[global_tags]
+test = "test"
+
+[adaptor]
+debug = true
+interval = "3s"
+
+[[outputs.redis]]
+#[[outputs.file]]
+#    files = ["123", "stdout"]
+#    data_format = "json"
+
+[[inputs.modbus_tcp]]
+name_override = ""
+field_prefix = "abc_"
+#field_suffix = ""
+
+interval = "2s"
+address = "10.211.55.4:502"
+slave_id = 1
+point_map = "../configs/point_map_modbus_tcp.yml"
+
+#[[inputs.ftp]]
+#address = "localhost"
+#username = "leaniot"
+#password = "leaniot"
+#dev_path = "/SubFile/KJ95N/dev.txt"
+#data_path = "/SubFile/KJ95N/rtdata.txt"

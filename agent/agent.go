@@ -1,9 +1,13 @@
 package agent
 
 import (
-	"deviceAgent.General/configs"
-	"deviceAgent.General/internal/models"
+	"deviceAdaptor"
+	"deviceAdaptor/configs"
+	"deviceAdaptor/internal"
+	"deviceAdaptor/internal/models"
+	"fmt"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -21,6 +25,15 @@ func NewAgent(config *configs.Config) (*Agent, error) {
 
 func (a *Agent) Connect() error {
 	for _, o := range a.Config.Outputs {
+		switch ot := o.Output.(type) {
+		case deviceAgent.ServiceOutput:
+			if err := ot.Start(); err != nil {
+				log.Printf("E! Service for outpt %s failed to start, exiting\n%s\n",
+					o.Name, err.Error())
+				return err
+			}
+		}
+		log.Printf("D! Attempting connect to output: %s\n", o.Name)
 		err := o.Output.Connect()
 		if err != nil {
 			log.Printf("E! Failed to connect to output %s, retrying in 15s, "+
@@ -45,18 +58,184 @@ func (a *Agent) Close() error {
 	return err
 }
 
-func (a *Agent)gatherer(input *models.RunningInput, interval time.Duration)  {
-	input.Input.Gather(nil)
+func panicRecover(input *models.RunningInput) {
+	if err := recover(); err != nil {
+		trace := make([]byte, 2048)
+		runtime.Stack(trace, true)
+		log.Printf("E! FATAL: Input [%s] panicked: %s, Stack:\n%s\n", input.Name(), err, trace)
+	}
+}
+
+func gatherWithTimeout(shutdown chan struct{}, input *models.RunningInput, acc deviceAgent.Accumulator, timeout time.Duration) {
+	ticker := time.NewTicker(timeout)
+	defer ticker.Stop()
+
+	done := make(chan error)
+	go func() {
+		done <- input.Input.Gather(acc)
+	}()
+
+	for {
+		select {
+		case err := <-done:
+			if err != nil {
+				acc.AddError(err)
+			}
+			return
+		case <-ticker.C:
+			err := fmt.Errorf("took longer to collect than collection interval (%s)", timeout)
+			acc.AddError(err)
+			continue
+		case <-shutdown:
+			return
+		}
+	}
+}
+
+func (a *Agent) gatherer(shutdown chan struct{}, input *models.RunningInput, interval time.Duration, metricC chan deviceAgent.Metric) {
+	defer panicRecover(input)
+
+	acc := NewAccumulator(input, metricC)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	flushTicker := time.NewTicker(interval * 1000)
+	defer ticker.Stop()
+
+	for {
+		internal.RandomSleep(a.Config.Agent.CollectionJitter.Duration, shutdown)
+		gatherWithTimeout(shutdown, input, acc, interval)
+		select {
+		case <-shutdown:
+			return
+		case <-ticker.C:
+			continue
+		case <-flushTicker.C:
+			input.Input.FlushPointMap(acc)
+		}
+	}
+}
+
+func (a *Agent) flush() {
+	var wg sync.WaitGroup
+	wg.Add(len(a.Config.Outputs))
+	for _, o := range a.Config.Outputs {
+		go func(output *models.RunningOutput) {
+			defer wg.Done()
+			if err := output.WriteCached(); err != nil {
+				log.Printf("E! Error writing to output [%s]: %s\n",
+					output.Name, err.Error())
+			}
+		}(o)
+	}
+}
+func (a *Agent) flusher(shutdown chan struct{}, metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-shutdown:
+				if len(metricC) > 0 {
+					continue
+				}
+				return
+			case metric := <-metricC:
+				metrics := []deviceAgent.Metric{metric}
+				for _, metric := range metrics {
+					outMetricC <- metric
+				}
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-shutdown:
+				if len(outMetricC) > 0 {
+					continue
+				}
+				return
+			case metric := <-outMetricC:
+				for i, o := range a.Config.Outputs {
+					if i == len(a.Config.Outputs)-1 {
+						o.AddMetric(metric)
+					} else {
+						o.AddMetric(metric.Copy())
+					}
+				}
+			}
+		}
+	}()
+
+	ticker := time.NewTicker(a.Config.Agent.FlushInterval.Duration)
+	semaphore := make(chan struct{}, 1)
+	for {
+		select {
+		case <-shutdown:
+			wg.Wait()
+			a.flush()
+			return nil
+		case <-ticker.C:
+			go func() {
+				select {
+				case semaphore <- struct{}{}:
+					internal.RandomSleep(a.Config.Agent.FlushInterval.Duration, shutdown)
+					a.flush()
+					<-semaphore
+				default:
+					log.Println("W! skipping a scheduled flush")
+				}
+			}()
+		}
+	}
+
+	return nil
 }
 
 func (a *Agent) Run(shutdown chan struct{}) error {
 	var wg sync.WaitGroup
+	metricC := make(chan deviceAgent.Metric, 100)
+	outMetricC := make(chan deviceAgent.Metric, 100)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := a.flusher(shutdown, metricC, outMetricC); err != nil {
+			log.Printf("E! Flusher roution failed, exiting: %s\n", err.Error())
+			close(shutdown)
+		}
+	}()
+
+	for _, input := range a.Config.Inputs {
+		input.SetDefaultTags(a.Config.Tags)
+		switch p := input.Input.(type) {
+		case deviceAgent.ServiceInput:
+			acc := NewAccumulator(input, metricC)
+			acc.SetPrecision(time.Nanosecond, 0)
+			if err := p.Start(acc); err != nil {
+				log.Printf("E! Service for input %s failed to start, exiting\n%s\n",
+					input.Name(), err.Error())
+				return err
+			}
+			defer p.Stop()
+		}
+	}
+
 	wg.Add(len(a.Config.Inputs))
-	for _, input  := range a.Config.Inputs {
+	for _, input := range a.Config.Inputs {
+		inter := a.Config.Agent.Interval.Duration
+		if input.Config.Interval != 0 {
+			inter = input.Config.Interval
+		}
 		go func(in *models.RunningInput, interval time.Duration) {
 			defer wg.Done()
-			a.gatherer(in, interval)
-		}(input, 10)
+			a.gatherer(shutdown, in, interval, metricC)
+		}(input, inter)
 	}
 	wg.Wait()
 	a.Close()

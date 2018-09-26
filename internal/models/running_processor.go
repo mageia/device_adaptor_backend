@@ -1,7 +1,7 @@
 package models
 
 import (
-	"deviceAgent.General/interfaces"
+	"deviceAdaptor"
 	"sync"
 )
 
@@ -12,7 +12,7 @@ type RunningProcessor struct {
 	Name string
 	sync.Mutex
 	Config *ProcessorConfig
-	Processor interfaces.Processor
+	Processor deviceAgent.Processor
 }
 
 type RunningProcessors []*RunningProcessor

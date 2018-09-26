@@ -1,8 +1,8 @@
 package inputs
 
-import "deviceAgent.General/interfaces"
+import "deviceAdaptor"
 
-type Creator func() interfaces.Input
+type Creator func() deviceAgent.Input
 
 var Inputs = map[string]Creator{}
 

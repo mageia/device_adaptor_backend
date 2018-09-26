@@ -1,0 +1,50 @@
+# addr:             目标寄存器地址
+#   label: string     给数据库存储使用，不可重复
+#   name: string    给前端绑点筛选使用，不可重复，否则会有歧义
+
+1x0001:
+  label: running
+  name: 1#开关开停状态
+  tags: []
+  option:
+    1: 开启
+    0: 断开
+1x0003:
+  label: running
+  name: 2#开关开停状态
+  option:
+    1: 开启
+    0: 断开
+1x0008:
+  label: fault
+  name: 1#开关故障
+  option:
+    1: 故障
+    0: 正常
+1x2004:
+  label: fault
+  name: 2#开关故障
+  option:
+    1: 故障
+    0: 正常
+
+4x0001:
+  label: Ua
+  name: 1#开关A相电压
+  parameter: 2.21234
+4x0002:
+  label: Ua
+  name: 2#开关A相电压
+  parameter: 0.707423
+4x0008:
+  label: I0
+  name: 1#开关零序电流
+  parameter: 1.732
+4x1126:
+  label: I0
+  name: 2#开关零序电流
+  parameter: 2.1
+4x1128:
+  label: IA
+  name: 2#开关A相电流
+  parameter: 2.1
