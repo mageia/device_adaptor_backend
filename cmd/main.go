@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"deviceAdaptor/agent"
 	"deviceAdaptor/configs"
 	_ "deviceAdaptor/plugins/controllers/all"
@@ -21,14 +20,12 @@ func main() {
 
 	ag, _ := agent.NewAgent(c)
 	ag.Connect()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	defer ag.Cancel()
 
 	//go func() {
 	//	time.Sleep(time.Second * 2)
 	//	cancel()
 	//}()
 
-	ag.Run(ctx)
+	ag.Run()
 }

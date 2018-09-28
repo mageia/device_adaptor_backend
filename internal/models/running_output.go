@@ -8,14 +8,9 @@ import (
 	"time"
 )
 
-type OutputConfig struct {
-	Name string
-}
-
 type RunningOutput struct {
 	Name              string
 	Output            deviceAgent.Output
-	Config            *OutputConfig
 	MetricBufferLimit int
 	MetricBatchSize   int
 
@@ -28,13 +23,7 @@ type RunningOutput struct {
 	writeMutex sync.Mutex
 }
 
-func NewRunningOutput(
-	name string,
-	output deviceAgent.Output,
-	conf *OutputConfig,
-	batchSize int,
-	bufferLimit int,
-) *RunningOutput {
+func NewRunningOutput(name string, output deviceAgent.Output, batchSize int, bufferLimit int) *RunningOutput {
 	if bufferLimit == 0 {
 		bufferLimit = 1
 	}
@@ -44,7 +33,6 @@ func NewRunningOutput(
 	ro := &RunningOutput{
 		Name:              name,
 		Output:            output,
-		Config:            conf,
 		metrics:           buffer.NewBuffer(batchSize),
 		failMetrics:       buffer.NewBuffer(bufferLimit),
 		MetricBufferLimit: bufferLimit,

@@ -20,13 +20,11 @@ import (
 )
 
 type Config struct {
-	Tags          map[string]string
-	Agent         *AgentConfig
-	Controllers   []*models.RunningController
-	Inputs        []*models.RunningInput
-	Outputs       []*models.RunningOutput
-	InputFilters  []string
-	OutputFilters []string
+	Tags        map[string]string
+	Agent       *AgentConfig
+	Inputs      []*models.RunningInput
+	Outputs     []*models.RunningOutput
+	Controllers []*models.RunningController
 }
 
 func NewConfig() *Config {
@@ -35,12 +33,10 @@ func NewConfig() *Config {
 			Interval:      internal.Duration{Duration: 10 * time.Second},
 			FlushInterval: internal.Duration{Duration: 10 * time.Second},
 		},
-		Controllers:   make([]*models.RunningController, 0),
-		Tags:          make(map[string]string),
-		Inputs:        make([]*models.RunningInput, 0),
-		Outputs:       make([]*models.RunningOutput, 0),
-		InputFilters:  make([]string, 0),
-		OutputFilters: make([]string, 0),
+		Controllers: make([]*models.RunningController, 0),
+		Tags:        make(map[string]string),
+		Inputs:      make([]*models.RunningInput, 0),
+		Outputs:     make([]*models.RunningOutput, 0),
 	}
 	return c
 }
@@ -48,9 +44,8 @@ func NewConfig() *Config {
 type AgentConfig struct {
 	Debug bool
 
-	ControlAddress string
-	Interval       internal.Duration
-	FlushInterval  internal.Duration
+	Interval      internal.Duration
+	FlushInterval internal.Duration
 
 	CollectionJitter internal.Duration
 	FlushJitter      internal.Duration
@@ -230,15 +225,10 @@ func (c *Config) addOutput(name string, table *ast.Table) error {
 		}
 		t.SetSerializer(serializer)
 	}
-	outputConfig, err := buildOutput(name, table)
-	if err != nil {
-		return err
-	}
 	if err := toml.UnmarshalTable(table, output); err != nil {
 		return err
 	}
-	ro := models.NewRunningOutput(name, output, outputConfig,
-		c.Agent.MetricBatchSize, c.Agent.MetricBufferLimit)
+	ro := models.NewRunningOutput(name, output, c.Agent.MetricBatchSize, c.Agent.MetricBufferLimit)
 	c.Outputs = append(c.Outputs, ro)
 
 	return nil
@@ -250,14 +240,10 @@ func (c *Config) addController(name string, table *ast.Table) error {
 		return fmt.Errorf("undefined but requested controller: %s", name)
 	}
 	controller := creator()
-	controllerConfig, err := buildController(name, table)
-	if err != nil {
-		return err
-	}
 	if err := toml.UnmarshalTable(table, controller); err != nil {
 		return err
 	}
-	rC := models.NewRunningController(controller, controllerConfig)
+	rC := models.NewRunningController(name, controller)
 	c.Controllers = append(c.Controllers, rC)
 
 	return nil
@@ -299,13 +285,6 @@ func buildInput(name string, table *ast.Table) (*models.InputConfig, error) {
 	delete(table.Fields, "tags")
 
 	return cp, nil
-}
-
-func buildOutput(name string, table *ast.Table) (*models.OutputConfig, error) {
-	oc := &models.OutputConfig{
-		Name: name,
-	}
-	return oc, nil
 }
 
 func buildSerializer(name string, tbl *ast.Table) (serializers.Serializer, error) {
@@ -407,7 +386,7 @@ func buildParser(name string, tbl *ast.Table) (parsers.Parser, error) {
 				iVal, err := strconv.Atoi(str.Value)
 				c.CSVHeaderRowCount = iVal
 				if err != nil {
-					return nil, fmt.Errorf("E! parsing to int: %v", err)
+					return nil, fmt.Errorf("parsing to int: %v", err)
 				}
 			}
 		}
@@ -431,7 +410,7 @@ func buildParser(name string, tbl *ast.Table) (parsers.Parser, error) {
 				iVal, err := strconv.Atoi(str.Value)
 				c.CSVSkipColumns = iVal
 				if err != nil {
-					return nil, fmt.Errorf("E! parsing to int: %v", err)
+					return nil, fmt.Errorf("parsing to int: %v", err)
 				}
 			}
 		}
@@ -444,7 +423,7 @@ func buildParser(name string, tbl *ast.Table) (parsers.Parser, error) {
 				val, err := strconv.ParseBool(str.Value)
 				c.CSVTrimSpace = val
 				if err != nil {
-					return nil, fmt.Errorf("E! parsing to bool: %v", err)
+					return nil, fmt.Errorf("parsing to bool: %v", err)
 				}
 			}
 		}
@@ -461,19 +440,4 @@ func buildParser(name string, tbl *ast.Table) (parsers.Parser, error) {
 	delete(tbl.Fields, "csv_delimiter")
 	delete(tbl.Fields, "csv_header")
 	return parsers.NewParser(c)
-}
-
-func buildController(name string, tbl *ast.Table) (*models.ControllerConfig, error) {
-	c := &models.ControllerConfig{}
-	c.Name = name
-
-	if node, ok := tbl.Fields["test"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				log.Println(str.Value)
-			}
-		}
-	}
-	delete(tbl.Fields, "test")
-	return c, nil
 }

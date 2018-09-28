@@ -26,8 +26,8 @@ type ModbusTCP struct {
 	SlaveId int
 
 	client    modbus.Client
+	_handler  *modbus.TCPClientHandler
 	connected bool
-	done      chan struct{}
 	pointMap  map[string]deviceAgent.PointDefine
 	addrMap   map[string][]int
 
@@ -77,30 +77,28 @@ func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
 	return R
 }
 
-func (*ModbusTCP) Name() string {
-	return "ModbusTCP"
+func (m *ModbusTCP) Name() string {
+	return "modbus_tcp"
 }
 
 func (m *ModbusTCP) Start(acc deviceAgent.Accumulator) error {
-	m.done = make(chan struct{})
 	m.connected = false
 	return m.connect()
 }
 
 func (m *ModbusTCP) Stop() error {
-	//log.Println("ModbusTCP::Stop()")
 	if m.connected {
+		m._handler.Close()
 		m.connected = false
 	}
 	return nil
 }
 
 func (m *ModbusTCP) connect() error {
-	//log.Println("ModbusTCP::connect()")
 	_handler := modbus.NewTCPClientHandler(m.Address)
 	_handler.SlaveId = uint8(m.SlaveId)
 	_handler.IdleTimeout = defaultTimeout.Duration
-	defer _handler.Close()
+	m._handler = _handler
 
 	if e := _handler.Connect(); e != nil {
 		return e
@@ -122,8 +120,8 @@ func (m *ModbusTCP) gatherServer(client modbus.Client, acc deviceAgent.Accumulat
 			for _, param := range getParamList(l, HoleWidth, 1000) {
 				r, e := client.ReadDiscreteInputs(uint16(param[0]-1), uint16(param[1]))
 				if e != nil {
-					acc.AddError(e)
-					log.Printf("ReadDiscreteInputs error: %s", e)
+					log.Println(e)
+					return e
 				}
 				for i := 0; i < MinInt(len(r)*8, param[1]); i++ {
 					tmpDataMap[k] = append(tmpDataMap[k], GetBit(r, uint(i)))
@@ -133,7 +131,8 @@ func (m *ModbusTCP) gatherServer(client modbus.Client, acc deviceAgent.Accumulat
 			for _, param := range getParamList(l, HoleWidth, 125) {
 				r, e := client.ReadHoldingRegisters(uint16(param[0]-1), uint16(param[1]))
 				if e != nil {
-					log.Fatalln(e)
+					log.Println(e)
+					return e
 				}
 				for i := 0; i < len(r); i += 2 {
 					tmpDataMap[k] = append(tmpDataMap[k], int16(binary.BigEndian.Uint16(r[i:i+2])))
@@ -187,7 +186,12 @@ func (m *ModbusTCP) Gather(acc deviceAgent.Accumulator) error {
 	wg.Add(1)
 	go func(client modbus.Client) {
 		defer wg.Done()
-		acc.AddError(m.gatherServer(client, acc))
+		e := m.gatherServer(client, acc)
+		if e != nil {
+			acc.AddError(e)
+			m.Stop()
+			m.Start(acc)
+		}
 	}(m.client)
 
 	wg.Wait()
@@ -232,32 +236,32 @@ func (m *ModbusTCP) FlushPointMap(acc deviceAgent.Accumulator) error {
 	return nil
 }
 
-func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) error {
-	log.Println(cmdId, key, value)
-
+func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) (bool, error) {
 	addrSplit := strings.Split(strings.TrimSpace(key), "x")
 	if len(addrSplit) != 2 {
-		return fmt.Errorf("invalid point key: %s", key)
+		return false, fmt.Errorf("invalid point key: %s", key)
 	}
 	readAddr, _ := strconv.Atoi(addrSplit[1])
 	switch addrSplit[0] {
-	case "1":
+	case "4":
 		if v, ok := value.(float64); ok {
-			log.Println(v)
 			r, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
 			if e != nil {
-				return e
+				return false, e
 			}
-			log.Println(r)
+			if binary.BigEndian.Uint16(r) == uint16(v) {
+				return true, nil
+			}
+			return false, nil
 		} else {
-			return fmt.Errorf("invalid value format: %s", value)
+			return false, fmt.Errorf("invalid value format: %s", value)
 		}
-	case "4":
+	case "1":
 	default:
-		return fmt.Errorf("unsupported modbus address type: %s", addrSplit[0])
+		return false, fmt.Errorf("unsupported modbus address type: %s", addrSplit[0])
 	}
 
-	return nil
+	return false, nil
 }
 
 func init() {

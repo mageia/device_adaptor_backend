@@ -48,13 +48,6 @@ func (r *RunningInput) MakeMetric(measurement string, fields map[string]interfac
 	return m
 }
 
-func (r *RunningInput) Trace() bool {
-	return r.trace
-}
-func (r *RunningInput) SetTrace(trace bool) {
-	r.trace = trace
-}
-
-func (r *RunningInput) SetDefaultTags(tags map[string]string) {
-	r.defaultTags = tags
-}
+//func (r *RunningInput) SetDefaultTags(tags map[string]string) {
+//	r.defaultTags = tags
+//}

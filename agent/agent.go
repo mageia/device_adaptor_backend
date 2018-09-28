@@ -14,11 +14,16 @@ import (
 )
 
 type Agent struct {
+	Ctx    context.Context
+	Cancel context.CancelFunc
 	Config *configs.Config
 }
 
 func NewAgent(config *configs.Config) (*Agent, error) {
+	ctx, cancel := context.WithCancel(context.Background())
 	a := &Agent{
+		Ctx:    ctx,
+		Cancel: cancel,
 		Config: config,
 	}
 	return a, nil
@@ -94,7 +99,7 @@ func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc devi
 	}
 }
 
-func (a *Agent) gatherer(ctx context.Context, input *models.RunningInput, interval time.Duration, metricC chan deviceAgent.Metric) {
+func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, metricC chan deviceAgent.Metric) {
 	defer panicRecover(input)
 
 	acc := NewAccumulator(input, metricC)
@@ -105,10 +110,10 @@ func (a *Agent) gatherer(ctx context.Context, input *models.RunningInput, interv
 	defer ticker.Stop()
 
 	for {
-		internal.RandomSleep(a.Config.Agent.CollectionJitter.Duration, ctx)
-		gatherWithTimeout(ctx, input, acc, interval)
+		internal.RandomSleep(a.Config.Agent.CollectionJitter.Duration, a.Ctx)
+		gatherWithTimeout(a.Ctx, input, acc, interval)
 		select {
-		case <-ctx.Done():
+		case <-a.Ctx.Done():
 			return
 		case <-ticker.C:
 			continue
@@ -130,14 +135,14 @@ func (a *Agent) flush() {
 		}(o)
 	}
 }
-func (a *Agent) flusher(ctx context.Context, metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
+func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-a.Ctx.Done():
 				return
 			case metric := <-metricC:
 				metrics := []deviceAgent.Metric{metric}
@@ -153,7 +158,7 @@ func (a *Agent) flusher(ctx context.Context, metricC chan deviceAgent.Metric, ou
 		defer wg.Done()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-a.Ctx.Done():
 				return
 			case metric := <-outMetricC:
 				for i, o := range a.Config.Outputs {
@@ -171,14 +176,14 @@ func (a *Agent) flusher(ctx context.Context, metricC chan deviceAgent.Metric, ou
 	semaphore := make(chan struct{}, 1)
 	for {
 		select {
-		case <-ctx.Done():
+		case <-a.Ctx.Done():
 			a.flush()
 			return nil
 		case <-ticker.C:
 			go func() {
 				select {
 				case semaphore <- struct{}{}:
-					internal.RandomSleep(a.Config.Agent.FlushJitter.Duration, ctx)
+					internal.RandomSleep(a.Config.Agent.FlushJitter.Duration, a.Ctx)
 					a.flush()
 					<-semaphore
 				default:
@@ -191,21 +196,34 @@ func (a *Agent) flusher(ctx context.Context, metricC chan deviceAgent.Metric, ou
 	return nil
 }
 
-func (a *Agent) Run(ctx context.Context) error {
+func (a *Agent) Run() error {
 	var wg sync.WaitGroup
 	metricC := make(chan deviceAgent.Metric, 100)
 	outMetricC := make(chan deviceAgent.Metric, 100)
 
+	//controller
+	wg.Add(len(a.Config.Controllers))
+	for _, controller := range a.Config.Controllers {
+		switch p := controller.Controller.(type) {
+		case deviceAgent.Controller:
+			if err := p.Start(); err != nil {
+				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name, err.Error())
+				return err
+			}
+		}
+	}
+
+	//flusher
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.flusher(ctx, metricC, outMetricC); err != nil {
+		if err := a.flusher(metricC, outMetricC); err != nil {
 			log.Printf("E! Flusher roution failed, exiting: %s\n", err.Error())
 		}
 	}()
 
 	for _, input := range a.Config.Inputs {
-		input.SetDefaultTags(a.Config.Tags)
+		//input.SetDefaultTags(a.Config.Tags)
 		switch p := input.Input.(type) {
 		case deviceAgent.ServiceInput:
 			acc := NewAccumulator(input, metricC)
@@ -215,7 +233,15 @@ func (a *Agent) Run(ctx context.Context) error {
 					input.Name(), err.Error())
 				return err
 			}
-			defer p.Stop()
+
+			switch pC := p.(type) {
+			case deviceAgent.ControllerInput:
+				for _, c := range a.Config.Controllers {
+					c.Controller.RegisterInput(pC.Name(), pC)
+				}
+			}
+		default:
+			log.Println(p.Name())
 		}
 	}
 
@@ -227,19 +253,8 @@ func (a *Agent) Run(ctx context.Context) error {
 		}
 		go func(in *models.RunningInput, interval time.Duration) {
 			defer wg.Done()
-			a.gatherer(ctx, in, interval, metricC)
+			a.gatherer(in, interval, metricC)
 		}(input, inter)
-	}
-
-	wg.Add(len(a.Config.Controllers))
-	for _, controller := range a.Config.Controllers {
-		switch p := controller.Controller.(type) {
-		case deviceAgent.Controller:
-			if err := p.Start(ctx); err != nil {
-				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name(), err.Error())
-				return err
-			}
-		}
 	}
 
 	wg.Wait()

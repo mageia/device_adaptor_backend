@@ -2,14 +2,14 @@ package deviceAgent
 
 import "context"
 
-type ControllerConfig struct {
-}
-
 type Controller interface {
-	Start(context.Context) error
+	Name() string
+	Start() error
+	Stop(context.Context) error
+	RegisterInput(string, ControllerInput)
 }
 
 type ControllerInput interface {
-	Set(cmdId, key string, value interface{}) error
+	Name() string
+	Set(cmdId string, key string, value interface{}) (bool, error)
 }
-

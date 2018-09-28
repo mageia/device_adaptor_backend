@@ -2,24 +2,14 @@ package models
 
 import "deviceAdaptor"
 
-type ControllerConfig struct {
-	Name string
-}
 type RunningController struct {
+	Name       string
 	Controller deviceAgent.Controller
-	Config     *ControllerConfig
 }
 
-func NewRunningController(
-	controller deviceAgent.Controller,
-	config *ControllerConfig,
-) *RunningController {
+func NewRunningController(name string, controller deviceAgent.Controller) *RunningController {
 	return &RunningController{
-		Config:     config,
+		Name:       name,
 		Controller: controller,
 	}
-}
-
-func (r *RunningController) Name() string {
-	return "controllers." + r.Config.Name
 }
