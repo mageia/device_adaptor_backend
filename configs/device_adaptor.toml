@@ -10,17 +10,17 @@ interval = "3s"
 [[controller.http]]
 address = ":8081"
 
-#[[outputs.redis]]
+[[outputs.redis]]
 #[outputs.file]
 #files = ["123", "stdout"]
 #data_format = "json"
 
 [[inputs.modbus_tcp]]
-#name_override = "abc"
+name_override = "abc"
 #field_prefix = "abc_"
 #field_suffix = ""
 
-interval = "0.3s"
+interval = "1s"
 address = "10.211.55.4:502"
 #slave_id = 1
 point_map = "../configs/point_map_modbus_tcp.yml"

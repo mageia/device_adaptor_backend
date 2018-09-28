@@ -271,19 +271,8 @@ func buildInput(name string, table *ast.Table) (*models.InputConfig, error) {
 			}
 		}
 	}
-
-	cp.Tags = make(map[string]string)
-	if node, ok := table.Fields["tags"]; ok {
-		if subTable, ok := node.(*ast.Table); ok {
-			if err := toml.UnmarshalTable(subTable, cp.Tags); err != nil {
-				log.Printf("E! Could not parse tags for input %s\n", name)
-			}
-		}
-	}
 	delete(table.Fields, "point_map")
 	delete(table.Fields, "interval")
-	delete(table.Fields, "tags")
-
 	return cp, nil
 }
 

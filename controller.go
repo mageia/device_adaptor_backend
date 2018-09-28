@@ -4,7 +4,7 @@ import "context"
 
 type Controller interface {
 	Name() string
-	Start() error
+	Start(context.Context) error
 	Stop(context.Context) error
 	RegisterInput(string, ControllerInput)
 }

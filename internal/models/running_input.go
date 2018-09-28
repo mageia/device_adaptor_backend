@@ -9,30 +9,20 @@ import (
 )
 
 type InputConfig struct {
-	Name              string
-	NameOverride      string
-	MeasurementPrefix string
-	MeasurementSuffix string
-	PointMapPath      string
-	Tags              map[string]string
-	Interval          time.Duration
+	Name         string
+	PointMapPath string
+	Interval     time.Duration
 }
 
 type RunningInput struct {
-	Input           deviceAgent.Input
 	Config          *InputConfig
-	trace           bool
-	defaultTags     map[string]string
-	MetricsGathered selfstat.Stat
+	Input           deviceAgent.Input
 	PointMap        map[string]deviceAgent.PointDefine
+	MetricsGathered selfstat.Stat
 }
 
 func NewRunningInput(input deviceAgent.Input, config *InputConfig) *RunningInput {
-	return &RunningInput{
-		Input:       input,
-		Config:      config,
-		defaultTags: make(map[string]string),
-	}
+	return &RunningInput{Input: input, Config: config}
 }
 
 func (r *RunningInput) Name() string {

@@ -21,10 +21,7 @@ type MetricMaker interface {
 	) deviceAgent.Metric
 }
 
-func NewAccumulator(
-	maker MetricMaker,
-	metrics chan deviceAgent.Metric,
-) deviceAgent.Accumulator {
+func NewAccumulator(maker MetricMaker, metrics chan deviceAgent.Metric) deviceAgent.Accumulator {
 	acc := accumulator{
 		maker:     maker,
 		metrics:   metrics,

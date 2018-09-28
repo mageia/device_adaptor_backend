@@ -26,7 +26,7 @@ func (h *HTTP) RegisterInput(name string, input deviceAgent.ControllerInput) {
 	h.Inputs[name] = input
 }
 
-func (h *HTTP) Start() error {
+func (h *HTTP) Start(ctx context.Context) error {
 	router := gin.Default()
 	router.Use(func(c *gin.Context) {
 		c.Next()
@@ -53,6 +53,8 @@ func (h *HTTP) Start() error {
 		}
 		log.Printf("I! Server: %s closed", srv.Addr)
 	}()
+
+	go h.Stop(ctx)
 
 	return nil
 }

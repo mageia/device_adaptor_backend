@@ -69,7 +69,7 @@ func panicRecover(input *models.RunningInput) {
 	if err := recover(); err != nil {
 		trace := make([]byte, 2048)
 		runtime.Stack(trace, true)
-		log.Printf("E! FATAL: Input [%s] panicked: %s, Stack:\n%s\n", input.Name(), err, trace)
+		log.Printf("E! FATAL: Input [%s] panicked: %s, Stack:\n%s\n", input.Name, err, trace)
 	}
 }
 
@@ -202,11 +202,10 @@ func (a *Agent) Run() error {
 	outMetricC := make(chan deviceAgent.Metric, 100)
 
 	//controller
-	wg.Add(len(a.Config.Controllers))
 	for _, controller := range a.Config.Controllers {
 		switch p := controller.Controller.(type) {
 		case deviceAgent.Controller:
-			if err := p.Start(); err != nil {
+			if err := p.Start(a.Ctx); err != nil {
 				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name, err.Error())
 				return err
 			}
@@ -230,10 +229,9 @@ func (a *Agent) Run() error {
 			acc.SetPrecision(time.Nanosecond, 0)
 			if err := p.Start(acc); err != nil {
 				log.Printf("E! Service for input %s failed to start, exiting\n%s\n",
-					input.Name(), err.Error())
+					input.Name, err.Error())
 				return err
 			}
-
 			switch pC := p.(type) {
 			case deviceAgent.ControllerInput:
 				for _, c := range a.Config.Controllers {
