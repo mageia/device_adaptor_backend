@@ -11,11 +11,8 @@ type S71215CRawData struct {
 	RawData  []string
 }
 
-func (*S71215CRawData) Description() string {
-	return "Get S71215CRawData data by point map"
-}
-func (*S71215CRawData) SampleConfig() string {
-	return "S71215CRawData sample config"
+func (*S71215CRawData) Name() string {
+	return "S71215C"
 }
 
 func (m *S71215CRawData) Gather(acc deviceAgent.Accumulator) error {

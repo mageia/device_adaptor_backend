@@ -4,6 +4,7 @@ import (
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
+	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
 	"deviceAdaptor/plugins/parsers"
@@ -21,6 +22,7 @@ import (
 type Config struct {
 	Tags          map[string]string
 	Agent         *AgentConfig
+	Controllers   []*models.RunningController
 	Inputs        []*models.RunningInput
 	Outputs       []*models.RunningOutput
 	InputFilters  []string
@@ -33,10 +35,10 @@ func NewConfig() *Config {
 			Interval:      internal.Duration{Duration: 10 * time.Second},
 			FlushInterval: internal.Duration{Duration: 10 * time.Second},
 		},
-		Tags:    make(map[string]string),
-		Inputs:  make([]*models.RunningInput, 0),
-		Outputs: make([]*models.RunningOutput, 0),
-		//Processors:    make([]*models.RunningProcessor, 0),
+		Controllers:   make([]*models.RunningController, 0),
+		Tags:          make(map[string]string),
+		Inputs:        make([]*models.RunningInput, 0),
+		Outputs:       make([]*models.RunningOutput, 0),
 		InputFilters:  make([]string, 0),
 		OutputFilters: make([]string, 0),
 	}
@@ -46,8 +48,9 @@ func NewConfig() *Config {
 type AgentConfig struct {
 	Debug bool
 
-	Interval      internal.Duration
-	FlushInterval internal.Duration
+	ControlAddress string
+	Interval       internal.Duration
+	FlushInterval  internal.Duration
 
 	CollectionJitter internal.Duration
 	FlushJitter      internal.Duration
@@ -93,13 +96,13 @@ func (c *Config) LoadConfig(path string) error {
 		}
 	}
 
-	if val, ok := tbl.Fields["adaptor"]; ok {
+	if val, ok := tbl.Fields["agent"]; ok {
 		subTable, ok := val.(*ast.Table)
 		if !ok {
 			return fmt.Errorf("%s: invalid configuration", path)
 		}
 		if err = toml.UnmarshalTable(subTable, c.Agent); err != nil {
-			log.Printf("E! Could not parse [adaptor] config\n")
+			log.Printf("E! Could not parse [agent] config\n")
 			return fmt.Errorf("error parsing %s, %s", path, err)
 		}
 	}
@@ -110,7 +113,25 @@ func (c *Config) LoadConfig(path string) error {
 			return fmt.Errorf("%s: invalid configuration", path)
 		}
 		switch name {
-		case "adaptor", "global_tags", "tags":
+		case "agent", "global_tags", "tags":
+		case "controller":
+			for pluginName, pluginVal := range subTable.Fields {
+				switch pluginSubTable := pluginVal.(type) {
+				case *ast.Table:
+					if err = c.addController(pluginName, pluginSubTable); err != nil {
+						return fmt.Errorf("error parsing %s, %s", path, err)
+					}
+				case []*ast.Table:
+					for _, t := range pluginSubTable {
+						if err = c.addController(pluginName, t); err != nil {
+							return fmt.Errorf("error parsing %s, %s", path, err)
+						}
+					}
+				default:
+					return fmt.Errorf("unsupported config format: %s, file: %s", pluginName, path)
+				}
+			}
+
 		case "outputs":
 			for pluginName, pluginVal := range subTable.Fields {
 				switch pluginSubTable := pluginVal.(type) {
@@ -142,9 +163,7 @@ func (c *Config) LoadConfig(path string) error {
 						}
 					}
 				default:
-					return fmt.Errorf("unsupported config format: %s, file: %s",
-						pluginName, path)
-					log.Println(pluginSubTable)
+					return fmt.Errorf("unsupported config format: %s, file: %s", pluginName, path)
 				}
 			}
 		default:
@@ -200,7 +219,7 @@ func (c *Config) addInput(name string, table *ast.Table) error {
 func (c *Config) addOutput(name string, table *ast.Table) error {
 	creator, ok := outputs.Outputs[name]
 	if !ok {
-		return fmt.Errorf("undefined buf requested output: %s", name)
+		return fmt.Errorf("undefined but requested output: %s", name)
 	}
 	output := creator()
 	switch t := output.(type) {
@@ -225,8 +244,28 @@ func (c *Config) addOutput(name string, table *ast.Table) error {
 	return nil
 }
 
+func (c *Config) addController(name string, table *ast.Table) error {
+	creator, ok := controllers.Controllers[name]
+	if !ok {
+		return fmt.Errorf("undefined but requested controller: %s", name)
+	}
+	controller := creator()
+	controllerConfig, err := buildController(name, table)
+	if err != nil {
+		return err
+	}
+	if err := toml.UnmarshalTable(table, controller); err != nil {
+		return err
+	}
+	rC := models.NewRunningController(controller, controllerConfig)
+	c.Controllers = append(c.Controllers, rC)
+
+	return nil
+}
+
 func buildInput(name string, table *ast.Table) (*models.InputConfig, error) {
 	cp := &models.InputConfig{Name: name}
+
 	if node, ok := table.Fields["interval"]; ok {
 		if kv, ok := node.(*ast.KeyValue); ok {
 			if str, ok := kv.Value.(*ast.String); ok {
@@ -422,4 +461,19 @@ func buildParser(name string, tbl *ast.Table) (parsers.Parser, error) {
 	delete(tbl.Fields, "csv_delimiter")
 	delete(tbl.Fields, "csv_header")
 	return parsers.NewParser(c)
+}
+
+func buildController(name string, tbl *ast.Table) (*models.ControllerConfig, error) {
+	c := &models.ControllerConfig{}
+	c.Name = name
+
+	if node, ok := tbl.Fields["test"]; ok {
+		if kv, ok := node.(*ast.KeyValue); ok {
+			if str, ok := kv.Value.(*ast.String); ok {
+				log.Println(str.Value)
+			}
+		}
+	}
+	delete(tbl.Fields, "test")
+	return c, nil
 }

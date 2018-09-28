@@ -3,24 +3,31 @@
 [global_tags]
 test = "test"
 
-[adaptor]
+[agent]
 debug = true
 interval = "3s"
 
+[[controller.http]]
+address = ":8080"
+
 [[outputs.redis]]
-#[[outputs.file]]
+#[outputs.file]
 #    files = ["123", "stdout"]
 #    data_format = "json"
 
 [[inputs.modbus_tcp]]
-name_override = ""
+name_override = "abc"
 field_prefix = "abc_"
 #field_suffix = ""
 
-interval = "2s"
+interval = "10s"
 address = "10.211.55.4:502"
-slave_id = 1
+#slave_id = 1
 point_map = "../configs/point_map_modbus_tcp.yml"
+
+#[inputs.modbus_tcp.controller]
+#name = "http"
+#test = "inputs.modbus_tcp.controller"
 
 #[[inputs.ftp]]
 #address = "localhost"

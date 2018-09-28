@@ -19,13 +19,6 @@ type Redis struct {
 	serializer serializers.Serializer
 }
 
-func (r *Redis) Description() string {
-	return "redis output"
-}
-
-func (r *Redis) SampleConfig() string {
-	return ""
-}
 func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 	if len(metrics) == 0 {
 		return nil

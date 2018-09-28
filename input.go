@@ -11,19 +11,18 @@ type PointDefine struct {
 }
 
 type Input interface {
-	SampleConfig() string
-	Description() string
+	Name() string
 	Gather(Accumulator) error
 	SetPointMap(map[string]PointDefine)
 	FlushPointMap(Accumulator) error
 }
 
 type ServiceInput interface {
-	SampleConfig() string
-	Description() string
+	Name() string
 	Gather(Accumulator) error
-	Start(Accumulator) error
-	Stop() error
 	SetPointMap(map[string]PointDefine)
 	FlushPointMap(Accumulator) error
+
+	Start(Accumulator) error
+	Stop() error
 }

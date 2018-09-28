@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"deviceAdaptor"
 	"deviceAdaptor/configs"
 	"deviceAdaptor/internal"
@@ -28,7 +29,7 @@ func (a *Agent) Connect() error {
 		switch ot := o.Output.(type) {
 		case deviceAgent.ServiceOutput:
 			if err := ot.Start(); err != nil {
-				log.Printf("E! Service for outpt %s failed to start, exiting\n%s\n",
+				log.Printf("E! Service for output %s failed to start, exiting\n%s\n",
 					o.Name, err.Error())
 				return err
 			}
@@ -46,6 +47,7 @@ func (a *Agent) Connect() error {
 		}
 		log.Printf("D! Successfully connected to output: %s\n", o.Name)
 	}
+
 	return nil
 }
 
@@ -53,7 +55,7 @@ func (a *Agent) Close() error {
 	var err error
 	for _, o := range a.Config.Outputs {
 		err = o.Output.Close()
-		log.Printf("D! Successfully connected to output: %s\n", o.Name)
+		log.Printf("D! Successfully closed output: %s\n", o.Name)
 	}
 	return err
 }
@@ -66,7 +68,7 @@ func panicRecover(input *models.RunningInput) {
 	}
 }
 
-func gatherWithTimeout(shutdown chan struct{}, input *models.RunningInput, acc deviceAgent.Accumulator, timeout time.Duration) {
+func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc deviceAgent.Accumulator, timeout time.Duration) {
 	ticker := time.NewTicker(timeout)
 	defer ticker.Stop()
 
@@ -86,13 +88,13 @@ func gatherWithTimeout(shutdown chan struct{}, input *models.RunningInput, acc d
 			err := fmt.Errorf("took longer to collect than collection interval (%s)", timeout)
 			acc.AddError(err)
 			continue
-		case <-shutdown:
+		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (a *Agent) gatherer(shutdown chan struct{}, input *models.RunningInput, interval time.Duration, metricC chan deviceAgent.Metric) {
+func (a *Agent) gatherer(ctx context.Context, input *models.RunningInput, interval time.Duration, metricC chan deviceAgent.Metric) {
 	defer panicRecover(input)
 
 	acc := NewAccumulator(input, metricC)
@@ -103,10 +105,10 @@ func (a *Agent) gatherer(shutdown chan struct{}, input *models.RunningInput, int
 	defer ticker.Stop()
 
 	for {
-		internal.RandomSleep(a.Config.Agent.CollectionJitter.Duration, shutdown)
-		gatherWithTimeout(shutdown, input, acc, interval)
+		internal.RandomSleep(a.Config.Agent.CollectionJitter.Duration, ctx)
+		gatherWithTimeout(ctx, input, acc, interval)
 		select {
-		case <-shutdown:
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			continue
@@ -123,23 +125,19 @@ func (a *Agent) flush() {
 		go func(output *models.RunningOutput) {
 			defer wg.Done()
 			if err := output.WriteCached(); err != nil {
-				log.Printf("E! Error writing to output [%s]: %s\n",
-					output.Name, err.Error())
+				log.Printf("E! Error writing to output [%s]: %s\n", output.Name, err.Error())
 			}
 		}(o)
 	}
 }
-func (a *Agent) flusher(shutdown chan struct{}, metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
+func (a *Agent) flusher(ctx context.Context, metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
 			select {
-			case <-shutdown:
-				if len(metricC) > 0 {
-					continue
-				}
+			case <-ctx.Done():
 				return
 			case metric := <-metricC:
 				metrics := []deviceAgent.Metric{metric}
@@ -155,10 +153,7 @@ func (a *Agent) flusher(shutdown chan struct{}, metricC chan deviceAgent.Metric,
 		defer wg.Done()
 		for {
 			select {
-			case <-shutdown:
-				if len(outMetricC) > 0 {
-					continue
-				}
+			case <-ctx.Done():
 				return
 			case metric := <-outMetricC:
 				for i, o := range a.Config.Outputs {
@@ -176,15 +171,14 @@ func (a *Agent) flusher(shutdown chan struct{}, metricC chan deviceAgent.Metric,
 	semaphore := make(chan struct{}, 1)
 	for {
 		select {
-		case <-shutdown:
-			wg.Wait()
+		case <-ctx.Done():
 			a.flush()
 			return nil
 		case <-ticker.C:
 			go func() {
 				select {
 				case semaphore <- struct{}{}:
-					internal.RandomSleep(a.Config.Agent.FlushInterval.Duration, shutdown)
+					internal.RandomSleep(a.Config.Agent.FlushJitter.Duration, ctx)
 					a.flush()
 					<-semaphore
 				default:
@@ -197,7 +191,7 @@ func (a *Agent) flusher(shutdown chan struct{}, metricC chan deviceAgent.Metric,
 	return nil
 }
 
-func (a *Agent) Run(shutdown chan struct{}) error {
+func (a *Agent) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 	metricC := make(chan deviceAgent.Metric, 100)
 	outMetricC := make(chan deviceAgent.Metric, 100)
@@ -205,9 +199,8 @@ func (a *Agent) Run(shutdown chan struct{}) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := a.flusher(shutdown, metricC, outMetricC); err != nil {
+		if err := a.flusher(ctx, metricC, outMetricC); err != nil {
 			log.Printf("E! Flusher roution failed, exiting: %s\n", err.Error())
-			close(shutdown)
 		}
 	}()
 
@@ -234,9 +227,21 @@ func (a *Agent) Run(shutdown chan struct{}) error {
 		}
 		go func(in *models.RunningInput, interval time.Duration) {
 			defer wg.Done()
-			a.gatherer(shutdown, in, interval, metricC)
+			a.gatherer(ctx, in, interval, metricC)
 		}(input, inter)
 	}
+
+	wg.Add(len(a.Config.Controllers))
+	for _, controller := range a.Config.Controllers {
+		switch p := controller.Controller.(type) {
+		case deviceAgent.Controller:
+			if err := p.Start(ctx); err != nil {
+				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name(), err.Error())
+				return err
+			}
+		}
+	}
+
 	wg.Wait()
 	a.Close()
 	return nil

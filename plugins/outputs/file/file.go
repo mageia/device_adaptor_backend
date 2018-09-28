@@ -58,13 +58,6 @@ func (f *File) Close() error {
 	return nil
 }
 
-func (f *File) SampleConfig() string {
-	return "SampleConfig of output.file"
-}
-
-func (f *File) Description() string {
-	return "Description of output.file"
-}
 func (f *File) Write(metrics []deviceAgent.Metric) error {
 	var writeErr error = nil
 	for _, metric := range metrics {

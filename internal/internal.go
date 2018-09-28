@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"math/big"
 	"strconv"
@@ -37,7 +38,7 @@ func (d *Duration) UnmarshalTOML(b []byte) error {
 	return nil
 }
 
-func RandomSleep(max time.Duration, shutdown chan struct{}) {
+func RandomSleep(max time.Duration, ctx context.Context) {
 	if max == 0 {
 		return
 	}
@@ -50,7 +51,7 @@ func RandomSleep(max time.Duration, shutdown chan struct{}) {
 	select {
 	case <-t.C:
 		return
-	case <-shutdown:
+	case <-ctx.Done():
 		t.Stop()
 		return
 	}

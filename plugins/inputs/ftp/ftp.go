@@ -26,13 +26,10 @@ type FTP struct {
 	parser    parsers.Parser
 }
 
-func (*FTP) SampleConfig() string {
-	return ""
+func (*FTP) Name() string {
+	return "FTP"
 }
 
-func (*FTP) Description() string {
-	return ""
-}
 func (f *FTP) SetParser(parser parsers.Parser) {
 	f.parser = parser
 }

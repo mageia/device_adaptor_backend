@@ -77,11 +77,8 @@ func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
 	return R
 }
 
-func (*ModbusTCP) Description() string {
-	return "Get Modbus data by point map"
-}
-func (*ModbusTCP) SampleConfig() string {
-	return "Modbus sample config"
+func (*ModbusTCP) Name() string {
+	return "ModbusTCP"
 }
 
 func (m *ModbusTCP) Start(acc deviceAgent.Accumulator) error {
@@ -90,7 +87,16 @@ func (m *ModbusTCP) Start(acc deviceAgent.Accumulator) error {
 	return m.connect()
 }
 
+func (m *ModbusTCP) Stop() error {
+	//log.Println("ModbusTCP::Stop()")
+	if m.connected {
+		m.connected = false
+	}
+	return nil
+}
+
 func (m *ModbusTCP) connect() error {
+	//log.Println("ModbusTCP::connect()")
 	_handler := modbus.NewTCPClientHandler(m.Address)
 	_handler.SlaveId = uint8(m.SlaveId)
 	_handler.IdleTimeout = defaultTimeout.Duration
@@ -101,7 +107,6 @@ func (m *ModbusTCP) connect() error {
 	}
 	m.client = modbus.NewClient(_handler)
 	m.connected = true
-
 	return nil
 }
 
@@ -165,7 +170,7 @@ func (m *ModbusTCP) gatherServer(client modbus.Client, acc deviceAgent.Accumulat
 
 	if m.NameOverride != "" {
 		acc.AddFields(m.NameOverride, fields, tags)
-	}else{
+	} else {
 		acc.AddFields("modbus_tcp", fields, tags)
 	}
 	return nil
@@ -224,6 +229,34 @@ func (m *ModbusTCP) FlushPointMap(acc deviceAgent.Accumulator) error {
 		pointMapFields[k], _ = jsoniter.MarshalToString(v)
 	}
 	acc.AddFields("modbus_tcp_point_map", pointMapFields, nil)
+	return nil
+}
+
+func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) error {
+	log.Println(cmdId, key, value)
+
+	addrSplit := strings.Split(strings.TrimSpace(key), "x")
+	if len(addrSplit) != 2 {
+		return fmt.Errorf("invalid point key: %s", key)
+	}
+	readAddr, _ := strconv.Atoi(addrSplit[1])
+	switch addrSplit[0] {
+	case "1":
+		if v, ok := value.(float64); ok {
+			log.Println(v)
+			r, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
+			if e != nil {
+				return e
+			}
+			log.Println(r)
+		} else {
+			return fmt.Errorf("invalid value format: %s", value)
+		}
+	case "4":
+	default:
+		return fmt.Errorf("unsupported modbus address type: %s", addrSplit[0])
+	}
+
 	return nil
 }
 
