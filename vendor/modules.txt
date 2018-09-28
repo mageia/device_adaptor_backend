@@ -2,8 +2,17 @@
 git.leaniot.cn/publicLib/go-modbus
 # git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7
 git.leaniot.cn/publicLib/go-modbus-serial
+# github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
+github.com/axgle/mahonia
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7
+github.com/gin-contrib/sse
+# github.com/gin-gonic/gin v1.3.0
+github.com/gin-gonic/gin
+github.com/gin-gonic/gin/binding
+github.com/gin-gonic/gin/json
+github.com/gin-gonic/gin/render
 # github.com/go-redis/redis v6.14.1+incompatible
 github.com/go-redis/redis
 github.com/go-redis/redis/internal
@@ -13,24 +22,37 @@ github.com/go-redis/redis/internal/pool
 github.com/go-redis/redis/internal/proto
 github.com/go-redis/redis/internal/singleflight
 github.com/go-redis/redis/internal/util
+# github.com/golang/protobuf v1.2.0
+github.com/golang/protobuf/proto
+# github.com/google/uuid v1.0.0
+github.com/google/uuid
 # github.com/influxdata/toml v0.0.0-20180607005434-2a2e3012f7cf
 github.com/influxdata/toml
 github.com/influxdata/toml/ast
+# github.com/jlaffaye/ftp v0.0.0-20180808211605-3f6433f7eae3
+github.com/jlaffaye/ftp
+# github.com/json-iterator/go v1.1.5
+github.com/json-iterator/go
+# github.com/mattn/go-isatty v0.0.4
+github.com/mattn/go-isatty
+# github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+github.com/modern-go/concurrent
+# github.com/modern-go/reflect2 v1.0.1
+github.com/modern-go/reflect2
 # github.com/naoina/go-stringutil v0.1.0
 github.com/naoina/go-stringutil
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/sirupsen/logrus v1.0.6
-github.com/sirupsen/logrus
 # github.com/stretchr/objx v0.1.1
 github.com/stretchr/objx
 # github.com/stretchr/testify v1.2.2
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/assert
-# golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b
-golang.org/x/crypto/ssh/terminal
+# github.com/ugorji/go/codec v0.0.0-20180920200043-2c86ab75771c
+github.com/ugorji/go/codec
 # golang.org/x/sys v0.0.0-20180921163948-d47a0f339242
 golang.org/x/sys/unix
-golang.org/x/sys/windows
+# gopkg.in/go-playground/validator.v8 v8.18.2
+gopkg.in/go-playground/validator.v8
 # gopkg.in/yaml.v2 v2.2.1
 gopkg.in/yaml.v2
