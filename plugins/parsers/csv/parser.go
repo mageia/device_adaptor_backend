@@ -24,7 +24,7 @@ type Parser struct {
 	MeasurementColumn string
 	TimestampColumn   string
 	TimestampFormat   string
-	DefaultTags       map[string]string
+	//DefaultTags       map[string]string
 }
 
 func (p *Parser) initReader(r *bytes.Reader) (*csv.Reader, error) {
@@ -71,9 +71,9 @@ outer:
 		}
 	}
 
-	for k, v := range p.DefaultTags {
-		tags[k] = v
-	}
+	//for k, v := range p.DefaultTags {
+	//	tags[k] = v
+	//}
 
 	measurementName := p.MetricName
 	if recordFields[p.MeasurementColumn] != nil {
@@ -174,6 +174,6 @@ func (p *Parser) ParseLine(line string) (deviceAgent.Metric, error) {
 	return m, nil
 }
 
-func (p *Parser) SetDefaultTags(tags map[string]string) {
-	p.DefaultTags = tags
-}
+//func (p *Parser) SetDefaultTags(tags map[string]string) {
+//	p.DefaultTags = tags
+//}

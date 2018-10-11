@@ -3,6 +3,7 @@ package parsers
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/plugins/parsers/csv"
+	"deviceAdaptor/plugins/parsers/vibration"
 	"fmt"
 )
 
@@ -13,7 +14,7 @@ type ParserInput interface {
 type Parser interface {
 	Parse(line []byte) ([]deviceAgent.Metric, error)
 	ParseLine(line string) (deviceAgent.Metric, error)
-	SetDefaultTags(tags map[string]string)
+	//SetDefaultTags(tags map[string]string)
 }
 
 type Config struct {
@@ -53,6 +54,8 @@ func NewParser(config *Config) (Parser, error) {
 			config.CSVTimestampColumn,
 			config.CSVTimestampFormat,
 			config.DefaultTags)
+	case "vibration":
+		parser, err = newVibrationParser()
 	default:
 		err = fmt.Errorf("unsupported data format: %s", config.DataFormat)
 	}
@@ -103,7 +106,12 @@ func newCSVParser(metricName string,
 		MeasurementColumn: nameColumn,
 		TimestampColumn:   timestampColumn,
 		TimestampFormat:   timestampFormat,
-		DefaultTags:       defaultTags,
+		//DefaultTags:       defaultTags,
 	}
+	return parser, nil
+}
+
+func newVibrationParser() (Parser, error) {
+	parser := &vibration.Parser{}
 	return parser, nil
 }

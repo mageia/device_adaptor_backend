@@ -7,7 +7,6 @@ import (
 	_ "deviceAdaptor/plugins/inputs/all"
 	_ "deviceAdaptor/plugins/outputs/all"
 	"log"
-	"time"
 )
 
 func main() {
@@ -23,10 +22,10 @@ func main() {
 	ag.Connect()
 	defer ag.Cancel()
 
-	go func() {
-		time.Sleep(time.Second * 3)
-		ag.Cancel()
-	}()
+	//go func() {
+	//	time.Sleep(time.Second * 3)
+	//	ag.Cancel()
+	//}()
 
 	ag.Run()
 }

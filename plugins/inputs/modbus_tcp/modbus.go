@@ -98,6 +98,7 @@ func (m *ModbusTCP) connect() error {
 	_handler := modbus.NewTCPClientHandler(m.Address)
 	_handler.SlaveId = uint8(m.SlaveId)
 	_handler.IdleTimeout = defaultTimeout.Duration
+	_handler.Timeout = defaultTimeout.Duration
 	m._handler = _handler
 
 	if e := _handler.Connect(); e != nil {
@@ -236,10 +237,12 @@ func (m *ModbusTCP) FlushPointMap(acc deviceAgent.Accumulator) error {
 	return nil
 }
 
-func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) (bool, error) {
+func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) error {
+	//time.Sleep(10 * time.Second)
+
 	addrSplit := strings.Split(strings.TrimSpace(key), "x")
 	if len(addrSplit) != 2 {
-		return false, fmt.Errorf("invalid point key: %s", key)
+		return fmt.Errorf("invalid point key: %s", key)
 	}
 	readAddr, _ := strconv.Atoi(addrSplit[1])
 	switch addrSplit[0] {
@@ -247,21 +250,21 @@ func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) (bool, erro
 		if v, ok := value.(float64); ok {
 			r, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
 			if e != nil {
-				return false, e
+				return e
 			}
 			if binary.BigEndian.Uint16(r) == uint16(v) {
-				return true, nil
+				return nil
 			}
-			return false, nil
+			return nil
 		} else {
-			return false, fmt.Errorf("invalid value format: %s", value)
+			return fmt.Errorf("invalid value format: %s", value)
 		}
 	case "1":
 	default:
-		return false, fmt.Errorf("unsupported modbus address type: %s", addrSplit[0])
+		return fmt.Errorf("unsupported modbus address type: %s", addrSplit[0])
 	}
 
-	return false, nil
+	return nil
 }
 
 func init() {
