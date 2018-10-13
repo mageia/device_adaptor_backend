@@ -7,6 +7,7 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"runtime"
 	"sync"
@@ -14,17 +15,19 @@ import (
 )
 
 type Agent struct {
-	Ctx    context.Context
-	Cancel context.CancelFunc
-	Config *configs.Config
+	Ctx          context.Context
+	Cancel       context.CancelFunc
+	Config       *configs.Config
+	ConfigServer *gin.Engine
 }
 
 func NewAgent(config *configs.Config) (*Agent, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	a := &Agent{
-		Ctx:    ctx,
-		Cancel: cancel,
-		Config: config,
+		Ctx:          ctx,
+		Cancel:       cancel,
+		Config:       config,
+		ConfigServer: configs.InitRouter(),
 	}
 	return a, nil
 }
@@ -253,6 +256,12 @@ func (a *Agent) Run() error {
 			a.gatherer(in, interval, metricC)
 		}(input, inter)
 	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		a.ConfigServer.Run(":8080")
+	}()
 
 	wg.Wait()
 	a.Close()

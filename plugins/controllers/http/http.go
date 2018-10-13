@@ -55,7 +55,7 @@ func (h *HTTP) Start(ctx context.Context) error {
 	router.POST("/set/:deviceName", h.cmdHandler)
 
 	if h.Address == "" {
-		h.Address = ":8080"
+		h.Address = ":9999"
 	}
 	srv := &http.Server{
 		Addr:    h.Address,

@@ -10,8 +10,8 @@ interval = "3s"
 #[[controller.http]]
 #address = ":8080"
 
-[[outputs.redis]]
-[outputs.file]
+#[[outputs.redis]]
+#[outputs.file]
 #files = ["stdout"]
 #data_format = "json"
 
@@ -42,9 +42,9 @@ interval = "3s"
 #[[inputs.sensor_vibration]]
 
 
-[inputs.s7]
-interval = "1s"
-address = "192.168.0.168"
-rack = 0
-slot = 1
-point_map = "../configs/point_map_s7.yml"
+#[inputs.s7]
+#interval = "1s"
+#address = "192.168.0.168"
+#rack = 0
+#slot = 1
+#point_map = "../configs/point_map_s7.yml"
