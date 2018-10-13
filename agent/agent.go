@@ -69,7 +69,7 @@ func panicRecover(input *models.RunningInput) {
 	if err := recover(); err != nil {
 		trace := make([]byte, 2048)
 		runtime.Stack(trace, true)
-		log.Printf("E! FATAL: Input [%s] panicked: %s, Stack:\n%s\n", input.Name, err, trace)
+		log.Printf("E! FATAL: Input [%s] panicked: %s, Stack:\n%s\n", input.Name(), err, trace)
 	}
 }
 
