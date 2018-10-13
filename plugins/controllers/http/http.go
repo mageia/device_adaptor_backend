@@ -8,13 +8,18 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/json-iterator/go"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type aboutCmd struct {
-	cmdId       string
 	input       deviceAgent.ControllerInput
+	cmdType     string
+	cmdId       string
 	key         string
 	value       interface{}
 	success     bool
@@ -72,11 +77,25 @@ func (h *HTTP) Start(ctx context.Context) error {
 	go func() {
 		for c := range h.cmdParam {
 			log.Printf("Start to process: cmd: %v\n", c)
-			err := c.input.Set(c.cmdId, c.key, c.value)
-			if err != nil {
-				h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: false, msg: err.Error(), callbackUrl: c.callbackUrl}
-			} else {
-				h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: true, msg: "success", callbackUrl: c.callbackUrl}
+			switch strings.ToUpper(c.cmdType) {
+			case "GET":
+				switch c.key {
+				case "PointMap":
+					g, _ := jsoniter.MarshalToString(c.input.Get(c.cmdId, c.key))
+					h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: true, msg: g, callbackUrl: c.callbackUrl}
+				default:
+					h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: false, msg: "unknown sub command", callbackUrl: c.callbackUrl}
+				}
+			case "SET":
+				err := c.input.Set(c.cmdId, c.key, c.value)
+				isSuccess := err == nil
+				errMsg := ""
+				if !isSuccess {
+					errMsg = err.Error()
+				}
+				h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: isSuccess, msg: errMsg, callbackUrl: c.callbackUrl}
+			default:
+				h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: false, msg: "unsupported command", callbackUrl: c.callbackUrl}
 			}
 		}
 	}()
@@ -84,8 +103,8 @@ func (h *HTTP) Start(ctx context.Context) error {
 	//接收命令执行结果，判断cmdId并执行回调
 	go func() {
 		for c := range h.cmdEnd {
-			log.Println(c.callbackUrl, c.cmdId, c.success, c.msg)
-			//TODO
+			r, _ := http.Post(c.callbackUrl, "application/json", strings.NewReader(c.msg))
+			io.Copy(os.Stdout, r.Body)
 		}
 	}()
 
@@ -114,6 +133,7 @@ func (h *HTTP) cmdHandler(ctx *gin.Context) {
 	}
 
 	var bodyIn struct {
+		Type        string      `json:"type" binding:"required"`
 		Key         string      `json:"key" binding:"required"`
 		Value       interface{} `json:"value" binding:"required"`
 		CallbackUrl string      `json:"callback_url" binding:"required"`
@@ -125,7 +145,7 @@ func (h *HTTP) cmdHandler(ctx *gin.Context) {
 	}
 	cmdId := uuid.New().String()
 
-	h.cmdParam <- aboutCmd{input: input, cmdId: cmdId, key: bodyIn.Key, value: bodyIn.Value, callbackUrl: bodyIn.CallbackUrl}
+	h.cmdParam <- aboutCmd{input: input, cmdType: bodyIn.Type, cmdId: cmdId, key: bodyIn.Key, value: bodyIn.Value, callbackUrl: bodyIn.CallbackUrl}
 
 	ctx.JSON(200, gin.H{"msg": "success", "cmdId": cmdId})
 }

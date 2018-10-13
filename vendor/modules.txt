@@ -43,11 +43,15 @@ github.com/modern-go/reflect2
 github.com/naoina/go-stringutil
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
+# github.com/robinson/gos7 v0.0.0-20181006145426-66ae787b1f82
+github.com/robinson/gos7
 # github.com/stretchr/objx v0.1.1
 github.com/stretchr/objx
 # github.com/stretchr/testify v1.2.2
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/assert
+# github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+github.com/tarm/serial
 # github.com/ugorji/go/codec v0.0.0-20180920200043-2c86ab75771c
 github.com/ugorji/go/codec
 # golang.org/x/sys v0.0.0-20180921163948-d47a0f339242

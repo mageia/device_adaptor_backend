@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math"
 	"strings"
+	"time"
 )
 
 type Vibration struct {
@@ -51,33 +52,29 @@ func (v *Vibration) CalcAcc(o []byte) float64 {
 
 func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 	vData := VibrationData{}
-	deviceIdArr, ok := v.mockData["deviceId"];
-	if ok {
+	if deviceIdArr, ok := v.mockData["deviceId"]; ok {
 		vData.DeviceId = strings.Join(deviceIdArr[5:15], "")
 	}
 
-	deviceUsedId, ok := v.mockData["deviceUsedId"];
-	if ok {
+	if deviceUsedId, ok := v.mockData["deviceUsedId"]; ok {
 		vData.DeviceUsedId = strings.Join(deviceUsedId[5:15], "")
 	}
 
-	TemperatureArr, ok := v.mockData["temperature"];
-	if ok {
+	if TemperatureArr, ok := v.mockData["temperature"]; ok {
 		var TempArr = make([]float64, len(TemperatureArr)/9)
 
 		for i := 0; i < len(TemperatureArr)-1; i += 9 {
 			h, _ := hex.DecodeString(strings.Join(TemperatureArr[i+5:i+7], ""))
 			if h[1] < 100 {
-				TempArr[i/9] = v.Round(float64(h[1])/100 + float64(h[0]), 2)
+				TempArr[i/9] = v.Round(float64(h[1])/100+float64(h[0]), 2)
 			} else {
-				TempArr[i/9] = v.Round(float64(h[1])/1000 + float64(h[0]), 2)
+				TempArr[i/9] = v.Round(float64(h[1])/1000+float64(h[0]), 2)
 			}
 		}
 		vData.Temperature = TempArr[v.count%len(TempArr)]
 	}
 
-	AccArr, ok := v.mockData["acceleration"];
-	if ok {
+	if AccArr, ok := v.mockData["acceleration"]; ok {
 		accTmp, _ := hex.DecodeString(strings.TrimSpace(AccArr[v.count%len(AccArr)]))
 		x := accTmp[5 : 5+512]
 		y := accTmp[5+512 : 5+2*512]
@@ -90,8 +87,7 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		}
 	}
 
-	FreqArr, ok := v.mockData["frequency"];
-	if ok {
+	if FreqArr, ok := v.mockData["frequency"]; ok {
 		freqTmp, _ := hex.DecodeString(strings.TrimSpace(FreqArr[v.count%len(FreqArr)]))
 		x := freqTmp[5 : 5+512]
 		y := freqTmp[5+512 : 5+2*512]
@@ -113,6 +109,7 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		"temperature":  vData.Temperature,
 		"acceleration": acceleration,
 		"frequency":    frequency,
+		"timestamp":    time.Now().UnixNano() / 1e6,
 	}, nil)
 	return nil
 }
@@ -125,7 +122,7 @@ func (*Vibration) FlushPointMap(deviceAgent.Accumulator) error {
 	return nil
 }
 
-func (v *Vibration) Start(deviceAgent.Accumulator) error {
+func (v *Vibration) Start() error {
 	v.done = make(chan struct{})
 	v.mockData = make(map[string][]string)
 

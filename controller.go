@@ -12,4 +12,5 @@ type Controller interface {
 type ControllerInput interface {
 	Name() string
 	Set(cmdId string, key string, value interface{}) error
+	Get(cmdId string, key string) interface{}
 }

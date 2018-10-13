@@ -227,7 +227,7 @@ func (a *Agent) Run() error {
 		case deviceAgent.ServiceInput:
 			acc := NewAccumulator(input, metricC)
 			acc.SetPrecision(time.Nanosecond, 0)
-			if err := p.Start(acc); err != nil {
+			if err := p.Start(); err != nil {
 				log.Printf("E! Service for input %s failed to start, exiting:\n%s\n", input.Name(), err.Error())
 				return err
 			}

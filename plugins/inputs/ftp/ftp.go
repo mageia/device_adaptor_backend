@@ -74,7 +74,7 @@ func (f *FTP) Gather(acc deviceAgent.Accumulator) error {
 	return nil
 }
 
-func (f *FTP) Start(acc deviceAgent.Accumulator) error {
+func (f *FTP) Start() error {
 	f.done = make(chan struct{})
 	f.connected = false
 	return f.connect()

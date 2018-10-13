@@ -1,13 +1,13 @@
 package deviceAgent
 
 type PointDefine struct {
-	Label     string
-	Name      string
-	Unit      string
-	IsAnalog  bool
-	Parameter float64
-	Option    map[string]string
-	Control   map[string]string
+	Label     string            `json:"label"`
+	Name      string            `json:"name"`
+	Unit      string            `json:"unit"`
+	IsAnalog  bool              `json:"is_analog"`
+	Parameter float64           `json:"parameter"`
+	Option    map[string]string `json:"option"`
+	Control   map[string]string `json:"control"`
 }
 
 type Input interface {
@@ -23,6 +23,6 @@ type ServiceInput interface {
 	SetPointMap(map[string]PointDefine)
 	FlushPointMap(Accumulator) error
 
-	Start(Accumulator) error
+	Start() error
 	Stop() error
 }

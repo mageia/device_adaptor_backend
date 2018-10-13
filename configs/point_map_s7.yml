@@ -1,0 +1,38 @@
+db40.dbw0:
+  label: DB_Var
+  name: 临时占位符变量
+  tags: ["test"]
+
+db40.dbd2:
+  label: XX
+  name: XX
+
+db40.dbd6:
+  label: XX1
+  name: XX1
+
+db40.dbx102.0:
+  label: start
+  name: 启动
+  option:
+    1: 启动
+    0: 停止
+
+db40.dbx104.1:
+  label: ji_ting
+  name: 急停
+
+db40.dbx102.1:
+  label: stop
+  name: 停止
+  option:
+    1: 停止
+    0: 启动
+
+db40.dbx102.7:
+  label: step2
+  name: 第二步
+
+db40.dbw112:
+  label: test
+  name: test

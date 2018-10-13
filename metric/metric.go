@@ -27,6 +27,7 @@ func New(name string, tags map[string]string, fields map[string]interface{}, tm 
 		}
 	}
 	m.fields = make([]*deviceAgent.Field, 0, len(fields))
+
 	for k, v := range fields {
 		m.AddField(k, v)
 	}
@@ -131,11 +132,11 @@ func (m *metric) HasField(key string) bool {
 func (m *metric) AddField(key string, value interface{}) {
 	for i, field := range m.fields {
 		if key == field.Key {
-			m.fields[i] = &deviceAgent.Field{Key: key, Value: convertField(value)}
+			m.fields[i] = &deviceAgent.Field{Key: key, Value: value}
 			return
 		}
 	}
-	m.fields = append(m.fields, &deviceAgent.Field{Key: key, Value: convertField(value)})
+	m.fields = append(m.fields, &deviceAgent.Field{Key: key, Value: value})
 }
 func (m *metric) RemoveField(key string) {
 	for i, field := range m.fields {
@@ -164,41 +165,4 @@ func (m *metric) Copy() deviceAgent.Metric {
 		m2.fields[i] = field
 	}
 	return m2
-}
-
-func convertField(v interface{}) interface{} {
-	switch v := v.(type) {
-	case float64:
-		return v
-	case int64:
-		return v
-	case string:
-		return v
-	case bool:
-		return v
-	case int:
-		return int64(v)
-	case uint:
-		return uint64(v)
-	case uint64:
-		return uint64(v)
-	case []byte:
-		return string(v)
-	case int32:
-		return int64(v)
-	case int16:
-		return int64(v)
-	case int8:
-		return int64(v)
-	case uint32:
-		return uint64(v)
-	case uint16:
-		return uint64(v)
-	case uint8:
-		return uint64(v)
-	case float32:
-		return float64(v)
-	default:
-		return nil
-	}
 }

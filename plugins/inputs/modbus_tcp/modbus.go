@@ -4,12 +4,11 @@ import (
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
 	"deviceAdaptor/plugins/inputs"
+	"deviceAdaptor/utils"
 	"encoding/binary"
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
-	"github.com/json-iterator/go"
 	"log"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +19,10 @@ import (
 const HoleWidth = 200
 
 var defaultTimeout = internal.Duration{Duration: 15 * time.Second}
+
+type DbAddrMap struct {
+}
+
 
 type ModbusTCP struct {
 	Address string
@@ -34,22 +37,6 @@ type ModbusTCP struct {
 	FieldPrefix  string
 	FieldSuffix  string
 	NameOverride string
-}
-
-func Round(f float64, n int) float64 {
-	pow10 := math.Pow10(n)
-	return math.Trunc((f+0.5/pow10)*pow10) / pow10
-}
-
-func GetBit(word []byte, bit uint) byte {
-	return (word[bit/8]) >> (bit % 8) & 0x01
-}
-
-func MinInt(x int, y int) int {
-	if x < y {
-		return x
-	}
-	return y
 }
 
 func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
@@ -81,7 +68,7 @@ func (m *ModbusTCP) Name() string {
 	return "modbus_tcp"
 }
 
-func (m *ModbusTCP) Start(acc deviceAgent.Accumulator) error {
+func (m *ModbusTCP) Start() error {
 	m.connected = false
 	return m.connect()
 }
@@ -109,7 +96,7 @@ func (m *ModbusTCP) connect() error {
 	return nil
 }
 
-func (m *ModbusTCP) gatherServer(client modbus.Client, acc deviceAgent.Accumulator) error {
+func (m *ModbusTCP) gatherServer(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	tmpDataMap := make(map[string][]interface{})
@@ -119,18 +106,18 @@ func (m *ModbusTCP) gatherServer(client modbus.Client, acc deviceAgent.Accumulat
 		switch k {
 		case "1":
 			for _, param := range getParamList(l, HoleWidth, 1000) {
-				r, e := client.ReadDiscreteInputs(uint16(param[0]-1), uint16(param[1]))
+				r, e := m.client.ReadDiscreteInputs(uint16(param[0]-1), uint16(param[1]))
 				if e != nil {
 					log.Println(e)
 					return e
 				}
-				for i := 0; i < MinInt(len(r)*8, param[1]); i++ {
-					tmpDataMap[k] = append(tmpDataMap[k], GetBit(r, uint(i)))
+				for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
+					tmpDataMap[k] = append(tmpDataMap[k], utils.GetBit(r, uint(i)))
 				}
 			}
 		case "4":
 			for _, param := range getParamList(l, HoleWidth, 125) {
-				r, e := client.ReadHoldingRegisters(uint16(param[0]-1), uint16(param[1]))
+				r, e := m.client.ReadHoldingRegisters(uint16(param[0]-1), uint16(param[1]))
 				if e != nil {
 					log.Println(e)
 					return e
@@ -152,18 +139,20 @@ func (m *ModbusTCP) gatherServer(client modbus.Client, acc deviceAgent.Accumulat
 				if i > 0 && a-l[i-1]-1 <= HoleWidth {
 					x1 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
-				fields[pointAddr], _ = jsoniter.MarshalToString(map[string]interface{}{
-					"Value":     m.TranslateOption(pointAddr, tmpDataMap[k][i+x1].(byte)),
-					"Timestamp": now,
-				})
+				fields[pointAddr] = map[string]interface{}{
+					"value":     m.TranslateOption(pointAddr, tmpDataMap[k][i+x1].(byte)),
+					"timestamp": now,
+					//"point_define": m.pointMap[pointAddr],
+				}
 			case "4":
 				if i > 0 && a-l[i-1]-1 <= HoleWidth {
 					x4 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
-				fields[pointAddr], _ = jsoniter.MarshalToString(map[string]interface{}{
-					"Value":     m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16)),
-					"Timestamp": now,
-				})
+				fields[pointAddr] = map[string]interface{}{
+					"value":     m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16)),
+					"timestamp": now,
+					//"point_define": m.pointMap[pointAddr],
+				}
 			}
 		}
 	}
@@ -185,15 +174,15 @@ func (m *ModbusTCP) Gather(acc deviceAgent.Accumulator) error {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func(client modbus.Client) {
+	go func() {
 		defer wg.Done()
-		e := m.gatherServer(client, acc)
+		e := m.gatherServer(acc)
 		if e != nil {
 			acc.AddError(e)
 			m.Stop()
-			m.Start(acc)
+			m.Start()
 		}
-	}(m.client)
+	}()
 
 	wg.Wait()
 	return nil
@@ -223,15 +212,15 @@ func (m *ModbusTCP) TranslateOption(pointAddr string, source byte) string {
 func (m *ModbusTCP) TranslateParameter(pointAddr string, source int16) float64 {
 	parameter := m.pointMap[pointAddr].Parameter
 	if parameter != 0 {
-		return Round(parameter*float64(source), 2)
+		return utils.Round(parameter*float64(source), 2)
 	}
-	return Round(float64(source), 2)
+	return utils.Round(float64(source), 2)
 }
 
 func (m *ModbusTCP) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range m.pointMap {
-		pointMapFields[k], _ = jsoniter.MarshalToString(v)
+		pointMapFields[k] = v
 	}
 	acc.AddFields("modbus_tcp_point_map", pointMapFields, nil)
 	return nil
@@ -265,6 +254,10 @@ func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) error {
 	}
 
 	return nil
+}
+
+func (m *ModbusTCP) Get(cmdId string, key string) interface{} {
+	return m.pointMap
 }
 
 func init() {
