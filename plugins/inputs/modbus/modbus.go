@@ -1,4 +1,4 @@
-package modbus_tcp
+package modbus
 
 import (
 	"deviceAdaptor"
@@ -20,11 +20,7 @@ const HoleWidth = 200
 
 var defaultTimeout = internal.Duration{Duration: 15 * time.Second}
 
-type DbAddrMap struct {
-}
-
-
-type ModbusTCP struct {
+type Modbus struct {
 	Address string
 	SlaveId int
 
@@ -64,16 +60,16 @@ func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
 	return R
 }
 
-func (m *ModbusTCP) Name() string {
-	return "modbus_tcp"
+func (m *Modbus) Name() string {
+	return "modbus"
 }
 
-func (m *ModbusTCP) Start() error {
+func (m *Modbus) Start() error {
 	m.connected = false
 	return m.connect()
 }
 
-func (m *ModbusTCP) Stop() error {
+func (m *Modbus) Stop() error {
 	if m.connected {
 		m._handler.Close()
 		m.connected = false
@@ -81,7 +77,7 @@ func (m *ModbusTCP) Stop() error {
 	return nil
 }
 
-func (m *ModbusTCP) connect() error {
+func (m *Modbus) connect() error {
 	_handler := modbus.NewTCPClientHandler(m.Address)
 	_handler.SlaveId = uint8(m.SlaveId)
 	_handler.IdleTimeout = defaultTimeout.Duration
@@ -96,7 +92,7 @@ func (m *ModbusTCP) connect() error {
 	return nil
 }
 
-func (m *ModbusTCP) gatherServer(acc deviceAgent.Accumulator) error {
+func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	tmpDataMap := make(map[string][]interface{})
@@ -160,12 +156,12 @@ func (m *ModbusTCP) gatherServer(acc deviceAgent.Accumulator) error {
 	if m.NameOverride != "" {
 		acc.AddFields(m.NameOverride, fields, tags)
 	} else {
-		acc.AddFields("modbus_tcp", fields, tags)
+		acc.AddFields("modbus", fields, tags)
 	}
 	return nil
 }
 
-func (m *ModbusTCP) Gather(acc deviceAgent.Accumulator) error {
+func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 	if !m.connected {
 		if e := m.connect(); e != nil {
 			return e
@@ -188,7 +184,7 @@ func (m *ModbusTCP) Gather(acc deviceAgent.Accumulator) error {
 	return nil
 }
 
-func (m *ModbusTCP) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
+func (m *Modbus) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	m.pointMap = pointMap
 	m.addrMap = make(map[string][]int, 0)
 
@@ -199,7 +195,7 @@ func (m *ModbusTCP) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	}
 }
 
-func (m *ModbusTCP) TranslateOption(pointAddr string, source byte) string {
+func (m *Modbus) TranslateOption(pointAddr string, source byte) string {
 	option := m.pointMap[pointAddr].Option
 	sourceStr := strconv.Itoa(int(source))
 	if option != nil && option[sourceStr] != "" {
@@ -209,7 +205,7 @@ func (m *ModbusTCP) TranslateOption(pointAddr string, source byte) string {
 	return sourceStr
 }
 
-func (m *ModbusTCP) TranslateParameter(pointAddr string, source int16) float64 {
+func (m *Modbus) TranslateParameter(pointAddr string, source int16) float64 {
 	parameter := m.pointMap[pointAddr].Parameter
 	if parameter != 0 {
 		return utils.Round(parameter*float64(source), 2)
@@ -217,16 +213,16 @@ func (m *ModbusTCP) TranslateParameter(pointAddr string, source int16) float64 {
 	return utils.Round(float64(source), 2)
 }
 
-func (m *ModbusTCP) FlushPointMap(acc deviceAgent.Accumulator) error {
+func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range m.pointMap {
 		pointMapFields[k] = v
 	}
-	acc.AddFields("modbus_tcp_point_map", pointMapFields, nil)
+	acc.AddFields("modbus_point_map", pointMapFields, nil)
 	return nil
 }
 
-func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) error {
+func (m *Modbus) Set(cmdId string, key string, value interface{}) error {
 	//time.Sleep(10 * time.Second)
 
 	addrSplit := strings.Split(strings.TrimSpace(key), "x")
@@ -256,12 +252,42 @@ func (m *ModbusTCP) Set(cmdId string, key string, value interface{}) error {
 	return nil
 }
 
-func (m *ModbusTCP) Get(cmdId string, key string) interface{} {
-	return m.pointMap
+func (m *Modbus) Get(cmdId string, key string) interface{} {
+	return nil
+}
+
+
+func (m *Modbus) UpdatePointMap(cmdId string, key string, value interface{}) error {
+	pD, ok := m.pointMap[key]
+	if !ok {
+		return fmt.Errorf("no such point: %s\n", key)
+	}
+
+	//TODO: convert map[string]interface{} to struct by tag
+
+	itemList := []string{"label", "name"}
+	switch value.(type) {
+	case map[string]interface{}:
+		for _, k := range itemList {
+			if v, ok := value.(map[string]interface{})[k]; ok {
+				if e := utils.SetField(&pD, strings.Title(k), v); e != nil {
+					return e
+				}
+			}
+		}
+	}
+	m.pointMap[key] = pD
+	return nil
+}
+func (m *Modbus) RetrievePointMap(cmdId string, key string) interface{} {
+	if p, ok := m.pointMap[key]; ok {
+		return p
+	}
+	return nil
 }
 
 func init() {
-	inputs.Add("modbus_tcp", func() deviceAgent.Input {
-		return &ModbusTCP{}
+	inputs.Add("modbus", func() deviceAgent.Input {
+		return &Modbus{}
 	})
 }

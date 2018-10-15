@@ -21,7 +21,7 @@ import (
 
 type Config struct {
 	Tags        map[string]string
-	Agent       *AgentConfig
+	Global      *GlobalConfig
 	Inputs      []*models.RunningInput
 	Outputs     []*models.RunningOutput
 	Controllers []*models.RunningController
@@ -29,7 +29,7 @@ type Config struct {
 
 func NewConfig() *Config {
 	c := &Config{
-		Agent: &AgentConfig{
+		Global: &GlobalConfig{
 			Interval:      internal.Duration{Duration: 10 * time.Second},
 			FlushInterval: internal.Duration{Duration: 10 * time.Second},
 		},
@@ -41,7 +41,7 @@ func NewConfig() *Config {
 	return c
 }
 
-type AgentConfig struct {
+type GlobalConfig struct {
 	Debug bool
 
 	Interval      internal.Duration
@@ -96,7 +96,7 @@ func (c *Config) LoadConfig(path string) error {
 		if !ok {
 			return fmt.Errorf("%s: invalid configuration", path)
 		}
-		if err = toml.UnmarshalTable(subTable, c.Agent); err != nil {
+		if err = toml.UnmarshalTable(subTable, c.Global); err != nil {
 			log.Printf("E! Could not parse [agent] config\n")
 			return fmt.Errorf("error parsing %s, %s", path, err)
 		}
@@ -228,7 +228,7 @@ func (c *Config) addOutput(name string, table *ast.Table) error {
 	if err := toml.UnmarshalTable(table, output); err != nil {
 		return err
 	}
-	ro := models.NewRunningOutput(name, output, c.Agent.MetricBatchSize, c.Agent.MetricBufferLimit)
+	ro := models.NewRunningOutput(name, output, c.Global.MetricBatchSize, c.Global.MetricBufferLimit)
 	c.Outputs = append(c.Outputs, ro)
 
 	return nil

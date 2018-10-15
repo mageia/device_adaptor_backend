@@ -1,0 +1,42 @@
+{{define "base.header"}}
+<html>
+<head>
+    <title>{{.Title}}</title>
+</head>
+<body>
+
+<h3>Agent</h3>
+<ul>
+{{range $k, $v := .Agent}}
+    <li>{{$k}}: {{$v}}</li>
+{{end}}
+</ul>
+
+<h3>Plugins</h3>
+<ul>
+{{range $key, $value := .Plugins}}
+    <li>{{$key}}</li>
+
+    <ul>
+    {{range $k, $v := $value}}
+        <li>{{$k}}</li>
+
+        <ul>
+        {{range $x, $y := $v}}
+            <li>{{$x}}: {{$y}}</li>
+        {{end}}
+        </ul>
+
+    {{end}}
+    </ul>
+
+{{end}}
+</ul>
+
+{{end}}
+
+
+{{define "base.footer"}}
+</body>
+</html>
+{{end}}

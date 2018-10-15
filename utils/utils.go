@@ -1,6 +1,11 @@
 package utils
 
-import "math"
+import (
+	"errors"
+	"fmt"
+	"math"
+	"reflect"
+)
 
 func Round(f float64, n int) float64 {
 	pow10 := math.Pow10(n)
@@ -53,4 +58,25 @@ func ConvertNumber(v interface{}) interface{} {
 	default:
 		return v
 	}
+}
+
+func SetField(obj interface{}, name string, value interface{}) error {
+	structFieldValue := reflect.ValueOf(obj).Elem().FieldByName(name)
+
+	if !structFieldValue.IsValid() {
+		return fmt.Errorf("no such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		return errors.New("provided value type didn't match obj field type")
+	}
+
+	structFieldValue.Set(val)
+	return nil
 }

@@ -7,56 +7,49 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 	"runtime"
 	"sync"
 	"time"
 )
 
+var A *Agent
+
 type Agent struct {
 	Ctx          context.Context
 	Cancel       context.CancelFunc
+	ConfigServer *http.Server
 	Config       *configs.Config
-	ConfigServer *gin.Engine
 }
 
-func NewAgent(config *configs.Config) (*Agent, error) {
+func NewAgent() (*Agent, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	c := configs.NewConfig()
+	if err := c.LoadConfig(""); err != nil {
+		return nil, err
+	}
+
 	a := &Agent{
-		Ctx:          ctx,
-		Cancel:       cancel,
-		Config:       config,
-		ConfigServer: configs.InitRouter(),
+		Ctx:    ctx,
+		Cancel: cancel,
+		Config: c,
+		ConfigServer: &http.Server{
+			Addr:    ":8080",
+			Handler: InitRouter(),
+		},
 	}
 	return a, nil
 }
 
-func (a *Agent) Connect() error {
-	for _, o := range a.Config.Outputs {
-		switch ot := o.Output.(type) {
-		case deviceAgent.ServiceOutput:
-			if err := ot.Start(); err != nil {
-				log.Printf("E! Service for output %s failed to start, exiting\n%s\n",
-					o.Name, err.Error())
-				return err
-			}
-		}
-		log.Printf("D! Attempting connect to output: %s\n", o.Name)
-		err := o.Output.Connect()
-		if err != nil {
-			log.Printf("E! Failed to connect to output %s, retrying in 15s, "+
-				"error was '%s'\n", o.Name, err)
-			time.Sleep(15 * time.Second)
-			err = o.Output.Connect()
-			if err != nil {
-				return err
-			}
-		}
-		log.Printf("D! Successfully connected to output: %s\n", o.Name)
-	}
-
-	return nil
+func (a *Agent) Reload() {
+	A.Cancel()
+	go func() {
+		A, _ = NewAgent()
+		log.Println(A.Config.Tags)
+		A.Run()
+	}()
 }
 
 func (a *Agent) Close() error {
@@ -65,6 +58,8 @@ func (a *Agent) Close() error {
 		err = o.Output.Close()
 		log.Printf("D! Successfully closed output: %s\n", o.Name)
 	}
+
+	a.ConfigServer.Shutdown(a.Ctx)
 	return err
 }
 
@@ -111,9 +106,10 @@ func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, met
 
 	flushTicker := time.NewTicker(interval * 1000)
 	defer ticker.Stop()
+	input.Input.FlushPointMap(acc)
 
 	for {
-		internal.RandomSleep(a.Config.Agent.CollectionJitter.Duration, a.Ctx)
+		internal.RandomSleep(a.Config.Global.CollectionJitter.Duration, a.Ctx)
 		gatherWithTimeout(a.Ctx, input, acc, interval)
 		select {
 		case <-a.Ctx.Done():
@@ -175,7 +171,7 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 		}
 	}()
 
-	ticker := time.NewTicker(a.Config.Agent.FlushInterval.Duration)
+	ticker := time.NewTicker(a.Config.Global.FlushInterval.Duration)
 	semaphore := make(chan struct{}, 1)
 	for {
 		select {
@@ -186,7 +182,7 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 			go func() {
 				select {
 				case semaphore <- struct{}{}:
-					internal.RandomSleep(a.Config.Agent.FlushJitter.Duration, a.Ctx)
+					internal.RandomSleep(a.Config.Global.FlushJitter.Duration, a.Ctx)
 					a.flush()
 					<-semaphore
 				default:
@@ -204,16 +200,9 @@ func (a *Agent) Run() error {
 	metricC := make(chan deviceAgent.Metric, 100)
 	outMetricC := make(chan deviceAgent.Metric, 100)
 
-	//controller
-	for _, controller := range a.Config.Controllers {
-		switch p := controller.Controller.(type) {
-		case deviceAgent.Controller:
-			if err := p.Start(a.Ctx); err != nil {
-				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name, err.Error())
-				return err
-			}
-		}
-	}
+	go func() {
+		a.ConfigServer.ListenAndServe()
+	}()
 
 	//flusher
 	wg.Add(1)
@@ -224,8 +213,43 @@ func (a *Agent) Run() error {
 		}
 	}()
 
+	//controller
+	for _, controller := range a.Config.Controllers {
+		switch p := controller.Controller.(type) {
+		case deviceAgent.Controller:
+			if err := p.Start(a.Ctx); err != nil {
+				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name, err.Error())
+				return err
+			}
+			//defer p.Stop(a.Ctx)
+		}
+	}
+
+	for _, o := range a.Config.Outputs {
+		switch ot := o.Output.(type) {
+		case deviceAgent.ServiceOutput:
+			if err := ot.Start(); err != nil {
+				log.Printf("E! Service for output %s failed to start, exiting\n%s\n",
+					o.Name, err.Error())
+				return err
+			}
+		}
+		log.Printf("D! Attempting connect to output: %s\n", o.Name)
+		err := o.Output.Connect()
+		if err != nil {
+			log.Printf("E! Failed to connect to output %s, retrying in 15s, "+
+				"error was '%s'\n", o.Name, err)
+			time.Sleep(15 * time.Second)
+			err = o.Output.Connect()
+			if err != nil {
+				return err
+			}
+		}
+		log.Printf("D! Successfully connected to output: %s\n", o.Name)
+	}
+
+	wg.Add(len(a.Config.Inputs))
 	for _, input := range a.Config.Inputs {
-		//input.SetDefaultTags(a.Config.Tags)
 		switch p := input.Input.(type) {
 		case deviceAgent.ServiceInput:
 			acc := NewAccumulator(input, metricC)
@@ -240,14 +264,9 @@ func (a *Agent) Run() error {
 					c.Controller.RegisterInput(pC.Name(), pC)
 				}
 			}
-		default:
-			log.Println(p.Name())
 		}
-	}
 
-	wg.Add(len(a.Config.Inputs))
-	for _, input := range a.Config.Inputs {
-		inter := a.Config.Agent.Interval.Duration
+		inter := a.Config.Global.Interval.Duration
 		if input.Config.Interval != 0 {
 			inter = input.Config.Interval
 		}
@@ -257,13 +276,9 @@ func (a *Agent) Run() error {
 		}(input, inter)
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		a.ConfigServer.Run(":8080")
-	}()
-
 	wg.Wait()
 	a.Close()
+
+	log.Println("#############")
 	return nil
 }

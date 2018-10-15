@@ -14,7 +14,7 @@
   - [ ] websocket
 - Input
   - [x] ftp
-  - [x] modbus_tcp
+  - [x] modbus
   - [x] s7
 - Output
   - [x] file
@@ -29,4 +29,4 @@
 ## TODO:
 
 - [ ] 配置流程Server化
-- [ ] 
+- [ ] 配置更新后，程序Reload功能

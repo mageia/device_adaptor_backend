@@ -13,4 +13,6 @@ type ControllerInput interface {
 	Name() string
 	Set(cmdId string, key string, value interface{}) error
 	Get(cmdId string, key string) interface{}
+	UpdatePointMap(cmdId string, key string, value interface{}) error
+	RetrievePointMap(cmdId string, key string) interface{}
 }

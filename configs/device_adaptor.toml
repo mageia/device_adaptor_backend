@@ -1,50 +1,12 @@
-#title = "Deivce Adaptor Configuration"
-
-[global_tags]
-test = "test"
 
 [agent]
-debug = true
-interval = "3s"
+  debug = true
+  interval = "3s"
 
-#[[controller.http]]
-#address = ":8080"
+[controller]
 
-#[[outputs.redis]]
-#[outputs.file]
-#files = ["stdout"]
-#data_format = "json"
+  [[controller.http]]
+    address = ":9999"
 
-#[[inputs.modbus_tcp]]
-#name_override = "abc"
-#field_prefix = "abc_"
-#field_suffix = ""
-#interval = "1s"
-#address = "10.211.55.4:5021"
-#slave_id = 1
-#point_map = "../configs/point_map_modbus_tcp.yml"
-
-
-#[[inputs.modbus_tcp]]
-#interval = "1s"
-#address = "10.211.55.4:502"
-#slave_id = 1
-#point_map = "../configs/point_map_modbus_tcp.yml"
-
-
-#[[inputs.ftp]]
-#address = "localhost"
-#username = "leaniot"
-#password = "leaniot"
-#dev_path = "/SubFile/KJ95N/dev.txt"
-#data_path = "/SubFile/KJ95N/rtdata.txt"
-
-#[[inputs.sensor_vibration]]
-
-
-#[inputs.s7]
-#interval = "1s"
-#address = "192.168.0.168"
-#rack = 0
-#slot = 1
-#point_map = "../configs/point_map_s7.yml"
+[global_tags]
+  test = "2018-10-15 19:16:36.977509 +0800 CST m=+59.559988468"
