@@ -10,7 +10,7 @@
 
 # Structure
 
-[](structure.png)
+![](structure.png)
 
 # Plugins
 
