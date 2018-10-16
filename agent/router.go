@@ -65,9 +65,9 @@ func Update(c *gin.Context) {
 }
 
 func InitRouter(debug bool) *gin.Engine {
-	if !debug {
+	//if !debug {
 		gin.SetMode(gin.ReleaseMode)
-	}
+	//}
 	router := gin.Default()
 
 	router.Use(func(c *gin.Context) {

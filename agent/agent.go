@@ -203,9 +203,9 @@ func (a *Agent) Run() error {
 
 	//ConfigServer
 	go func() {
-		if !a.Config.Global.Debug {
+		//if !a.Config.Global.Debug {
 			gin.SetMode(gin.ReleaseMode)
-		}
+		//}
 		a.ConfigServer.ListenAndServe()
 	}()
 
