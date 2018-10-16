@@ -46,6 +46,7 @@ func (h *HTTP) RegisterInput(name string, input deviceAgent.ControllerInput) {
 
 func (h *HTTP) Start(ctx context.Context) error {
 	router := gin.Default()
+
 	router.Use(func(c *gin.Context) {
 		c.Next()
 		if len(c.Errors) == 0 {

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"github.com/fatih/structs"
 	"github.com/gin-gonic/gin"
 	"github.com/theherk/viper"
 	"time"
@@ -9,8 +10,14 @@ import (
 var ReloadSignal = make(chan struct{})
 
 func Index(c *gin.Context) {
-	c.HTML(200, "index", gin.H{
+	c.HTML(200, "test.html", gin.H{
 		"Title": "Index",
+		"Global": map[string]interface{}{
+			"debug":    true,
+			"interval": "3s",
+		},
+		"GlobalConfig": structs.New(A.Config.Global).Map(),
+
 		"Plugins": map[string]interface{}{
 			"Controllers": map[string]interface{}{
 				"http": map[string]interface{}{
@@ -40,10 +47,6 @@ func Index(c *gin.Context) {
 				"json": map[string]interface{}{},
 			},
 		},
-		"Global": map[string]interface{}{
-			"debug":    true,
-			"interval": "3s",
-		},
 	})
 }
 
@@ -61,9 +64,11 @@ func Update(c *gin.Context) {
 	ReloadSignal <- struct{}{}
 }
 
-func InitRouter() *gin.Engine {
+func InitRouter(debug bool) *gin.Engine {
+	if !debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	router := gin.Default()
-	gin.SetMode(gin.ReleaseMode)
 
 	router.Use(func(c *gin.Context) {
 		c.Next()
@@ -71,16 +76,16 @@ func InitRouter() *gin.Engine {
 			c.AbortWithStatusJSON(400, c.Errors.JSON())
 		}
 	})
-	router.LoadHTMLGlob("../configs/templates/*")
+	router.LoadHTMLGlob("../agent/templates/*")
 	router.GET("/", Index)
 	router.GET("/update", Update)
 
-	//plugins := router.Group("/plugins")
-	//plugins.GET("/", Index)
-	//plugins.GET("/inputs")
-	//plugins.GET("/outputs")
-	//plugins.GET("/controllers")
-	//plugins.GET("/parsers")
-	//plugins.GET("/serializers")
+	plugins := router.Group("/plugins")
+	plugins.GET("/", Index)
+	plugins.GET("/inputs")
+	plugins.GET("/outputs")
+	plugins.GET("/controllers")
+	plugins.GET("/parsers")
+	plugins.GET("/serializers")
 	return router
 }

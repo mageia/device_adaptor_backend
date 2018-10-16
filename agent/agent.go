@@ -7,6 +7,7 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"runtime"
@@ -37,7 +38,7 @@ func NewAgent() (*Agent, error) {
 		Config: c,
 		ConfigServer: &http.Server{
 			Addr:    ":8080",
-			Handler: InitRouter(),
+			Handler: InitRouter(c.Global.Debug),
 		},
 	}
 	return a, nil
@@ -200,7 +201,11 @@ func (a *Agent) Run() error {
 	metricC := make(chan deviceAgent.Metric, 100)
 	outMetricC := make(chan deviceAgent.Metric, 100)
 
+	//ConfigServer
 	go func() {
+		if !a.Config.Global.Debug {
+			gin.SetMode(gin.ReleaseMode)
+		}
 		a.ConfigServer.ListenAndServe()
 	}()
 
@@ -221,7 +226,6 @@ func (a *Agent) Run() error {
 				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name, err.Error())
 				return err
 			}
-			//defer p.Stop(a.Ctx)
 		}
 	}
 

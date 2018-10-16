@@ -4,6 +4,7 @@ require (
 	git.leaniot.cn/publicLib/go-modbus v0.0.0-20180328164922-c15c68297f4f
 	git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7 // indirect
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
+	github.com/fatih/structs v1.1.0
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-redis/redis v6.14.1+incompatible
@@ -13,6 +14,7 @@ require (
 	github.com/influxdata/toml v0.0.0-20180607005434-2a2e3012f7cf
 	github.com/jlaffaye/ftp v0.0.0-20180808211605-3f6433f7eae3
 	github.com/json-iterator/go v1.1.5
+	github.com/legendtkl/godag v0.0.0-20180408040019-5a81fba2c676 // indirect
 	github.com/magiconair/properties v1.8.0 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect

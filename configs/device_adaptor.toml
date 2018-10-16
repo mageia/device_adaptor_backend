@@ -1,12 +1,50 @@
-
-[agent]
-  debug = true
-  interval = "3s"
-
-[controller]
-
-  [[controller.http]]
-    address = ":9999"
+#title = "Deivce Adaptor Configuration"
 
 [global_tags]
-  test = "2018-10-15 19:16:36.977509 +0800 CST m=+59.559988468"
+test = "test"
+
+[agent]
+debug = false
+interval = "3s"
+
+[[controller.http]]
+address = ":9999"
+
+[[outputs.redis]]
+#[outputs.file]
+#files = ["stdout"]
+#data_format = "json"
+
+#[[inputs.modbus]]
+#name_override = "abc"
+#field_prefix = "abc_"
+#field_suffix = ""
+#interval = "1s"
+#address = "10.211.55.4:5021"
+#slave_id = 1
+#point_map = "../configs/point_map_modbus.yml"
+
+
+[[inputs.modbus]]
+interval = "1s"
+address = "10.211.55.4:502"
+slave_id = 1
+point_map = "../configs/point_map_ups.yml"
+
+
+#[[inputs.ftp]]
+#address = "localhost"
+#username = "leaniot"
+#password = "leaniot"
+#dev_path = "/SubFile/KJ95N/dev.txt"
+#data_path = "/SubFile/KJ95N/rtdata.txt"
+
+#[[inputs.sensor_vibration]]
+
+
+#[inputs.s7]
+#interval = "1s"
+#address = "192.168.0.168"
+#rack = 0
+#slot = 1
+#point_map = "../configs/point_map_s7.yml"

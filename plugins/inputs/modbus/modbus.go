@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -100,11 +99,11 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	for k, l := range m.addrMap {
 		sort.Ints(l)
 		switch k {
-		case "1":
+		case "0", "1":
 			for _, param := range getParamList(l, HoleWidth, 1000) {
-				r, e := m.client.ReadDiscreteInputs(uint16(param[0]-1), uint16(param[1]))
+				r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 				if e != nil {
-					log.Println(e)
+					acc.AddError(e)
 					return e
 				}
 				for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
@@ -113,9 +112,9 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 			}
 		case "4":
 			for _, param := range getParamList(l, HoleWidth, 125) {
-				r, e := m.client.ReadHoldingRegisters(uint16(param[0]-1), uint16(param[1]))
+				r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 				if e != nil {
-					log.Println(e)
+					acc.AddError(e)
 					return e
 				}
 				for i := 0; i < len(r); i += 2 {
@@ -131,7 +130,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 		for i, a := range l {
 			pointAddr := m.FieldPrefix + fmt.Sprintf("%sx%04d", k, a) + m.FieldSuffix
 			switch k {
-			case "1":
+			case "0", "1":
 				if i > 0 && a-l[i-1]-1 <= HoleWidth {
 					x1 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}

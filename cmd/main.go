@@ -6,8 +6,6 @@ import (
 	_ "deviceAdaptor/plugins/inputs/all"
 	_ "deviceAdaptor/plugins/outputs/all"
 	"log"
-	"runtime"
-	"time"
 )
 
 func main() {
@@ -19,11 +17,11 @@ func main() {
 		defer agent.A.Cancel()
 	}()
 
-	go func() {
-		for range time.Tick(time.Second) {
-			log.Println(runtime.NumGoroutine())
-		}
-	}()
+	//go func() {
+	//	for range time.Tick(time.Second) {
+	//		log.Println(runtime.NumGoroutine())
+	//	}
+	//}()
 
 	for {
 		select {

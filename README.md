@@ -6,6 +6,12 @@
 - 统一控制流程问题，指令的发送、调度、回调等
 - 统一数据格式问题，避免维护多种输出或输出的类型、格式等
 
+
+
+# Structure
+
+[](structure.png)
+
 # Plugins
 
 - Controller

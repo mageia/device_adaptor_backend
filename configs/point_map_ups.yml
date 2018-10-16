@@ -1,0 +1,330 @@
+4x0001:
+  label: 4x0001
+  name: 输出频率
+  desc: 设备输出频率
+  unit: Hz
+4x0002:
+  label: 4x0002
+  name: 电网输入电压1
+  desc: 单相AC127V电压
+  unit: V
+4x0003:
+  label: 4x0003
+  name: 电网输入电流1
+  desc: 单相AC127V电流
+  unit: A
+4x0004:
+  label: 4x0004
+  name: 电网输入电压2
+  desc: 单相AC660V电压
+  unit: V
+4x0005:
+  label: 4x0005
+  name: 电网输入电流2
+  desc: 单相AC660V电流
+  unit: A
+4x0006:
+  label: 4x0006
+  name: 输出电压1
+  desc: AC127V电压（数值范围：124-130，超过范围显示极限值）
+  unit: V
+4x0007:
+  label: 4x0007
+  name: 输出电压2
+  desc: AC220电压（数值范围：214-226，超过范围显示极限值）
+  unit: V
+4x0008:
+  label: 4x0008
+  name: 输出电压3
+  desc: AC660V电压（数值范围：640-680，超过范围显示极限值）
+  unit: V
+4x0009:
+  label: 4x0009
+  name: 输出电流1
+  desc: AC127V电流
+  unit: A
+4x000A:
+  label: 4x000A
+  name: 输出电流2
+  desc: 220V电流
+  unit: A
+4x000B:
+  label: 4x000B
+  name: 输出电流3
+  desc: 660V电流
+  unit: A
+4x000C:
+  label: 4x000C
+  name: 电池状态
+  desc: 充电/放电/满电后备
+  unit: 无
+4x000D:
+  label: 4x000D
+  name: 电池总电压值
+  desc: 电池总电压值
+  unit: V
+4x000E:
+  label: 4x000E
+  name: 电池放电电流值
+  desc: 电池放电电流值
+  unit: A
+4x000F:
+  label: 4x000F
+  name: 电池充电电电流值
+  desc: 电池充电电电流值
+  unit: A
+4x0010:
+  label: 4x0010
+  name: 电池电压禁止输出保护值
+  desc: 电池电压禁止输出保护值
+  unit: V
+4x0011:
+  label: 4x0011
+  name: 单芯电压值（1-24节）
+  desc: 1-24节
+  unit: V
+4x0012:
+  label: 4x0012
+  name: 单芯间电压差值
+  desc: 单芯间电压差值
+  unit: V
+4x0013:
+  label: 4x0013
+  name: 单芯间温度压差值
+  desc: 温度压差值
+  unit: ℃
+4x0014:
+  label: 4x0014
+  name: 电池腔温度值（1-10个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0015:
+  label: 4x0015
+  name: 电池温度过低值
+  desc: 电池温度过低值
+  unit: ℃
+4x0016:
+  label: 4x0016
+  name: 电池温度过高值
+  desc: 电池温度过高值
+  unit: ℃
+4x0017:
+  label: 4x0017
+  name: 单芯均衡开启压差值
+  desc: 单芯均衡开启压差
+  unit: V
+4x0018:
+  label: 4x0018
+  name: 单芯均衡开启电压值
+  desc: 单芯均衡开启电压
+  unit: V
+4x0019:
+  label: 4x0019
+  name: 电池剩余电量值
+  desc: 电池剩余电量值
+  unit: Wh
+4x001A:
+  label: 4x001A
+  name: 电池剩余运行时间
+  desc: 电池剩余运行时间
+  unit: min
+4x001B:
+  label: 4x001B
+  name: 设备ID
+  desc: 设备出厂唯一编号
+  unit: 无
+1x0001:
+  label: 1x0001
+  name: 单机故障
+  desc: 设备单机故障告警
+  unit: 无
+1x0002:
+  label: 1x0002
+  name: 维修旁路
+  desc: 维修旁路工作模式
+  unit: 无
+1x0003:
+  label: 1x0003
+  name: 输出短路保护
+  desc: 设备输出短路保护与告警
+  unit: 无
+1x0004:
+  label: 1x0004
+  name: 输出浪涌保护
+  desc: 设备输出浪涌保护与告警
+  unit: 无
+1x0005:
+  label: 1x0005
+  name: 输出过载保护
+  desc: 设备输出过载保护与告警
+  unit: 无
+1x0006:
+  label: 1x0006
+  name: 电网停电故障
+  desc: 电网输入故障告警
+  unit: 无
+1x0007:
+  label: 1x0007
+  name: ups本体过温
+  desc: ups本体过温保护
+  unit: 无
+1x0008:
+  label: 1x0008
+  name: ups本体故障
+  desc: ups本体不工作
+  unit: 无
+1x0009:
+  label: 1x0009
+  name: 防爆腔内过温
+  desc: 设备内部过温保护
+  unit: 无
+1x000A:
+  label: 1x000A
+  name: 输入熔断器故障
+  desc: 电网输入熔断器信号
+  unit: 无
+1x000B:
+  label: 1x000B
+  name: 电池总电压过压报警
+  desc: 总电压过压报警
+  unit: 无
+1x000C:
+  label: 1x000C
+  name: 电池总电压过压保护
+  desc: 总电压过压保护
+  unit: 无
+1x000D:
+  label: 1x000D
+  name: 电池总电压欠压报警
+  desc: 总电压欠压报警
+  unit: 无
+1x000E:
+  label: 1x000E
+  name: 电池总电压欠压保护
+  desc: 总电压欠压保护
+  unit: 无
+1x000F:
+  label: 1x000F
+  name: 电池输出过载报警
+  desc: 电池输出过载报警
+  unit: 无
+1x0010:
+  label: 1x0010
+  name: 电池输出过载保护
+  desc: 电池输出过载保护
+  unit: 无
+1x0011:
+  label: 1x0011
+  name: 电池输出短路保护
+  desc: 电池输出短路保护
+  unit: 无
+1x0012:
+  label: 1x0012
+  name: 电池充电过流保护
+  desc: 电池充电过流保护
+  unit: 无
+1x0013:
+  label: 1x0013
+  name: 单芯电压过压报警（1-24节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0014:
+  label: 1x0014
+  name: 单芯电压过压保护（1-24节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0015:
+  label: 1x0015
+  name: 单芯电压欠压报警（1-24节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0016:
+  label: 1x0016
+  name: 单芯电压欠压保护（1-24节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0017:
+  label: 1x0017
+  name: 单芯间电压差报警
+  desc: 单芯电压差报警
+  unit: 无
+1x0018:
+  label: 1x0018
+  name: 单芯间电压差保护
+  desc: 单芯电压差保护
+  unit: 无
+1x0019:
+  label: 1x0019
+  name: 单芯间温度压差报警
+  desc: 温度压差报警
+  unit: 无
+1x001A:
+  label: 1x001A
+  name: 单芯间温度压差保护
+  desc: 温度压差保护
+  unit: 无
+1x001B:
+  label: 1x001B
+  name: 电池温度过低保护
+  desc: 电池温度过低保护
+  unit: 无
+1x001C:
+  label: 1x001C
+  name: 电池温度过高保护
+  desc: 电池温度过高保护
+  unit: 无
+1x001D:
+  label: 1x001D
+  name: 电池信息采集线开路保护
+  desc: 电池信息采集线开路保护
+  unit: 无
+1x001E:
+  label: 1x001E
+  name: 电池剩余电量报警
+  desc: 电池剩余电量报警
+  unit: 无
+1x001F:
+  label: 1x001F
+  name: 电池腔电加热启动
+  desc: 电池腔电加热启动
+  unit: 无
+0x0001:
+  label: 0x0001
+  name: 远程停机
+  desc: 远程停止设备
+  unit: 无
+0x0002:
+  label: 0x0002
+  name: 远程启动
+  desc: 远程启动设备
+  unit: 无
+0x0003:
+  label: 0x0003
+  name: 电池强制充电
+  desc: 远程强制给电池充电
+  unit: 无
+0x0004:
+  label: 0x0004
+  name: 电池强制放电
+  desc: 远程强制给电池放电
+  unit: 无
+0x0005:
+  label: 0x0005
+  name: 启动/关闭（单相AC127V）
+  desc: 远程开启/关闭127V输出
+  unit: 无
+0x0006:
+  label: 0x0006
+  name: 启动/关闭（单相AC660V）
+  desc: 远程开启/关闭660V输出
+  unit: 无
+0x0007:
+  label: 0x0007
+  name: 启动/关闭（单相AC220V）
+  desc: 远程开启/关闭220V输出
+  unit: 无
+0x0008:
+  label: 0x0008
+  name: 供电方式
+  desc: 电网/电池
+  unit: 无
