@@ -138,6 +138,8 @@ func (a *Agent) flush() {
 func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
+
+	// 从input channel 读数据并传给 output channel
 	go func() {
 		defer wg.Done()
 		for {
@@ -154,6 +156,8 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 	}()
 
 	wg.Add(1)
+
+	// 从output channel 读数据传给 各个output组件
 	go func() {
 		defer wg.Done()
 		for {
@@ -172,8 +176,9 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 		}
 	}()
 
+	// randomSleep??
 	ticker := time.NewTicker(a.Config.Global.FlushInterval.Duration)
-	semaphore := make(chan struct{}, 1)
+	semaphore := make(chan struct{})
 	for {
 		select {
 		case <-a.Ctx.Done():
@@ -198,14 +203,14 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 
 func (a *Agent) Run() error {
 	var wg sync.WaitGroup
+	// input channel
 	metricC := make(chan deviceAgent.Metric, 100)
+	// output channel
 	outMetricC := make(chan deviceAgent.Metric, 100)
 
 	//ConfigServer
 	go func() {
-		//if !a.Config.Global.Debug {
-			gin.SetMode(gin.ReleaseMode)
-		//}
+		gin.SetMode(gin.ReleaseMode)
 		a.ConfigServer.ListenAndServe()
 	}()
 

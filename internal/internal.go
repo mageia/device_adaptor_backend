@@ -55,5 +55,4 @@ func RandomSleep(max time.Duration, ctx context.Context) {
 		t.Stop()
 		return
 	}
-
 }

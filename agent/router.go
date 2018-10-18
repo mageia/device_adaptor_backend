@@ -3,7 +3,7 @@ package agent
 import (
 	"github.com/fatih/structs"
 	"github.com/gin-gonic/gin"
-	"github.com/theherk/viper"
+	"github.com/spf13/viper"
 	"time"
 )
 
@@ -52,7 +52,7 @@ func Index(c *gin.Context) {
 
 func Update(c *gin.Context) {
 	viper.SetConfigName("device_adaptor")
-	viper.AddConfigPath("../configs")
+	//viper.AddConfigPath("../configs")
 	if e := viper.ReadInConfig(); e != nil {
 		c.JSON(400, "viper.ReadInConfig Error")
 		return
@@ -65,9 +65,7 @@ func Update(c *gin.Context) {
 }
 
 func InitRouter(debug bool) *gin.Engine {
-	//if !debug {
-		gin.SetMode(gin.ReleaseMode)
-	//}
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
 	router.Use(func(c *gin.Context) {
@@ -76,16 +74,23 @@ func InitRouter(debug bool) *gin.Engine {
 			c.AbortWithStatusJSON(400, c.Errors.JSON())
 		}
 	})
-	router.LoadHTMLGlob("../agent/templates/*")
-	router.GET("/", Index)
-	router.GET("/update", Update)
 
-	plugins := router.Group("/plugins")
-	plugins.GET("/", Index)
-	plugins.GET("/inputs")
-	plugins.GET("/outputs")
-	plugins.GET("/controllers")
-	plugins.GET("/parsers")
-	plugins.GET("/serializers")
+	router.Static("/", "../agent/dist")
+
+	//router.LoadHTMLGlob("../agent/dist/*")
+	//router.LoadHTMLFiles("../agent/dist/*")
+	//router.GET("/", Index)
+	//router.GET("/update", Update)
+	//
+	//plugins := router.Group("/plugins")
+	//plugins.GET("/", Index)
+	//plugins.GET("/inputs")
+	//plugins.GET("/outputs")
+	//plugins.GET("/controllers")
+	//plugins.GET("/parsers")
+	//plugins.GET("/serializers")
+	if debug {
+		gin.SetMode(gin.DebugMode)
+	}
 	return router
 }

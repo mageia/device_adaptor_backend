@@ -255,7 +255,6 @@ func (m *Modbus) Get(cmdId string, key string) interface{} {
 	return nil
 }
 
-
 func (m *Modbus) UpdatePointMap(cmdId string, key string, value interface{}) error {
 	pD, ok := m.pointMap[key]
 	if !ok {

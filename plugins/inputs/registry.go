@@ -6,6 +6,6 @@ type Creator func() deviceAgent.Input
 
 var Inputs = map[string]Creator{}
 
-func Add(name string, creator Creator)  {
+func Add(name string, creator Creator) {
 	Inputs[name] = creator
 }

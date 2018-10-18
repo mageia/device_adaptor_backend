@@ -43,93 +43,253 @@
   name: 输出电流1
   desc: AC127V电流
   unit: A
-4x000A:
-  label: 4x000A
+4x0010:
+  label: 4x0010
   name: 输出电流2
   desc: 220V电流
   unit: A
-4x000B:
-  label: 4x000B
+4x0011:
+  label: 4x0011
   name: 输出电流3
   desc: 660V电流
   unit: A
-4x000C:
-  label: 4x000C
+4x0012:
+  label: 4x0012
   name: 电池状态
   desc: 充电/放电/满电后备
   unit: 无
-4x000D:
-  label: 4x000D
+4x0013:
+  label: 4x0013
   name: 电池总电压值
   desc: 电池总电压值
   unit: V
-4x000E:
-  label: 4x000E
+4x0014:
+  label: 4x0014
   name: 电池放电电流值
   desc: 电池放电电流值
   unit: A
-4x000F:
-  label: 4x000F
+4x0015:
+  label: 4x0015
   name: 电池充电电电流值
   desc: 电池充电电电流值
   unit: A
-4x0010:
-  label: 4x0010
+4x0016:
+  label: 4x0016
   name: 电池电压禁止输出保护值
   desc: 电池电压禁止输出保护值
   unit: V
-4x0011:
-  label: 4x0011
-  name: 单芯电压值（1-24节）
-  desc: 1-24节
-  unit: V
-4x0012:
-  label: 4x0012
-  name: 单芯间电压差值
-  desc: 单芯间电压差值
-  unit: V
-4x0013:
-  label: 4x0013
-  name: 单芯间温度压差值
-  desc: 温度压差值
-  unit: ℃
-4x0014:
-  label: 4x0014
-  name: 电池腔温度值（1-10个节点）
-  desc: 电池腔10路温度采集点
-  unit: ℃
-4x0015:
-  label: 4x0015
-  name: 电池温度过低值
-  desc: 电池温度过低值
-  unit: ℃
-4x0016:
-  label: 4x0016
-  name: 电池温度过高值
-  desc: 电池温度过高值
-  unit: ℃
 4x0017:
   label: 4x0017
-  name: 单芯均衡开启压差值
-  desc: 单芯均衡开启压差
+  name: 单芯电压值（1节）
+  desc: 1-24节
   unit: V
 4x0018:
   label: 4x0018
-  name: 单芯均衡开启电压值
-  desc: 单芯均衡开启电压
+  name: 单芯电压值（2节）
+  desc: 1-24节
   unit: V
 4x0019:
   label: 4x0019
+  name: 单芯电压值（3节）
+  desc: 1-24节
+  unit: V
+4x0020:
+  label: 4x0020
+  name: 单芯电压值（4节）
+  desc: 1-24节
+  unit: V
+4x0021:
+  label: 4x0021
+  name: 单芯电压值（5节）
+  desc: 1-24节
+  unit: V
+4x0022:
+  label: 4x0022
+  name: 单芯电压值（6节）
+  desc: 1-24节
+  unit: V
+4x0023:
+  label: 4x0023
+  name: 单芯电压值（7节）
+  desc: 1-24节
+  unit: V
+4x0024:
+  label: 4x0024
+  name: 单芯电压值（8节）
+  desc: 1-24节
+  unit: V
+4x0025:
+  label: 4x0025
+  name: 单芯电压值（9节）
+  desc: 1-24节
+  unit: V
+4x0026:
+  label: 4x0026
+  name: 单芯电压值（10节）
+  desc: 1-24节
+  unit: V
+4x0027:
+  label: 4x0027
+  name: 单芯电压值（11节）
+  desc: 1-24节
+  unit: V
+4x0028:
+  label: 4x0028
+  name: 单芯电压值（12节）
+  desc: 1-24节
+  unit: V
+4x0029:
+  label: 4x0029
+  name: 单芯电压值（13节）
+  desc: 1-24节
+  unit: V
+4x0030:
+  label: 4x0030
+  name: 单芯电压值（14节）
+  desc: 1-24节
+  unit: V
+4x0031:
+  label: 4x0031
+  name: 单芯电压值（15节）
+  desc: 1-24节
+  unit: V
+4x0032:
+  label: 4x0032
+  name: 单芯电压值（16节）
+  desc: 1-24节
+  unit: V
+4x0033:
+  label: 4x0033
+  name: 单芯电压值（17节）
+  desc: 1-24节
+  unit: V
+4x0034:
+  label: 4x0034
+  name: 单芯电压值（18节）
+  desc: 1-24节
+  unit: V
+4x0035:
+  label: 4x0035
+  name: 单芯电压值（19节）
+  desc: 1-24节
+  unit: V
+4x0036:
+  label: 4x0036
+  name: 单芯电压值（20节）
+  desc: 1-24节
+  unit: V
+4x0037:
+  label: 4x0037
+  name: 单芯电压值（21节）
+  desc: 1-24节
+  unit: V
+4x0038:
+  label: 4x0038
+  name: 单芯电压值（22节）
+  desc: 1-24节
+  unit: V
+4x0039:
+  label: 4x0039
+  name: 单芯电压值（23节）
+  desc: 1-24节
+  unit: V
+4x0040:
+  label: 4x0040
+  name: 单芯电压值（24节）
+  desc: 1-24节
+  unit: V
+4x0041:
+  label: 4x0041
+  name: 单芯间电压差值
+  desc: 单芯间电压差值
+  unit: V
+4x0042:
+  label: 4x0042
+  name: 单芯间温度压差值
+  desc: 温度压差值
+  unit: ℃
+4x0043:
+  label: 4x0043
+  name: 电池腔温度值（1个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0044:
+  label: 4x0044
+  name: 电池腔温度值（2个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0045:
+  label: 4x0045
+  name: 电池腔温度值（3个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0046:
+  label: 4x0046
+  name: 电池腔温度值（4个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0047:
+  label: 4x0047
+  name: 电池腔温度值（5个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0048:
+  label: 4x0048
+  name: 电池腔温度值（6个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0049:
+  label: 4x0049
+  name: 电池腔温度值（7个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0050:
+  label: 4x0050
+  name: 电池腔温度值（8个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0051:
+  label: 4x0051
+  name: 电池腔温度值（9个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0052:
+  label: 4x0052
+  name: 电池腔温度值（10个节点）
+  desc: 电池腔10路温度采集点
+  unit: ℃
+4x0053:
+  label: 4x0053
+  name: 电池温度过低值
+  desc: 电池温度过低值
+  unit: ℃
+4x0054:
+  label: 4x0054
+  name: 电池温度过高值
+  desc: 电池温度过高值
+  unit: ℃
+4x0055:
+  label: 4x0055
+  name: 单芯均衡开启压差值
+  desc: 单芯均衡开启压差
+  unit: V
+4x0056:
+  label: 4x0056
+  name: 单芯均衡开启电压值
+  desc: 单芯均衡开启电压
+  unit: V
+4x0057:
+  label: 4x0057
   name: 电池剩余电量值
   desc: 电池剩余电量值
   unit: Wh
-4x001A:
-  label: 4x001A
+4x0058:
+  label: 4x0058
   name: 电池剩余运行时间
   desc: 电池剩余运行时间
   unit: min
-4x001B:
-  label: 4x001B
+4x0059:
+  label: 4x0059
   name: 设备ID
   desc: 设备出厂唯一编号
   unit: 无
@@ -178,113 +338,573 @@
   name: 防爆腔内过温
   desc: 设备内部过温保护
   unit: 无
-1x000A:
-  label: 1x000A
+1x0010:
+  label: 1x0010
   name: 输入熔断器故障
   desc: 电网输入熔断器信号
   unit: 无
-1x000B:
-  label: 1x000B
+1x0011:
+  label: 1x0011
   name: 电池总电压过压报警
   desc: 总电压过压报警
   unit: 无
-1x000C:
-  label: 1x000C
+1x0012:
+  label: 1x0012
   name: 电池总电压过压保护
   desc: 总电压过压保护
   unit: 无
-1x000D:
-  label: 1x000D
+1x0013:
+  label: 1x0013
   name: 电池总电压欠压报警
   desc: 总电压欠压报警
   unit: 无
-1x000E:
-  label: 1x000E
+1x0014:
+  label: 1x0014
   name: 电池总电压欠压保护
   desc: 总电压欠压保护
   unit: 无
-1x000F:
-  label: 1x000F
+1x0015:
+  label: 1x0015
   name: 电池输出过载报警
   desc: 电池输出过载报警
   unit: 无
-1x0010:
-  label: 1x0010
+1x0016:
+  label: 1x0016
   name: 电池输出过载保护
   desc: 电池输出过载保护
   unit: 无
-1x0011:
-  label: 1x0011
+1x0017:
+  label: 1x0017
   name: 电池输出短路保护
   desc: 电池输出短路保护
   unit: 无
-1x0012:
-  label: 1x0012
+1x0018:
+  label: 1x0018
   name: 电池充电过流保护
   desc: 电池充电过流保护
   unit: 无
-1x0013:
-  label: 1x0013
-  name: 单芯电压过压报警（1-24节）
+1x0019:
+  label: 1x0019
+  name: 单芯电压过压报警（1节）
   desc: 单芯电压过压报警（1-24节）
   unit: 无
-1x0014:
-  label: 1x0014
-  name: 单芯电压过压保护（1-24节）
+1x0020:
+  label: 1x0020
+  name: 单芯电压过压报警（2节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0021:
+  label: 1x0021
+  name: 单芯电压过压报警（3节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0022:
+  label: 1x0022
+  name: 单芯电压过压报警（4节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0023:
+  label: 1x0023
+  name: 单芯电压过压报警（5节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0024:
+  label: 1x0024
+  name: 单芯电压过压报警（6节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0025:
+  label: 1x0025
+  name: 单芯电压过压报警（7节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0026:
+  label: 1x0026
+  name: 单芯电压过压报警（8节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0027:
+  label: 1x0027
+  name: 单芯电压过压报警（9节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0028:
+  label: 1x0028
+  name: 单芯电压过压报警（10节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0029:
+  label: 1x0029
+  name: 单芯电压过压报警（11节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0030:
+  label: 1x0030
+  name: 单芯电压过压报警（12节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0031:
+  label: 1x0031
+  name: 单芯电压过压报警（13节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0032:
+  label: 1x0032
+  name: 单芯电压过压报警（14节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0033:
+  label: 1x0033
+  name: 单芯电压过压报警（15节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0034:
+  label: 1x0034
+  name: 单芯电压过压报警（16节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0035:
+  label: 1x0035
+  name: 单芯电压过压报警（17节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0036:
+  label: 1x0036
+  name: 单芯电压过压报警（18节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0037:
+  label: 1x0037
+  name: 单芯电压过压报警（19节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0038:
+  label: 1x0038
+  name: 单芯电压过压报警（20节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0039:
+  label: 1x0039
+  name: 单芯电压过压报警（21节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0040:
+  label: 1x0040
+  name: 单芯电压过压报警（22节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0041:
+  label: 1x0041
+  name: 单芯电压过压报警（23节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0042:
+  label: 1x0042
+  name: 单芯电压过压报警（24节）
+  desc: 单芯电压过压报警（1-24节）
+  unit: 无
+1x0043:
+  label: 1x0043
+  name: 单芯电压过压保护（1节）
   desc: 单芯电压过压保护（1-24节）
   unit: 无
-1x0015:
-  label: 1x0015
-  name: 单芯电压欠压报警（1-24节）
+1x0044:
+  label: 1x0044
+  name: 单芯电压过压保护（2节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0045:
+  label: 1x0045
+  name: 单芯电压过压保护（3节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0046:
+  label: 1x0046
+  name: 单芯电压过压保护（4节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0047:
+  label: 1x0047
+  name: 单芯电压过压保护（5节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0048:
+  label: 1x0048
+  name: 单芯电压过压保护（6节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0049:
+  label: 1x0049
+  name: 单芯电压过压保护（7节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0050:
+  label: 1x0050
+  name: 单芯电压过压保护（8节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0051:
+  label: 1x0051
+  name: 单芯电压过压保护（9节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0052:
+  label: 1x0052
+  name: 单芯电压过压保护（10节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0053:
+  label: 1x0053
+  name: 单芯电压过压保护（11节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0054:
+  label: 1x0054
+  name: 单芯电压过压保护（12节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0055:
+  label: 1x0055
+  name: 单芯电压过压保护（13节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0056:
+  label: 1x0056
+  name: 单芯电压过压保护（14节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0057:
+  label: 1x0057
+  name: 单芯电压过压保护（15节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0058:
+  label: 1x0058
+  name: 单芯电压过压保护（16节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0059:
+  label: 1x0059
+  name: 单芯电压过压保护（17节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0060:
+  label: 1x0060
+  name: 单芯电压过压保护（18节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0061:
+  label: 1x0061
+  name: 单芯电压过压保护（19节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0062:
+  label: 1x0062
+  name: 单芯电压过压保护（20节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0063:
+  label: 1x0063
+  name: 单芯电压过压保护（21节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0064:
+  label: 1x0064
+  name: 单芯电压过压保护（22节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0065:
+  label: 1x0065
+  name: 单芯电压过压保护（23节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0066:
+  label: 1x0066
+  name: 单芯电压过压保护（24节）
+  desc: 单芯电压过压保护（1-24节）
+  unit: 无
+1x0067:
+  label: 1x0067
+  name: 单芯电压欠压报警（1节）
   desc: 单芯电压欠压报警（1-24节）
   unit: 无
-1x0016:
-  label: 1x0016
-  name: 单芯电压欠压保护（1-24节）
+1x0068:
+  label: 1x0068
+  name: 单芯电压欠压报警（2节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0069:
+  label: 1x0069
+  name: 单芯电压欠压报警（3节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0070:
+  label: 1x0070
+  name: 单芯电压欠压报警（4节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0071:
+  label: 1x0071
+  name: 单芯电压欠压报警（5节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0072:
+  label: 1x0072
+  name: 单芯电压欠压报警（6节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0073:
+  label: 1x0073
+  name: 单芯电压欠压报警（7节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0074:
+  label: 1x0074
+  name: 单芯电压欠压报警（8节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0075:
+  label: 1x0075
+  name: 单芯电压欠压报警（9节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0076:
+  label: 1x0076
+  name: 单芯电压欠压报警（10节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0077:
+  label: 1x0077
+  name: 单芯电压欠压报警（11节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0078:
+  label: 1x0078
+  name: 单芯电压欠压报警（12节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0079:
+  label: 1x0079
+  name: 单芯电压欠压报警（13节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0080:
+  label: 1x0080
+  name: 单芯电压欠压报警（14节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0081:
+  label: 1x0081
+  name: 单芯电压欠压报警（15节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0082:
+  label: 1x0082
+  name: 单芯电压欠压报警（16节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0083:
+  label: 1x0083
+  name: 单芯电压欠压报警（17节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0084:
+  label: 1x0084
+  name: 单芯电压欠压报警（18节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0085:
+  label: 1x0085
+  name: 单芯电压欠压报警（19节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0086:
+  label: 1x0086
+  name: 单芯电压欠压报警（20节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0087:
+  label: 1x0087
+  name: 单芯电压欠压报警（21节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0088:
+  label: 1x0088
+  name: 单芯电压欠压报警 (22节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0089:
+  label: 1x0089
+  name: 单芯电压欠压报警（23节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0090:
+  label: 1x0090
+  name: 单芯电压欠压报警（24节）
+  desc: 单芯电压欠压报警（1-24节）
+  unit: 无
+1x0091:
+  label: 1x0091
+  name: 单芯电压欠压保护（1节）
   desc: 单芯电压欠压保护（1-24节）
   unit: 无
-1x0017:
-  label: 1x0017
+1x0092:
+  label: 1x0092
+  name: 单芯电压欠压保护（2节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0093:
+  label: 1x0093
+  name: 单芯电压欠压保护（3节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0094:
+  label: 1x0094
+  name: 单芯电压欠压保护（4节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0095:
+  label: 1x0095
+  name: 单芯电压欠压保护（5节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0096:
+  label: 1x0096
+  name: 单芯电压欠压保护（6节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0097:
+  label: 1x0097
+  name: 单芯电压欠压保护（7节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0098:
+  label: 1x0098
+  name: 单芯电压欠压保护（8节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0099:
+  label: 1x0099
+  name: 单芯电压欠压保护（9节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0100:
+  label: 1x0100
+  name: 单芯电压欠压保护（10节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0101:
+  label: 1x0101
+  name: 单芯电压欠压保护（11节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0102:
+  label: 1x0102
+  name: 单芯电压欠压保护（12节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0103:
+  label: 1x0103
+  name: 单芯电压欠压保护（13节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0104:
+  label: 1x0104
+  name: 单芯电压欠压保护（14节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0105:
+  label: 1x0105
+  name: 单芯电压欠压保护（15节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0106:
+  label: 1x0106
+  name: 单芯电压欠压保护（16节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0107:
+  label: 1x0107
+  name: 单芯电压欠压保护（17节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0108:
+  label: 1x0108
+  name: 单芯电压欠压保护（18节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0109:
+  label: 1x0109
+  name: 单芯电压欠压保护（19节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0110:
+  label: 1x0110
+  name: 单芯电压欠压保护（20节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0111:
+  label: 1x0111
+  name: 单芯电压欠压保护（21节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0112:
+  label: 1x0112
+  name: 单芯电压欠压保护（22节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0113:
+  label: 1x0113
+  name: 单芯电压欠压保护（23节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0114:
+  label: 1x0114
+  name: 单芯电压欠压保护（24节）
+  desc: 单芯电压欠压保护（1-24节）
+  unit: 无
+1x0115:
+  label: 1x0115
   name: 单芯间电压差报警
   desc: 单芯电压差报警
   unit: 无
-1x0018:
-  label: 1x0018
+1x0116:
+  label: 1x0116
   name: 单芯间电压差保护
   desc: 单芯电压差保护
   unit: 无
-1x0019:
-  label: 1x0019
+1x0117:
+  label: 1x0117
   name: 单芯间温度压差报警
   desc: 温度压差报警
   unit: 无
-1x001A:
-  label: 1x001A
+1x0118:
+  label: 1x0118
   name: 单芯间温度压差保护
   desc: 温度压差保护
   unit: 无
-1x001B:
-  label: 1x001B
+1x0119:
+  label: 1x0119
   name: 电池温度过低保护
   desc: 电池温度过低保护
   unit: 无
-1x001C:
-  label: 1x001C
+1x0120:
+  label: 1x0120
   name: 电池温度过高保护
   desc: 电池温度过高保护
   unit: 无
-1x001D:
-  label: 1x001D
+1x0121:
+  label: 1x0121
   name: 电池信息采集线开路保护
   desc: 电池信息采集线开路保护
   unit: 无
-1x001E:
-  label: 1x001E
+1x0122:
+  label: 1x0122
   name: 电池剩余电量报警
   desc: 电池剩余电量报警
   unit: 无
-1x001F:
-  label: 1x001F
+1x0123:
+  label: 1x0123
   name: 电池腔电加热启动
   desc: 电池腔电加热启动
   unit: 无
@@ -310,21 +930,36 @@
   unit: 无
 0x0005:
   label: 0x0005
-  name: 启动/关闭（单相AC127V）
+  name: 启动（单相AC127V）
   desc: 远程开启/关闭127V输出
   unit: 无
 0x0006:
   label: 0x0006
-  name: 启动/关闭（单相AC660V）
-  desc: 远程开启/关闭660V输出
+  name: 关闭（单相AC127V）
+  desc: 远程开启/关闭127V输出
   unit: 无
 0x0007:
   label: 0x0007
-  name: 启动/关闭（单相AC220V）
-  desc: 远程开启/关闭220V输出
+  name: 启动（单相AC660V）
+  desc: 远程开启/关闭660V输出
   unit: 无
 0x0008:
   label: 0x0008
+  name: 关闭（单相AC660V）
+  desc: 远程开启/关闭660V输出
+  unit: 无
+0x0009:
+  label: 0x0009
+  name: 启动（单相AC220V）
+  desc: 远程开启/关闭220V输出
+  unit: 无
+0x0010:
+  label: 0x0010
+  name: 关闭（单相AC220V）
+  desc: 远程开启/关闭220V输出
+  unit: 无
+0x0011:
+  label: 0x0011
   name: 供电方式
   desc: 电网/电池
   unit: 无

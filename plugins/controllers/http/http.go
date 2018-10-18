@@ -45,6 +45,7 @@ func (h *HTTP) RegisterInput(name string, input deviceAgent.ControllerInput) {
 }
 
 func (h *HTTP) Start(ctx context.Context) error {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
 	router.Use(func(c *gin.Context) {
@@ -77,9 +78,9 @@ func (h *HTTP) Start(ctx context.Context) error {
 
 	//接收控制命令参数并执行
 	go func() {
-		for{
+		for {
 			select {
-			case c :=<-h.cmdParam:
+			case c := <-h.cmdParam:
 				log.Printf("Starting process cmd: %v\n", c)
 				switch strings.ToUpper(c.cmdType) {
 				case "GET":
@@ -130,9 +131,9 @@ func (h *HTTP) Start(ctx context.Context) error {
 
 	//接收命令执行结果，判断cmdId并执行回调
 	go func() {
-		for{
+		for {
 			select {
-			case c:=<-h.cmdEnd:
+			case c := <-h.cmdEnd:
 				r, e := http.Post(c.callbackUrl, "application/json", strings.NewReader(c.msg))
 				if e != nil {
 					log.Println(e)
