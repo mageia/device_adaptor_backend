@@ -14,6 +14,7 @@ require (
 	github.com/jlaffaye/ftp v0.0.0-20181011150954-fe787349a520
 	github.com/json-iterator/go v1.1.5
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kr/pty v1.1.3 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -29,7 +30,7 @@ require (
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/ugorji/go/codec v0.0.0-20181018023622-b30ce92d500b // indirect
 	golang.org/x/net v0.0.0-20181017193950-04a2e542c03f // indirect
-	golang.org/x/sys v0.0.0-20181011152604-fa43e7bc11ba // indirect
+	golang.org/x/sys v0.0.0-20181019160139-8e24a49d80f8 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

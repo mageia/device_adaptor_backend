@@ -8,7 +8,7 @@ debug = true
 interval = "3s"
 
 [[controller.http]]
-address = ":9999"
+address = ":9999"    # 默认端口9999
 
 [[outputs.redis]]
 #[outputs.file]

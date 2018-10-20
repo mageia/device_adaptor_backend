@@ -135,6 +135,7 @@ func (a *Agent) flush() {
 		}(o)
 	}
 }
+
 func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -288,6 +289,5 @@ func (a *Agent) Run() error {
 	wg.Wait()
 	a.Close()
 
-	log.Println("#############")
 	return nil
 }

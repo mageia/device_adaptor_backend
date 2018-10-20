@@ -1,4 +1,4 @@
-.PHONY: build build-alpine clean test help default
+.PHONY: bin build build-alpine clean test help default
 
 BIN_NAME=deviceAdaptor
 GIT_COMMIT=$(shell git rev-parse HEAD)
@@ -18,6 +18,12 @@ help:
 	@echo '    make clean           Clean the directory tree.'
 	@echo
 
+
+bin:
+	@echo "building exec ${BIN_NAME}"
+	cd cmd && go build -o ${BIN_NAME} .
+
+
 package:
 	@echo "building image ${BIN_NAME} $(GIT_COMMIT)"
 	docker build -t $(IMAGE_NAME):local .
@@ -33,7 +39,7 @@ push: tag
 	docker push $(IMAGE_NAME):latest
 
 clean:
-	@test ! -e bin/${BIN_NAME} || rm bin/${BIN_NAME}
+	@test ! -e cmd/${BIN_NAME} || rm cmd/${BIN_NAME}
 
 test:
 	go test ./...

@@ -7,33 +7,23 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 	"github.com/json-iterator/go"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 )
 
-type aboutCmd struct {
-	input       deviceAgent.ControllerInput
-	cmdType     string
-	cmdId       string
-	subCmd      string
-	key         string
-	value       interface{}
-	success     bool
-	msg         string
-	callbackUrl string
-}
-
 type HTTP struct {
-	Address  string
-	Server   *http.Server
-	Inputs   map[string]deviceAgent.ControllerInput
-	cmdEnd   chan aboutCmd
-	cmdParam chan aboutCmd
+	Address      string
+	Server       *http.Server
+	Inputs       map[string]deviceAgent.ControllerInput
+	chanResults  chan result
+	chanCommands chan command
 }
 
 func (h *HTTP) Name() string {
@@ -47,7 +37,7 @@ func (h *HTTP) RegisterInput(name string, input deviceAgent.ControllerInput) {
 func (h *HTTP) Start(ctx context.Context) error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-
+	gin.New()
 	router.Use(func(c *gin.Context) {
 		c.Next()
 		if len(c.Errors) == 0 {
@@ -80,49 +70,11 @@ func (h *HTTP) Start(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case c := <-h.cmdParam:
+			case c := <-h.chanCommands:
 				log.Printf("Starting process cmd: %v\n", c)
-				switch strings.ToUpper(c.cmdType) {
-				case "GET":
-					switch c.subCmd {
-					case "point_meta":
-						p := c.input.RetrievePointMap(c.cmdId, c.key)
-						if p != nil {
-							g, _ := jsoniter.MarshalToString(p)
-							h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: true, msg: g, callbackUrl: c.callbackUrl}
-						} else {
-							h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: false, msg: "no such point: " + c.key, callbackUrl: c.callbackUrl}
-						}
-
-					case "point_value":
-						g, _ := jsoniter.MarshalToString(c.input.Get(c.cmdId, c.key))
-						h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: true, msg: g, callbackUrl: c.callbackUrl}
-					default:
-						h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: false, msg: "unknown sub command", callbackUrl: c.callbackUrl}
-					}
-				case "SET":
-					errMsg := ""
-					isSuccess := true
-					switch c.subCmd {
-					case "point_meta":
-						if err := c.input.UpdatePointMap(c.cmdId, c.key, c.value); err != nil {
-							errMsg = err.Error()
-							isSuccess = false
-						}
-					case "point_value":
-						if err := c.input.Set(c.cmdId, c.key, c.value); err != nil {
-							errMsg = err.Error()
-							isSuccess = false
-						}
-					default:
-						isSuccess = false
-						errMsg = "unknown sub command: " + c.subCmd
-					}
-					h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: isSuccess, msg: errMsg, callbackUrl: c.callbackUrl}
-				default:
-					h.cmdEnd <- aboutCmd{cmdId: c.cmdId, success: false, msg: "unsupported command", callbackUrl: c.callbackUrl}
-				}
-				log.Printf("Ending process cmd: %v\n", c)
+				result := c.execute()
+				h.chanResults <- result
+				log.Printf("command processed: %v\n", result)
 			case <-ctx.Done():
 				return
 			}
@@ -133,12 +85,20 @@ func (h *HTTP) Start(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case c := <-h.cmdEnd:
-				r, e := http.Post(c.callbackUrl, "application/json", strings.NewReader(c.msg))
+			case r := <-h.chanResults:
+				rS, err := jsoniter.MarshalToString(r)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if r.CallbackUrl == "" {
+					continue
+				}
+				resp, e := http.Post(r.CallbackUrl, "application/json", strings.NewReader(rS))
 				if e != nil {
 					log.Println(e)
 				} else {
-					io.Copy(os.Stdout, r.Body)
+					io.Copy(os.Stdout, resp.Body)
 				}
 			case <-ctx.Done():
 				return
@@ -169,33 +129,54 @@ func (h *HTTP) cmdHandler(ctx *gin.Context) {
 		ctx.Error(fmt.Errorf("undefined but requested input: %s", deviceName))
 		return
 	}
-
-	cmdType := ctx.Param("cmdType")
+	cmdType := strings.ToUpper(ctx.Param("cmdType"))
 	subCmd := ctx.Param("subCmd")
-
-	var bodyIn struct {
-		Key         string      `json:"key" binding:"required"`
-		Value       interface{} `json:"value" binding:"required"`
-		CallbackUrl string      `json:"callback_url" binding:"required"`
-	}
-
-	if err := ctx.ShouldBindJSON(&bodyIn); err != nil {
-		ctx.Error(errors.New("key and value parameters are all required"))
-		return
-	}
 	cmdId := uuid.New().String()
 
-	h.cmdParam <- aboutCmd{input: input, cmdType: cmdType, cmdId: cmdId, subCmd: subCmd, key: bodyIn.Key, value: bodyIn.Value, callbackUrl: bodyIn.CallbackUrl}
+	var getBody struct {
+		Value       []string `json:"value" binding:"required"`
+		CallbackUrl string   `json:"callback_url" binding:"required"`
+	}
+	var setBody struct {
+		Value       map[string]interface{} `json:"value" binding:"required"`
+		CallbackUrl string                 `json:"callback_url" binding:"required"`
+	}
 
+	if err := ctx.ShouldBindBodyWith(&getBody, binding.JSON); cmdType == "GET" && err == nil {
+		h.chanCommands <- command{
+			input:       input,
+			cmdType:     cmdType,
+			cmdId:       cmdId,
+			subCmd:      subCmd,
+			value:       getBody.Value,
+			callbackUrl: getBody.CallbackUrl,
+		}
+	} else if err := ctx.ShouldBindBodyWith(&setBody, binding.JSON); cmdType == "SET" && err == nil {
+		h.chanCommands <- command{
+			input:       input,
+			cmdType:     cmdType,
+			cmdId:       cmdId,
+			subCmd:      subCmd,
+			value:       setBody.Value,
+			callbackUrl: setBody.CallbackUrl,
+		}
+
+		log.Println(reflect.TypeOf(setBody.Value))
+	} else {
+		log.Println(err)
+		// TODO 明确错误的类型
+		ctx.Error(errors.New("unmatched value format"))
+		return
+	}
 	ctx.JSON(200, gin.H{"msg": "success", "cmdId": cmdId})
 }
 
 func init() {
 	controllers.Add("http", func() deviceAgent.Controller {
 		return &HTTP{
-			cmdParam: make(chan aboutCmd, 100),
-			cmdEnd:   make(chan aboutCmd, 100),
-			Inputs:   make(map[string]deviceAgent.ControllerInput),
+			chanCommands: make(chan command, 100),
+			chanResults:  make(chan result, 100),
+			Inputs:       make(map[string]deviceAgent.ControllerInput),
 		}
 	})
 }

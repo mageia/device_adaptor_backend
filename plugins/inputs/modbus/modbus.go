@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -194,14 +195,16 @@ func (m *Modbus) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	}
 }
 
-func (m *Modbus) TranslateOption(pointAddr string, source byte) string {
-	option := m.pointMap[pointAddr].Option
-	sourceStr := strconv.Itoa(int(source))
-	if option != nil && option[sourceStr] != "" {
-		return option[sourceStr]
+func (m *Modbus) TranslateOption(pointAddr string, source byte) interface{} {
+	if _, ok := m.pointMap[pointAddr]; !ok {
+		return source
 	}
 
-	return sourceStr
+	if o, ok := m.pointMap[pointAddr].Option[strconv.Itoa(int(source))]; ok {
+		return o
+	}
+
+	return source
 }
 
 func (m *Modbus) TranslateParameter(pointAddr string, source int16) float64 {
@@ -221,67 +224,103 @@ func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
 	return nil
 }
 
-func (m *Modbus) Set(cmdId string, key string, value interface{}) error {
+func (m *Modbus) Set(cmdId string, kv map[string]interface{}) error {
+	var errors []error
 	//time.Sleep(10 * time.Second)
 
-	addrSplit := strings.Split(strings.TrimSpace(key), "x")
-	if len(addrSplit) != 2 {
-		return fmt.Errorf("invalid point key: %s", key)
-	}
-	readAddr, _ := strconv.Atoi(addrSplit[1])
-	switch addrSplit[0] {
-	case "4":
-		if v, ok := value.(float64); ok {
-			r, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
-			if e != nil {
-				return e
-			}
-			if binary.BigEndian.Uint16(r) == uint16(v) {
-				return nil
-			}
-			return nil
-		} else {
-			return fmt.Errorf("invalid value format: %s", value)
+NEXT:
+	for key, value := range kv {
+
+		log.Println(key, value)
+
+		addrSplit := strings.Split(strings.TrimSpace(key), "x")
+		if len(addrSplit) != 2 {
+			errors = append(errors, fmt.Errorf("invalid point key: %s", key))
+			continue NEXT
 		}
-	case "1":
-	default:
-		return fmt.Errorf("unsupported modbus address type: %s", addrSplit[0])
-	}
 
+		readAddr, _ := strconv.Atoi(addrSplit[1])
+		switch addrSplit[0] {
+		case "4":
+			if v, ok := value.(float64); ok {
+				_, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
+				if e != nil {
+					errors = append(errors, e)
+					continue NEXT
+				}
+				//TODO: write result check
+				//if binary.BigEndian.Uint16(r) == uint16(v) {
+				//	return nil
+				//}
+				//return nil
+			} else {
+				errors = append(errors, fmt.Errorf("invalid value format: %s", value))
+				continue NEXT
+			}
+		default:
+			errors = append(errors, fmt.Errorf("unsupported modbus address type: %s", addrSplit[0]))
+			continue NEXT
+		}
+	}
+	if len(errors) != 0 {
+		var ss string
+		for _, s := range errors {
+			ss += s.Error() + "\n"
+		}
+		return fmt.Errorf(ss)
+	}
 	return nil
 }
 
-func (m *Modbus) Get(cmdId string, key string) interface{} {
+func (m *Modbus) Get(cmdId string, key []string) interface{} {
 	return nil
 }
 
-func (m *Modbus) UpdatePointMap(cmdId string, key string, value interface{}) error {
-	pD, ok := m.pointMap[key]
-	if !ok {
-		return fmt.Errorf("no such point: %s\n", key)
-	}
+func (m *Modbus) UpdatePointMap(cmdId string, kv map[string]interface{}) error {
+	var errors []error
 
-	//TODO: convert map[string]interface{} to struct by tag
+NEXT:
+	for key, value := range kv {
+		pD, ok := m.pointMap[key]
+		if !ok {
+			errors = append(errors, fmt.Errorf("no such point: %s\n", key))
+			continue NEXT
+		}
 
-	itemList := []string{"label", "name"}
-	switch value.(type) {
-	case map[string]interface{}:
-		for _, k := range itemList {
-			if v, ok := value.(map[string]interface{})[k]; ok {
-				if e := utils.SetField(&pD, strings.Title(k), v); e != nil {
-					return e
+		//TODO: convert map[string]interface{} to struct by tag
+
+		itemList := []string{"label", "name"}
+		switch value.(type) {
+		case map[string]interface{}:
+			for _, k := range itemList {
+				if v, ok := value.(map[string]interface{})[k]; ok {
+					if e := utils.SetField(&pD, strings.Title(k), v); e != nil {
+						errors = append(errors, e)
+						continue NEXT
+					}
 				}
 			}
 		}
+		m.pointMap[key] = pD
 	}
-	m.pointMap[key] = pD
+
+	if len(errors) != 0 {
+		var ss string
+		for _, s := range errors {
+			ss += s.Error() + "\n"
+		}
+		return fmt.Errorf(ss)
+	}
 	return nil
 }
-func (m *Modbus) RetrievePointMap(cmdId string, key string) interface{} {
-	if p, ok := m.pointMap[key]; ok {
-		return p
+func (m *Modbus) RetrievePointMap(cmdId string, keys []string) map[string]deviceAgent.PointDefine {
+	result := make(map[string]deviceAgent.PointDefine, len(keys))
+	for _, key := range keys {
+		if p, ok := m.pointMap[key]; ok {
+			result[key] = p
+		}
 	}
-	return nil
+	return result
 }
 
 func init() {
