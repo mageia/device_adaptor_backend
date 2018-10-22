@@ -16,3 +16,13 @@ type ControllerInput interface {
 	UpdatePointMap(cmdId string, kv map[string]interface{}) error
 	RetrievePointMap(cmdId string, key []string) map[string]PointDefine
 }
+
+type PointMap struct {
+	Name      string                 `json:"name"`
+	UniqueId  string                 `json:"unique_id"`
+	Parameter float64                `json:"parameter"`
+	Options   map[string]string      `json:"options"`
+	Unit      string                 `json:"unit"`
+	Tags      []string               `json:"tags"`
+	Extra     map[string]interface{} `json:"extra"`
+}

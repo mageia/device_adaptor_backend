@@ -5,7 +5,7 @@
 1x0001:
   label: running
   name: 1#开关开停状态
-  tags: []
+  tags: ["control", "ro", "rw", ]
   option:
     1: 开启
     0: 断开
@@ -24,6 +24,9 @@
 1x2004:
   label: fault
   name: 2#开关故障
+  extra:
+    sub_: "abc"
+    device: "002"
   option:
     1: 故障
     0: 正常

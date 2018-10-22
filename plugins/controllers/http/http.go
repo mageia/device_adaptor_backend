@@ -134,8 +134,8 @@ func (h *HTTP) cmdHandler(ctx *gin.Context) {
 	cmdId := uuid.New().String()
 
 	var getBody struct {
-		Value       []string `json:"value" binding:"required"`
-		CallbackUrl string   `json:"callback_url" binding:"required"`
+		Value []string `json:"value" binding:"required"`
+		//CallbackUrl string   `json:"callback_url" binding:"required"`
 	}
 	var setBody struct {
 		Value       map[string]interface{} `json:"value" binding:"required"`
@@ -143,14 +143,16 @@ func (h *HTTP) cmdHandler(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindBodyWith(&getBody, binding.JSON); cmdType == "GET" && err == nil {
-		h.chanCommands <- command{
-			input:       input,
-			cmdType:     cmdType,
-			cmdId:       cmdId,
-			subCmd:      subCmd,
-			value:       getBody.Value,
-			callbackUrl: getBody.CallbackUrl,
+		c := command{
+			input:   input,
+			cmdType: cmdType,
+			cmdId:   cmdId,
+			subCmd:  subCmd,
+			value:   getBody.Value,
 		}
+		r := c.execute()
+		ctx.JSON(200, r.Msg)
+		return
 	} else if err := ctx.ShouldBindBodyWith(&setBody, binding.JSON); cmdType == "SET" && err == nil {
 		h.chanCommands <- command{
 			input:       input,

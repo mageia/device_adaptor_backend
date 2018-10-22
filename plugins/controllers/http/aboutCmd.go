@@ -4,7 +4,6 @@ import (
 	"deviceAdaptor"
 	"errors"
 	"fmt"
-	"github.com/json-iterator/go"
 	"strings"
 )
 
@@ -18,13 +17,13 @@ type command struct {
 }
 
 type result struct {
-	CmdId       string `json:"cmd_id"`
-	Success     bool   `json:"success"`
-	CallbackUrl string `json:"callback_url"`
-	Msg         string `json:"msg"`
+	CmdId       string      `json:"cmd_id"`
+	Success     bool        `json:"success"`
+	CallbackUrl string      `json:"callback_url"`
+	Msg         interface{} `json:"msg"`
 }
 
-func (c *command) success(msg string) result {
+func (c *command) success(msg interface{}) result {
 	return result{
 		CmdId:       c.cmdId,
 		Success:     true,
@@ -50,18 +49,18 @@ func (c command) execute() result {
 			if len(p) == 0 {
 				return c.failed(fmt.Errorf("no such point: %v", c.value))
 			}
-			g, err := jsoniter.MarshalToString(p)
-			if err != nil {
-				return c.failed(err)
-			}
-			return c.success(g)
+			//g, err := jsoniter.MarshalToString(p)
+			//if err != nil {
+			//	return c.failed(err)
+			//}
+			return c.success(p)
 
 		case "point_value":
-			g, err := jsoniter.MarshalToString(c.input.Get(c.cmdId, c.value.([]string)))
-			if err != nil {
-				return c.failed(err)
-			}
-			return c.success(g)
+			//g, err := jsoniter.MarshalToString(c.input.Get(c.cmdId, c.value.([]string)))
+			//if err != nil {
+			//	return c.failed(err)
+			//}
+			return c.success(c.input.Get(c.cmdId, c.value.([]string)))
 		default:
 			return c.failed(errors.New("unknown sub command: " + c.subCmd))
 		}

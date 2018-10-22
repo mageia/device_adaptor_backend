@@ -11,7 +11,7 @@ interval = "3s"
 address = ":9999"    # 默认端口9999
 
 [[outputs.redis]]
-#[outputs.file]
+[outputs.file]
 #files = ["stdout"]
 #data_format = "json"
 
@@ -27,9 +27,13 @@ address = ":9999"    # 默认端口9999
 
 [[inputs.modbus]]
 interval = "1s"
+
+#name_override = "abc"
+#field_prefix = "fuck_you"
+#field_suffix = "_333"
 address = "10.211.55.4:502"
 slave_id = 1
-point_map = "../configs/point_map_ups.yml"
+point_map = "../configs/point_map_modbus.yml"
 
 
 #[[inputs.ftp]]
