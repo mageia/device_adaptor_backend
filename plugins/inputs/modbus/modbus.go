@@ -29,6 +29,7 @@ type Modbus struct {
 	connected bool
 	pointMap  map[string]deviceAgent.PointDefine
 	addrMap   map[string][]int
+	quality   deviceAgent.Quality
 
 	FieldPrefix  string
 	FieldSuffix  string
@@ -96,7 +97,20 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	tmpDataMap := make(map[string][]interface{})
-	now := time.Now().UnixNano() / 1e6
+	m.quality = deviceAgent.QualityGood
+
+	defer func(modbus *Modbus) {
+		if e := recover(); e != nil {
+			acc.AddError(fmt.Errorf("%v", e))
+		}
+		m.quality = deviceAgent.QualityBad
+		if modbus.NameOverride != "" {
+			acc.AddFields(modbus.NameOverride, fields, tags, modbus.SelfCheck())
+		} else {
+			acc.AddFields("modbus", fields, tags, modbus.SelfCheck())
+		}
+	}(m)
+
 	for k, l := range m.addrMap {
 		sort.Ints(l)
 		switch k {
@@ -105,6 +119,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 				r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 				if e != nil {
 					acc.AddError(e)
+					m.quality = deviceAgent.QualityBad
 					return e
 				}
 				for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
@@ -116,6 +131,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 				r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 				if e != nil {
 					acc.AddError(e)
+					m.quality = deviceAgent.QualityBad
 					return e
 				}
 				for i := 0; i < len(r); i += 2 {
@@ -135,29 +151,16 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 				if i > 0 && a-l[i-1]-1 <= HoleWidth {
 					x1 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
-				fields[pointAddr] = map[string]interface{}{
-					"value":     m.TranslateOption(pointAddr, tmpDataMap[k][i+x1].(byte)),
-					"timestamp": now,
-					//"point_define": m.pointMap[pointAddr],
-				}
+				fields[pointAddr] = tmpDataMap[k][i+x1].(byte)
 			case "4":
 				if i > 0 && a-l[i-1]-1 <= HoleWidth {
 					x4 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
-				fields[pointAddr] = map[string]interface{}{
-					"value":     m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16)),
-					"timestamp": now,
-					//"point_define": m.pointMap[pointAddr],
-				}
+				fields[pointAddr] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
 			}
 		}
 	}
 
-	if m.NameOverride != "" {
-		acc.AddFields(m.NameOverride, fields, tags)
-	} else {
-		acc.AddFields("modbus", fields, tags)
-	}
 	return nil
 }
 
@@ -220,7 +223,7 @@ func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
 	for k, v := range m.pointMap {
 		pointMapFields[k] = v
 	}
-	acc.AddFields("modbus_point_map", pointMapFields, nil)
+	acc.AddFields("modbus_point_map", pointMapFields, nil, m.SelfCheck())
 	return nil
 }
 
@@ -272,6 +275,10 @@ NEXT:
 	return nil
 }
 
+func (m *Modbus) SelfCheck() deviceAgent.Quality {
+	return m.quality
+}
+
 func (m *Modbus) Get(cmdId string, key []string) interface{} {
 	return nil
 }
@@ -314,6 +321,9 @@ NEXT:
 	return nil
 }
 func (m *Modbus) RetrievePointMap(cmdId string, keys []string) map[string]deviceAgent.PointDefine {
+	if len(keys) == 0 {
+		return m.pointMap
+	}
 	result := make(map[string]deviceAgent.PointDefine, len(keys))
 	for _, key := range keys {
 		if p, ok := m.pointMap[key]; ok {
@@ -325,6 +335,8 @@ func (m *Modbus) RetrievePointMap(cmdId string, keys []string) map[string]device
 
 func init() {
 	inputs.Add("modbus", func() deviceAgent.Input {
-		return &Modbus{}
+		return &Modbus{
+			quality: deviceAgent.QualityGood,
+		}
 	})
 }

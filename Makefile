@@ -1,11 +1,11 @@
-.PHONY: bin build build-alpine clean test help default
+.PHONY: all bin build build-alpine frontend clean test help default
 
 BIN_NAME=deviceAdaptor
 GIT_COMMIT=$(shell git rev-parse HEAD)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
 IMAGE_NAME := "harbor.leaniot.cn/mos/device_adaptor"
 
-default: help
+default: all
 
 help:
 	@echo 'Management commands for device_adaptor:'
@@ -18,11 +18,18 @@ help:
 	@echo '    make clean           Clean the directory tree.'
 	@echo
 
+all: bin frontend run
 
 bin:
 	@echo "building exec ${BIN_NAME}"
 	cd cmd && go build -o ${BIN_NAME} .
 
+run:
+	cd cmd && ./${BIN_NAME}
+
+frontend:
+	@echo "building frontend"
+	cd frontend && npm run build
 
 package:
 	@echo "building image ${BIN_NAME} $(GIT_COMMIT)"

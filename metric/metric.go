@@ -7,18 +7,20 @@ import (
 )
 
 type metric struct {
-	name   string
-	tags   []*deviceAgent.Tag
-	fields []*deviceAgent.Field
-	tm     time.Time
+	name    string
+	tags    []*deviceAgent.Tag
+	fields  []*deviceAgent.Field
+	tm      time.Time
+	quality deviceAgent.Quality
 }
 
-func New(name string, tags map[string]string, fields map[string]interface{}, tm time.Time) (deviceAgent.Metric, error) {
+func New(name string, tags map[string]string, fields map[string]interface{}, quality deviceAgent.Quality, tm time.Time) (deviceAgent.Metric, error) {
 	m := &metric{
-		name:   name,
-		tags:   nil,
-		fields: nil,
-		tm:     tm,
+		name:    name,
+		tags:    nil,
+		fields:  nil,
+		quality: quality,
+		tm:      tm,
 	}
 	if len(tags) > 0 {
 		m.tags = make([]*deviceAgent.Tag, 0, len(tags))
@@ -62,6 +64,9 @@ func (m *metric) FieldList() []*deviceAgent.Field {
 }
 func (m *metric) Time() time.Time {
 	return m.tm
+}
+func (m *metric) Quality() deviceAgent.Quality {
+	return m.quality
 }
 func (m *metric) SetName(name string) {
 	m.name = name

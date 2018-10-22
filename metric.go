@@ -1,15 +1,17 @@
 package deviceAgent
 
-import "time"
+import (
+	"time"
+)
 
 type Tag struct {
-	Key   string
-	Value string
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type Field struct {
-	Key   string
-	Value interface{}
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
 }
 
 type Metric interface {
@@ -19,6 +21,7 @@ type Metric interface {
 	Fields() map[string]interface{}
 	FieldList() []*Field
 	Time() time.Time
+	Quality() Quality
 
 	SetName(name string)
 	AddPrefix(prefix string)

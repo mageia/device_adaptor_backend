@@ -76,19 +76,6 @@ func InitRouter(debug bool) *gin.Engine {
 	})
 
 	router.Static("/", "../agent/dist")
-
-	//router.LoadHTMLGlob("../agent/dist/*")
-	//router.LoadHTMLFiles("../agent/dist/*")
-	//router.GET("/", Index)
-	//router.GET("/update", Update)
-	//
-	//plugins := router.Group("/plugins")
-	//plugins.GET("/", Index)
-	//plugins.GET("/inputs")
-	//plugins.GET("/outputs")
-	//plugins.GET("/controllers")
-	//plugins.GET("/parsers")
-	//plugins.GET("/serializers")
 	if debug {
 		gin.SetMode(gin.DebugMode)
 	}

@@ -19,6 +19,7 @@ type MetricMaker interface {
 		measurement string,
 		fields map[string]interface{},
 		tags map[string]string,
+		quality deviceAgent.Quality,
 		t time.Time,
 	) deviceAgent.Metric
 }
@@ -53,8 +54,8 @@ func (ac *accumulator) AddError(err error) {
 	}
 }
 
-func (ac *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, t ...time.Time) {
-	if m := ac.maker.MakeMetric(measurement, fields, tags, ac.getTime(t)); m != nil {
+func (ac *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, quality deviceAgent.Quality, t ...time.Time) {
+	if m := ac.maker.MakeMetric(measurement, fields, tags, quality, ac.getTime(t)); m != nil {
 		ac.metrics <- m
 	}
 }

@@ -9,21 +9,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
-	"github.com/json-iterator/go"
-	"io"
 	"log"
 	"net/http"
-	"os"
-	"reflect"
 	"strings"
 )
 
 type HTTP struct {
-	Address      string
-	Server       *http.Server
-	Inputs       map[string]deviceAgent.ControllerInput
-	chanResults  chan result
-	chanCommands chan command
+	Address string
+	Server  *http.Server
+	Inputs  map[string]deviceAgent.ControllerInput
 }
 
 func (h *HTTP) Name() string {
@@ -66,46 +60,6 @@ func (h *HTTP) Start(ctx context.Context) error {
 
 	go h.Stop(ctx)
 
-	//接收控制命令参数并执行
-	go func() {
-		for {
-			select {
-			case c := <-h.chanCommands:
-				log.Printf("Starting process cmd: %v\n", c)
-				result := c.execute()
-				h.chanResults <- result
-				log.Printf("command processed: %v\n", result)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	//接收命令执行结果，判断cmdId并执行回调
-	go func() {
-		for {
-			select {
-			case r := <-h.chanResults:
-				rS, err := jsoniter.MarshalToString(r)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				if r.CallbackUrl == "" {
-					continue
-				}
-				resp, e := http.Post(r.CallbackUrl, "application/json", strings.NewReader(rS))
-				if e != nil {
-					log.Println(e)
-				} else {
-					io.Copy(os.Stdout, resp.Body)
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	return nil
 }
 
@@ -134,51 +88,36 @@ func (h *HTTP) cmdHandler(ctx *gin.Context) {
 	cmdId := uuid.New().String()
 
 	var getBody struct {
-		Value []string `json:"value" binding:"required"`
-		//CallbackUrl string   `json:"callback_url" binding:"required"`
+		Keys []string `json:"keys" binding:"required"`
 	}
-	var setBody struct {
-		Value       map[string]interface{} `json:"value" binding:"required"`
-		CallbackUrl string                 `json:"callback_url" binding:"required"`
-	}
-
-	if err := ctx.ShouldBindBodyWith(&getBody, binding.JSON); cmdType == "GET" && err == nil {
-		c := command{
-			input:   input,
-			cmdType: cmdType,
-			cmdId:   cmdId,
-			subCmd:  subCmd,
-			value:   getBody.Value,
-		}
-		r := c.execute()
-		ctx.JSON(200, r.Msg)
-		return
-	} else if err := ctx.ShouldBindBodyWith(&setBody, binding.JSON); cmdType == "SET" && err == nil {
-		h.chanCommands <- command{
-			input:       input,
-			cmdType:     cmdType,
-			cmdId:       cmdId,
-			subCmd:      subCmd,
-			value:       setBody.Value,
-			callbackUrl: setBody.CallbackUrl,
-		}
-
-		log.Println(reflect.TypeOf(setBody.Value))
-	} else {
-		log.Println(err)
-		// TODO 明确错误的类型
-		ctx.Error(errors.New("unmatched value format"))
+	if cmdType != "GET" {
+		ctx.Error(errors.New("invalid command type"))
 		return
 	}
-	ctx.JSON(200, gin.H{"msg": "success", "cmdId": cmdId})
+
+	if err := ctx.ShouldBindBodyWith(&getBody, binding.JSON); err != nil {
+		ctx.Error(err)
+		return
+	}
+	r, err := command{
+		input:   input,
+		cmdType: cmdType,
+		cmdId:   cmdId,
+		subCmd:  subCmd,
+		keys:    getBody.Keys,
+	}.execute()
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(200, r)
+	return
 }
 
 func init() {
 	controllers.Add("http", func() deviceAgent.Controller {
 		return &HTTP{
-			chanCommands: make(chan command, 100),
-			chanResults:  make(chan result, 100),
-			Inputs:       make(map[string]deviceAgent.ControllerInput),
+			Inputs: make(map[string]deviceAgent.ControllerInput),
 		}
 	})
 }

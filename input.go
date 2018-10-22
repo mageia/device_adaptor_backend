@@ -1,11 +1,8 @@
 package deviceAgent
 
 type PointDefine struct {
-	//Label     string            `json:"label"`
-	Name string `json:"name"`
-	//Desc      string            `json:"desc"`
-	Unit string `json:"unit"`
-	//IsAnalog  bool              `json:"is_analog"`
+	Name      string                 `json:"name"`
+	Unit      string                 `json:"unit"`
 	Parameter float64                `json:"parameter,omitempty"`
 	Option    map[string]string      `json:"option,omitempty"`
 	Control   map[string]string      `json:"control,omitempty"`
@@ -13,9 +10,19 @@ type PointDefine struct {
 	Extra     map[string]interface{} `json:"extra,omitempty"`
 }
 
+type Quality int
+
+const (
+	_ Quality = iota
+	QualityGood
+	QualityBad
+	QualityUnknown
+)
+
 type Input interface {
 	Name() string
 	Gather(Accumulator) error
+	SelfCheck() Quality
 	SetPointMap(map[string]PointDefine)
 	FlushPointMap(Accumulator) error
 }

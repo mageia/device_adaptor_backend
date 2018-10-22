@@ -17,9 +17,13 @@ func NewSerializer(timestampUnits time.Duration) (*serializer, error) {
 }
 
 func (s *serializer) Serialize(metric deviceAgent.Metric) ([]byte, error) {
-	m := map[string]map[string]interface{}{
-		metric.Name(): metric.Fields(),
+	m := map[string]interface{}{
+		"name":      metric.Name(),
+		"fields":    metric.Fields(),
+		"timestamp": metric.Time().UnixNano() / 1e6,
+		"quality":   metric.Quality(),
 	}
+
 	serialized, err := json.Marshal(m)
 	if err != nil {
 		return []byte{}, err

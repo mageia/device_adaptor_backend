@@ -29,8 +29,8 @@ func (r *RunningInput) Name() string {
 	return "inputs." + r.Config.Name
 }
 
-func (r *RunningInput) MakeMetric(measurement string, fields map[string]interface{}, tags map[string]string, t time.Time) deviceAgent.Metric {
-	m, err := metric.New(measurement, tags, fields, t)
+func (r *RunningInput) MakeMetric(measurement string, fields map[string]interface{}, tags map[string]string, quality deviceAgent.Quality, t time.Time) deviceAgent.Metric {
+	m, err := metric.New(measurement, tags, fields, quality, t)
 	if err != nil {
 		log.Printf("Error adding point [%s]: %s\n", measurement, err.Error())
 		return nil

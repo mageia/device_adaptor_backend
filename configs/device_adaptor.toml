@@ -28,7 +28,7 @@ address = ":9999"    # 默认端口9999
 [[inputs.modbus]]
 interval = "1s"
 
-#name_override = "abc"
+name_override = "abc____________"
 #field_prefix = "fuck_you"
 #field_suffix = "_333"
 address = "10.211.55.4:502"
