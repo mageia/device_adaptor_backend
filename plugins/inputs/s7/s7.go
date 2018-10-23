@@ -27,6 +27,7 @@ type S7 struct {
 	connected bool
 	pointMap  map[string]deviceAgent.PointDefine
 	addrMap   map[string]map[string][][2]int
+	quality   deviceAgent.Quality
 
 	FieldPrefix  string
 	FieldSuffix  string
@@ -69,6 +70,22 @@ func (s *S7) getParamList() map[string][3]int {
 }
 
 func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
+	fields := make(map[string]interface{})
+	tags := make(map[string]string)
+	s.quality = deviceAgent.QualityGood
+
+	defer func(s7 *S7) {
+		if e := recover(); e != nil {
+			s7.quality = deviceAgent.QualityDisconnect
+			acc.AddError(fmt.Errorf("%v", e))
+		}
+		if s7.NameOverride != "" {
+			acc.AddFields(s7.NameOverride, fields, tags, s7.SelfCheck())
+		} else {
+			acc.AddFields("s7", fields, tags, s7.SelfCheck())
+		}
+	}(s)
+
 	paramMap := s.getParamList()
 	for k, v := range paramMap {
 		switch k[:2] {
@@ -78,8 +95,6 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 		}
 	}
 
-	fields := make(map[string]interface{})
-	now := time.Now().UnixNano() / 1e6
 
 	for area, o := range s.addrMap {
 		for dataType, addrList := range o {
@@ -89,37 +104,23 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 				case "w":
 					valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+2]
 					//log.Println(key, binary.BigEndian.Uint16(valueByteArr))
-					fields[key] = map[string]interface{}{
-						"value":     binary.BigEndian.Uint16(valueByteArr),
-						"timestamp": now,
-					}
+					fields[key] = binary.BigEndian.Uint16(valueByteArr)
 				case "d":
 					valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+4]
 					var v float32
 					binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
 					//log.Println(key, v)
-					fields[key] = map[string]interface{}{
-						"value":     v,
-						"timestamp": now,
-					}
+					fields[key] = v
 				case "x":
 					key = area + "." + dataType + fmt.Sprintf("%d.%d", addr[0], addr[1])
 					valueByteArr := s.buf[area][addr[0]-paramMap[area][1]]
 					//log.Println(key, utils.GetBit([]byte{valueByteArr}, uint(addr[1])))
-					fields[key] = map[string]interface{}{
-						"value":     utils.GetBit([]byte{valueByteArr}, uint(addr[1])),
-						"timestamp": now,
-					}
+					fields[key] = utils.GetBit([]byte{valueByteArr}, uint(addr[1]))
 				}
 			}
 		}
 	}
 
-	if s.NameOverride != "" {
-		acc.AddFields(s.NameOverride, fields, nil)
-	} else {
-		acc.AddFields("s7", fields, nil)
-	}
 	return nil
 }
 
@@ -195,8 +196,12 @@ func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
 	for k, v := range s.pointMap {
 		pointMapFields[k] = v
 	}
-	acc.AddFields("s7_point_map", pointMapFields, nil)
+	acc.AddFields("s7_point_map", pointMapFields, nil, s.SelfCheck())
 	return nil
+}
+
+func (s *S7) SelfCheck() deviceAgent.Quality {
+	return s.quality
 }
 
 func init() {
@@ -204,6 +209,7 @@ func init() {
 		return &S7{
 			buf:     make(map[string][]byte),
 			addrMap: make(map[string]map[string][][2]int),
+			quality: deviceAgent.QualityGood,
 		}
 	})
 }

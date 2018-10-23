@@ -17,14 +17,7 @@ func NewSerializer(timestampUnits time.Duration) (*serializer, error) {
 }
 
 func (s *serializer) Serialize(metric deviceAgent.Metric) ([]byte, error) {
-	m := map[string]interface{}{
-		"name":      metric.Name(),
-		"fields":    metric.Fields(),
-		"timestamp": metric.Time().UnixNano() / 1e6,
-		"quality":   metric.Quality(),
-	}
-
-	serialized, err := json.Marshal(m)
+	serialized, err := json.Marshal(s.createObject(metric))
 	if err != nil {
 		return []byte{}, err
 	}
@@ -33,24 +26,23 @@ func (s *serializer) Serialize(metric deviceAgent.Metric) ([]byte, error) {
 }
 
 func (s *serializer) SerializeBatch(metrics []deviceAgent.Metric) ([]byte, error) {
-	objects := make([]interface{}, 0, len(metrics))
+	objects := make([]map[string]interface{}, 0, len(metrics))
 	for _, metric := range metrics {
 		objects = append(objects, s.createObject(metric))
 	}
-	obj := map[string]interface{}{
-		"metrics": objects,
-	}
-	serialized, err := json.Marshal(obj)
+	serialized, err := json.Marshal(objects)
 	if err != nil {
 		return []byte{}, err
 	}
+	serialized = append(serialized, byte('\n'))
 	return serialized, nil
 }
 
 func (s *serializer) SerializeMap(metric deviceAgent.Metric) (map[string]interface{}, error) {
+	m := s.createObject(metric.Copy())
 	r := make(map[string]interface{})
 
-	for k, v := range metric.Fields() {
+	for k, v := range m {
 		serialized, err := json.Marshal(v)
 		if err != nil {
 			return nil, err
@@ -61,11 +53,11 @@ func (s *serializer) SerializeMap(metric deviceAgent.Metric) (map[string]interfa
 }
 
 func (s *serializer) createObject(metric deviceAgent.Metric) map[string]interface{} {
-	m := make(map[string]interface{}, 4)
-	m["tags"] = metric.Tags()
+	m := make(map[string]interface{}, 5)
 	m["fields"] = metric.Fields()
 	m["name"] = metric.Name()
-	m["timestamp"] = metric.Time().Unix()
+	m["timestamp"] = metric.Time().UnixNano() / 1e6
+	m["quality"] = metric.Quality()
 	return m
 }
 

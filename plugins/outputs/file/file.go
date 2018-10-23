@@ -60,16 +60,15 @@ func (f *File) Close() error {
 
 func (f *File) Write(metrics []deviceAgent.Metric) error {
 	var writeErr error = nil
-	for _, metric := range metrics {
-		b, err := f.serializer.Serialize(metric)
-		if err != nil {
-			return fmt.Errorf("failed to serialize message: %s", err)
-		}
-		for _, writer := range f.writers {
-			_, err = writer.Write(b)
-			if err != nil && writer != os.Stdout {
-				writeErr = fmt.Errorf("failed to write message: %s, %s", b, err)
-			}
+	b, err := f.serializer.SerializeBatch(metrics)
+	if err != nil {
+		return fmt.Errorf("failed to serialize message: %s", err)
+	}
+
+	for _, writer := range f.writers {
+		_, err = writer.Write(b)
+		if err != nil && writer != os.Stdout {
+			writeErr = fmt.Errorf("failed to write message: %s, %s", b, err)
 		}
 	}
 	return writeErr

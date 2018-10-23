@@ -1,5 +1,7 @@
 package deviceAgent
 
+import "math"
+
 type PointDefine struct {
 	Name      string                 `json:"name"`
 	Unit      string                 `json:"unit"`
@@ -10,13 +12,14 @@ type PointDefine struct {
 	Extra     map[string]interface{} `json:"extra,omitempty"`
 }
 
-type Quality int
+type Quality uint8
 
 const (
 	_ Quality = iota
 	QualityGood
-	QualityBad
-	QualityUnknown
+	QualityDisconnect
+
+	QualityUnknown = math.MaxUint8
 )
 
 type Input interface {

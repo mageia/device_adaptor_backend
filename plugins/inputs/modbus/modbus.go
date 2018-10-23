@@ -103,7 +103,6 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
 		}
-		m.quality = deviceAgent.QualityBad
 		if modbus.NameOverride != "" {
 			acc.AddFields(modbus.NameOverride, fields, tags, modbus.SelfCheck())
 		} else {
@@ -118,8 +117,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 			for _, param := range getParamList(l, HoleWidth, 1000) {
 				r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 				if e != nil {
-					acc.AddError(e)
-					m.quality = deviceAgent.QualityBad
+					m.quality = deviceAgent.QualityDisconnect
 					return e
 				}
 				for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
@@ -130,8 +128,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 			for _, param := range getParamList(l, HoleWidth, 125) {
 				r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 				if e != nil {
-					acc.AddError(e)
-					m.quality = deviceAgent.QualityBad
+					m.quality = deviceAgent.QualityDisconnect
 					return e
 				}
 				for i := 0; i < len(r); i += 2 {

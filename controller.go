@@ -11,7 +11,7 @@ type Controller interface {
 
 type ControllerInput interface {
 	Name() string
-	Set(cmdId string, kv map[string]interface{}) error
+	//Set(cmdId string, kv map[string]interface{}) error
 	Get(cmdId string, key []string) interface{}
 	UpdatePointMap(cmdId string, kv map[string]interface{}) error
 	RetrievePointMap(cmdId string, key []string) map[string]PointDefine

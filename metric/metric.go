@@ -158,10 +158,11 @@ func (m *metric) SetTime(t time.Time) {
 }
 func (m *metric) Copy() deviceAgent.Metric {
 	m2 := &metric{
-		name:   m.name,
-		tags:   make([]*deviceAgent.Tag, len(m.tags)),
-		fields: make([]*deviceAgent.Field, len(m.fields)),
-		tm:     m.tm,
+		name:    m.name,
+		tags:    make([]*deviceAgent.Tag, len(m.tags)),
+		fields:  make([]*deviceAgent.Field, len(m.fields)),
+		tm:      m.tm,
+		quality: m.quality,
 	}
 	for i, tag := range m.tags {
 		m2.tags[i] = tag

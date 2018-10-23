@@ -23,6 +23,7 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 	if len(metrics) == 0 {
 		return nil
 	}
+
 	for _, metric := range metrics {
 		m, err := r.serializer.SerializeMap(metric)
 		if err != nil {
