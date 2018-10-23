@@ -31,6 +31,7 @@ type Modbus struct {
 	addrMap   map[string][]int
 	quality   deviceAgent.Quality
 
+	originName   string
 	FieldPrefix  string
 	FieldSuffix  string
 	NameOverride string
@@ -62,7 +63,14 @@ func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
 }
 
 func (m *Modbus) Name() string {
-	return "modbus"
+	if m.NameOverride != "" {
+		return m.NameOverride
+	}
+	return m.originName
+}
+
+func (m *Modbus) OriginName() string {
+	return m.originName
 }
 
 func (m *Modbus) Start() error {
@@ -106,7 +114,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 		if modbus.NameOverride != "" {
 			acc.AddFields(modbus.NameOverride, fields, tags, modbus.SelfCheck())
 		} else {
-			acc.AddFields("modbus", fields, tags, modbus.SelfCheck())
+			acc.AddFields(m.Name(), fields, tags, modbus.SelfCheck())
 		}
 	}(m)
 
@@ -181,6 +189,7 @@ func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 	}()
 
 	wg.Wait()
+
 	return nil
 }
 
@@ -220,13 +229,12 @@ func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
 	for k, v := range m.pointMap {
 		pointMapFields[k] = v
 	}
-	acc.AddFields("modbus_point_map", pointMapFields, nil, m.SelfCheck())
+	acc.AddFields(m.Name() + "_point_map", pointMapFields, nil, m.SelfCheck())
 	return nil
 }
 
 func (m *Modbus) Set(cmdId string, kv map[string]interface{}) error {
 	var errors []error
-	//time.Sleep(10 * time.Second)
 
 NEXT:
 	for key, value := range kv {
@@ -280,7 +288,7 @@ func (m *Modbus) Get(cmdId string, key []string) interface{} {
 	return nil
 }
 
-func (m *Modbus) UpdatePointMap(cmdId string, kv map[string]interface{}) error {
+func (m *Modbus) UpdatePointMap(kv map[string]interface{}) error {
 	var errors []error
 
 NEXT:
@@ -290,8 +298,6 @@ NEXT:
 			errors = append(errors, fmt.Errorf("no such point: %s\n", key))
 			continue NEXT
 		}
-
-		//TODO: convert map[string]interface{} to struct by tag
 
 		itemList := []string{"label", "name"}
 		switch value.(type) {
@@ -317,7 +323,7 @@ NEXT:
 	}
 	return nil
 }
-func (m *Modbus) RetrievePointMap(cmdId string, keys []string) map[string]deviceAgent.PointDefine {
+func (m *Modbus) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
 	if len(keys) == 0 {
 		return m.pointMap
 	}
@@ -333,7 +339,8 @@ func (m *Modbus) RetrievePointMap(cmdId string, keys []string) map[string]device
 func init() {
 	inputs.Add("modbus", func() deviceAgent.Input {
 		return &Modbus{
-			quality: deviceAgent.QualityGood,
+			originName: "modbus",
+			quality:    deviceAgent.QualityGood,
 		}
 	})
 }

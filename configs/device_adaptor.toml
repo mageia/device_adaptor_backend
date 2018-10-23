@@ -11,7 +11,9 @@ interval = "3s"
 address = ":9999"    # 默认端口9999
 
 [[outputs.redis]]
-[outputs.file]
+channel_name = "output_test"
+
+#[outputs.file]
 #files = ["stdout"]
 #data_format = "json"
 
@@ -25,15 +27,15 @@ address = ":9999"    # 默认端口9999
 #point_map = "../configs/point_map_modbus.yml"
 
 
-[[inputs.modbus]]
-interval = "1s"
-
-name_override = "abc____________"
-#field_prefix = "fuck_you"
-#field_suffix = "_333"
-address = "10.211.55.4:502"
-slave_id = 1
-point_map = "../configs/point_map_modbus.yml"
+#[[inputs.modbus]]
+#interval = "1s"
+#
+#name_override = "abc____________"
+##field_prefix = "fuck_you"
+##field_suffix = "_333"
+#address = "10.211.55.4:502"
+#slave_id = 1
+#point_map = "../configs/point_map_modbus.yml"
 
 
 #[[inputs.ftp]]
@@ -46,9 +48,14 @@ point_map = "../configs/point_map_modbus.yml"
 #[[inputs.sensor_vibration]]
 
 
-[inputs.s7]
-interval = "1s"
-address = "192.168.0.168"
-rack = 0
-slot = 1
-point_map = "../configs/point_map_s7.yml"
+#[inputs.s7]
+#interval = "1s"
+#address = "192.168.0.168"
+#rack = 0
+#slot = 1
+#point_map = "../configs/point_map_s7.yml"
+#name_override = "s7_abc"
+
+[[inputs.fake]]
+interval = "800ms"
+point_map = "../configs/point_map_modbus.yml"

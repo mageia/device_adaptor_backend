@@ -4,14 +4,9 @@ import (
 	"context"
 	"deviceAdaptor"
 	"deviceAdaptor/plugins/controllers"
-	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/google/uuid"
 	"log"
 	"net/http"
-	"strings"
 )
 
 type HTTP struct {
@@ -39,7 +34,7 @@ func (h *HTTP) Start(ctx context.Context) error {
 		}
 		c.AbortWithStatusJSON(400, c.Errors.JSON())
 	})
-	router.POST("/:cmdType/:deviceName/:subCmd", h.cmdHandler)
+	router.GET("/point_meta", h.getPointMapHandler)
 
 	if h.Address == "" {
 		h.Address = ":9999"
@@ -76,42 +71,33 @@ func (h *HTTP) Stop(ctx context.Context) error {
 	}
 }
 
-func (h *HTTP) cmdHandler(ctx *gin.Context) {
-	deviceName := ctx.Param("deviceName")
-	input, ok := h.Inputs[deviceName]
-	if !ok {
-		ctx.Error(fmt.Errorf("undefined but requested input: %s", deviceName))
-		return
-	}
-	cmdType := strings.ToUpper(ctx.Param("cmdType"))
-	subCmd := ctx.Param("subCmd")
-	cmdId := uuid.New().String()
-
+func (h *HTTP) getPointMapHandler(ctx *gin.Context) {
 	var getBody struct {
-		Keys []string `json:"keys" binding:"required"`
+		Inputs []string `form:"inputs"`
 	}
-	if cmdType != "GET" {
-		ctx.Error(errors.New("invalid command type"))
+	if err := ctx.ShouldBindQuery(&getBody); err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	if err := ctx.ShouldBindBodyWith(&getBody, binding.JSON); err != nil {
-		ctx.Error(err)
+	r := make(map[string]map[string]deviceAgent.PointDefine)
+	if len(getBody.Inputs) == 0 {
+		for _, iV := range h.Inputs {
+			r[iV.Name()] = iV.RetrievePointMap(nil)
+		}
+		ctx.JSON(200, r)
 		return
 	}
-	r, err := command{
-		input:   input,
-		cmdType: cmdType,
-		cmdId:   cmdId,
-		subCmd:  subCmd,
-		keys:    getBody.Keys,
-	}.execute()
-	if err != nil {
-		ctx.Error(err)
-		return
+
+	for _, iV := range h.Inputs {
+		for _, iS := range getBody.Inputs {
+			if iS == iV.Name() || iS == iV.OriginName() {
+				r[iV.Name()] = iV.RetrievePointMap(nil)
+				break
+			}
+		}
 	}
 	ctx.JSON(200, r)
-	return
 }
 
 func init() {

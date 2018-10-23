@@ -7,16 +7,17 @@ import (
 	"deviceAdaptor/plugins/serializers"
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/json-iterator/go"
 	"log"
 )
 
 type Redis struct {
-	Address    string
-	Password   string
-	Timeout    internal.Duration
-	Queue      string
-	client     *redis.Client
-	serializer serializers.Serializer
+	Address     string
+	Password    string
+	Timeout     internal.Duration
+	ChannelName string
+	client      *redis.Client
+	serializer  serializers.Serializer
 }
 
 func (r *Redis) Write(metrics []deviceAgent.Metric) error {
@@ -30,10 +31,21 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 			return fmt.Errorf("failed to serialize message: %s", err)
 		}
 
-		result := r.client.HMSet(metric.Name(), m)
-		if result.Err() != nil {
-			log.Printf("failed to write message: %s", result.Err())
-			return fmt.Errorf("failed to write message: %s", result.Err())
+		sV, err := jsoniter.MarshalToString(m)
+		if err != nil {
+			return err
+		}
+
+		if err := r.client.Set(metric.Name(), sV, 0).Err(); err != nil {
+			log.Println(err)
+			return err
+		}
+
+		if r.ChannelName != "" {
+			if err := r.client.Publish(r.ChannelName, sV).Err(); err != nil {
+				log.Println(err)
+				return err
+			}
 		}
 	}
 

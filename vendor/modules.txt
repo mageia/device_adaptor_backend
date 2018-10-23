@@ -84,9 +84,9 @@ github.com/stretchr/testify/mock
 github.com/stretchr/testify/assert
 # github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 github.com/tarm/serial
-# github.com/ugorji/go/codec v0.0.0-20181018023622-b30ce92d500b
+# github.com/ugorji/go/codec v0.0.0-20181022190402-e5e69e061d4f
 github.com/ugorji/go/codec
-# golang.org/x/sys v0.0.0-20181019160139-8e24a49d80f8
+# golang.org/x/sys v0.0.0-20181022134430-8a28ead16f52
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.0
 golang.org/x/text/transform

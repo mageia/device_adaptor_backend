@@ -6,6 +6,9 @@ db40.dbw0:
 db40.dbd2:
   label: XX
   name: XX
+  extra:
+    a: 123
+    b: 456sssssssss
 
 db40.dbd6:
   label: XX1

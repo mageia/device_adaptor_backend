@@ -29,6 +29,8 @@ type S7 struct {
 	addrMap   map[string]map[string][][2]int
 	quality   deviceAgent.Quality
 
+	originName string
+
 	FieldPrefix  string
 	FieldSuffix  string
 	NameOverride string
@@ -36,9 +38,17 @@ type S7 struct {
 
 var defaultTimeout = internal.Duration{Duration: 15 * time.Second}
 
-func (*S7) Name() string {
-	return "S7"
+func (s *S7) Name() string {
+	if s.NameOverride != "" {
+		return s.NameOverride
+	}
+	return s.originName
 }
+
+func (s *S7) OriginName() string {
+	return s.originName
+}
+
 func (s *S7) getParamList() map[string][3]int {
 	var areaNumber, startAddr, endAddr, endOffset int
 	var result = make(map[string][3]int)
@@ -95,7 +105,6 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 		}
 	}
 
-
 	for area, o := range s.addrMap {
 		for dataType, addrList := range o {
 			for _, addr := range addrList {
@@ -103,18 +112,15 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 				switch dataType[2:] {
 				case "w":
 					valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+2]
-					//log.Println(key, binary.BigEndian.Uint16(valueByteArr))
 					fields[key] = binary.BigEndian.Uint16(valueByteArr)
 				case "d":
 					valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+4]
 					var v float32
 					binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
-					//log.Println(key, v)
 					fields[key] = v
 				case "x":
 					key = area + "." + dataType + fmt.Sprintf("%d.%d", addr[0], addr[1])
 					valueByteArr := s.buf[area][addr[0]-paramMap[area][1]]
-					//log.Println(key, utils.GetBit([]byte{valueByteArr}, uint(addr[1])))
 					fields[key] = utils.GetBit([]byte{valueByteArr}, uint(addr[1]))
 				}
 			}
@@ -204,12 +210,61 @@ func (s *S7) SelfCheck() deviceAgent.Quality {
 	return s.quality
 }
 
+func (s *S7) UpdatePointMap(kv map[string]interface{}) error {
+	var errors []error
+
+NEXT:
+	for key, value := range kv {
+		pD, ok := s.pointMap[key]
+		if !ok {
+			errors = append(errors, fmt.Errorf("no such point: %s\n", key))
+			continue NEXT
+		}
+
+		itemList := []string{"label", "name"}
+		switch value.(type) {
+		case map[string]interface{}:
+			for _, k := range itemList {
+				if v, ok := value.(map[string]interface{})[k]; ok {
+					if e := utils.SetField(&pD, strings.Title(k), v); e != nil {
+						errors = append(errors, e)
+						continue NEXT
+					}
+				}
+			}
+		}
+		s.pointMap[key] = pD
+	}
+
+	if len(errors) != 0 {
+		var ss string
+		for _, s := range errors {
+			ss += s.Error() + "\n"
+		}
+		return fmt.Errorf(ss)
+	}
+	return nil
+}
+func (s *S7) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
+	if len(keys) == 0 {
+		return s.pointMap
+	}
+	result := make(map[string]deviceAgent.PointDefine, len(keys))
+	for _, key := range keys {
+		if p, ok := s.pointMap[key]; ok {
+			result[key] = p
+		}
+	}
+	return result
+}
+
 func init() {
 	inputs.Add("s7", func() deviceAgent.Input {
 		return &S7{
-			buf:     make(map[string][]byte),
-			addrMap: make(map[string]map[string][][2]int),
-			quality: deviceAgent.QualityGood,
+			originName: "s7",
+			buf:        make(map[string][]byte),
+			addrMap:    make(map[string]map[string][][2]int),
+			quality:    deviceAgent.QualityGood,
 		}
 	})
 }
