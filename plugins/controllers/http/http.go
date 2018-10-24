@@ -4,15 +4,34 @@ import (
 	"context"
 	"deviceAdaptor"
 	"deviceAdaptor/plugins/controllers"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/google/uuid"
 	"log"
 	"net/http"
 )
+
+type Command struct {
+	cmdId string
+	input deviceAgent.ControllerInput
+	kv    map[string]interface{}
+}
 
 type HTTP struct {
 	Address string
 	Server  *http.Server
 	Inputs  map[string]deviceAgent.ControllerInput
+	chanCmd chan *Command
+}
+
+func (h *HTTP) SyncExecute(c *Command) error {
+	log.Println(c)
+	if e := c.input.SetValue(c.kv); e != nil {
+		return e
+	}
+
+	return nil
 }
 
 func (h *HTTP) Name() string {
@@ -35,6 +54,7 @@ func (h *HTTP) Start(ctx context.Context) error {
 		c.AbortWithStatusJSON(400, c.Errors.JSON())
 	})
 	router.GET("/point_meta", h.getPointMapHandler)
+	router.POST("/point_value/:deviceName", h.setPointValueHandler)
 
 	if h.Address == "" {
 		h.Address = ":9999"
@@ -54,6 +74,15 @@ func (h *HTTP) Start(ctx context.Context) error {
 	}()
 
 	go h.Stop(ctx)
+
+	go func() {
+		for {
+			select {
+			case c := <-h.chanCmd:
+				h.SyncExecute(c)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -100,10 +129,38 @@ func (h *HTTP) getPointMapHandler(ctx *gin.Context) {
 	ctx.JSON(200, r)
 }
 
+func (h *HTTP) setPointValueHandler(ctx *gin.Context) {
+	var setBody map[string]interface{}
+	if err := ctx.ShouldBindBodyWith(&setBody, binding.JSON); err != nil {
+		ctx.Error(err)
+		return
+	} else if len(setBody) == 0 {
+		ctx.Error(fmt.Errorf("empty key-value pairs"))
+		return
+	}
+
+	deviceName := ctx.Param("deviceName")
+	for _, iV := range h.Inputs {
+		if deviceName == iV.Name() || deviceName == iV.OriginName() {
+			c := &Command{
+				input: iV,
+				kv:    setBody,
+				cmdId: uuid.New().String(),
+			}
+			h.chanCmd <- c
+			ctx.JSON(200, gin.H{"cmdId": c.cmdId})
+			return
+		}
+	}
+
+	ctx.Error(fmt.Errorf("unknown or unregistered input: %s", deviceName))
+}
+
 func init() {
 	controllers.Add("http", func() deviceAgent.Controller {
 		return &HTTP{
-			Inputs: make(map[string]deviceAgent.ControllerInput),
+			Inputs:  make(map[string]deviceAgent.ControllerInput),
+			chanCmd: make(chan *Command, 1000),
 		}
 	})
 }

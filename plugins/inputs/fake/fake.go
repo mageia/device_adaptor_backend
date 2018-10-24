@@ -6,15 +6,12 @@ import (
 	"deviceAdaptor/utils"
 	"fmt"
 	"math/rand"
-	"sort"
-	"strconv"
-	"strings"
+	"time"
 )
 
 type Fake struct {
 	connected bool
 	pointMap  map[string]deviceAgent.PointDefine
-	addrMap   map[string][]int
 	quality   deviceAgent.Quality
 
 	originName   string
@@ -27,12 +24,10 @@ func (f *Fake) Start() error {
 	f.connected = true
 	return nil
 }
-
 func (f *Fake) Stop() error {
 	f.connected = false
 	return nil
 }
-
 func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
@@ -49,38 +44,22 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 		}
 	}(f)
 
-	for k, l := range f.addrMap {
-		sort.Ints(l)
-
-		for _, a := range l {
-			pointAddr := f.FieldPrefix + fmt.Sprintf("%sx%04d", k, a) + f.FieldSuffix
-			switch k {
-			case "0", "1":
-				fields[pointAddr] = rand.Intn(10)%2
-			case "4":
-				fields[pointAddr] = utils.Round(rand.Float64()/rand.Float64(), 2)
-			}
+	for k, v := range f.pointMap {
+		if v.PointType == deviceAgent.PointState {
+			fields[k] = rand.Intn(10) % 2
+		} else {
+			fields[k] = utils.Round(rand.Float64()/rand.Float64(), 2)
 		}
 	}
 
 	return nil
 }
-
 func (f *Fake) SelfCheck() deviceAgent.Quality {
 	return f.quality
 }
-
 func (f *Fake) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	f.pointMap = pointMap
-	f.addrMap = make(map[string][]int, 0)
-
-	for a := range f.pointMap {
-		addrSplit := strings.Split(a, "x")
-		readAddr, _ := strconv.Atoi(addrSplit[1])
-		f.addrMap[addrSplit[0]] = append(f.addrMap[addrSplit[0]], readAddr)
-	}
 }
-
 func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range f.pointMap {
@@ -89,22 +68,18 @@ func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
 	acc.AddFields(f.Name()+"_point_map", pointMapFields, nil, f.SelfCheck())
 	return nil
 }
-
 func (f *Fake) Name() string {
 	if f.NameOverride != "" {
 		return f.NameOverride
 	}
 	return f.originName
 }
-
 func (f *Fake) OriginName() string {
 	return f.originName
 }
-
 func (f *Fake) UpdatePointMap(map[string]interface{}) error {
 	panic("implement me")
 }
-
 func (f *Fake) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
 	if len(keys) == 0 {
 		return f.pointMap
@@ -116,6 +91,10 @@ func (f *Fake) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefin
 		}
 	}
 	return result
+}
+func (f *Fake) SetValue(map[string]interface{}) error {
+	time.Sleep(2 * time.Second)
+	return nil
 }
 
 func init() {

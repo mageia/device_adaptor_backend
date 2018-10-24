@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,7 +17,7 @@ import (
 
 const HoleWidth = 200
 
-var defaultTimeout = internal.Duration{Duration: 15 * time.Second}
+var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
 type Modbus struct {
 	Address string
@@ -61,46 +60,6 @@ func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
 
 	return R
 }
-
-func (m *Modbus) Name() string {
-	if m.NameOverride != "" {
-		return m.NameOverride
-	}
-	return m.originName
-}
-
-func (m *Modbus) OriginName() string {
-	return m.originName
-}
-
-func (m *Modbus) Start() error {
-	m.connected = false
-	return m.connect()
-}
-
-func (m *Modbus) Stop() error {
-	if m.connected {
-		m._handler.Close()
-		m.connected = false
-	}
-	return nil
-}
-
-func (m *Modbus) connect() error {
-	_handler := modbus.NewTCPClientHandler(m.Address)
-	_handler.SlaveId = uint8(m.SlaveId)
-	_handler.IdleTimeout = defaultTimeout.Duration
-	_handler.Timeout = defaultTimeout.Duration
-	m._handler = _handler
-
-	if e := _handler.Connect(); e != nil {
-		return e
-	}
-	m.client = modbus.NewClient(_handler)
-	m.connected = true
-	return nil
-}
-
 func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
@@ -110,6 +69,8 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	defer func(modbus *Modbus) {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
+			m.quality = deviceAgent.QualityDisconnect
+			m.connected = false
 		}
 		if modbus.NameOverride != "" {
 			acc.AddFields(modbus.NameOverride, fields, tags, modbus.SelfCheck())
@@ -126,6 +87,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 				r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 				if e != nil {
 					m.quality = deviceAgent.QualityDisconnect
+					m.connected = false
 					return e
 				}
 				for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
@@ -137,6 +99,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 				r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 				if e != nil {
 					m.quality = deviceAgent.QualityDisconnect
+					m.connected = false
 					return e
 				}
 				for i := 0; i < len(r); i += 2 {
@@ -168,7 +131,6 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
-
 func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 	if !m.connected {
 		if e := m.connect(); e != nil {
@@ -192,18 +154,20 @@ func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
+func (m *Modbus) connect() error {
+	_handler := modbus.NewTCPClientHandler(m.Address)
+	_handler.SlaveId = uint8(m.SlaveId)
+	_handler.IdleTimeout = defaultTimeout.Duration
+	_handler.Timeout = defaultTimeout.Duration
+	m._handler = _handler
 
-func (m *Modbus) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
-	m.pointMap = pointMap
-	m.addrMap = make(map[string][]int, 0)
-
-	for a := range m.pointMap {
-		addrSplit := strings.Split(a, "x")
-		readAddr, _ := strconv.Atoi(addrSplit[1])
-		m.addrMap[addrSplit[0]] = append(m.addrMap[addrSplit[0]], readAddr)
+	if e := _handler.Connect(); e != nil {
+		return e
 	}
+	m.client = modbus.NewClient(_handler)
+	m.connected = true
+	return nil
 }
-
 func (m *Modbus) TranslateOption(pointAddr string, source byte) interface{} {
 	if _, ok := m.pointMap[pointAddr]; !ok {
 		return source
@@ -215,7 +179,6 @@ func (m *Modbus) TranslateOption(pointAddr string, source byte) interface{} {
 
 	return source
 }
-
 func (m *Modbus) TranslateParameter(pointAddr string, source int16) float64 {
 	parameter := m.pointMap[pointAddr].Parameter
 	if parameter != 0 {
@@ -224,23 +187,49 @@ func (m *Modbus) TranslateParameter(pointAddr string, source int16) float64 {
 	return utils.Round(float64(source), 2)
 }
 
+func (m *Modbus) Name() string {
+	if m.NameOverride != "" {
+		return m.NameOverride
+	}
+	return m.originName
+}
+func (m *Modbus) OriginName() string {
+	return m.originName
+}
+func (m *Modbus) Start() error {
+	m.connected = false
+	return m.connect()
+}
+func (m *Modbus) Stop() error {
+	if m.connected {
+		m._handler.Close()
+		m.connected = false
+	}
+	return nil
+}
+func (m *Modbus) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
+	m.pointMap = pointMap
+	m.addrMap = make(map[string][]int, 0)
+
+	for a := range m.pointMap {
+		addrSplit := strings.Split(a, "x")
+		readAddr, _ := strconv.Atoi(addrSplit[1])
+		m.addrMap[addrSplit[0]] = append(m.addrMap[addrSplit[0]], readAddr)
+	}
+}
 func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range m.pointMap {
 		pointMapFields[k] = v
 	}
-	acc.AddFields(m.Name() + "_point_map", pointMapFields, nil, m.SelfCheck())
+	acc.AddFields(m.Name()+"_point_map", pointMapFields, nil, m.SelfCheck())
 	return nil
 }
-
-func (m *Modbus) Set(cmdId string, kv map[string]interface{}) error {
+func (m *Modbus) SetValue(kv map[string]interface{}) error {
 	var errors []error
 
 NEXT:
 	for key, value := range kv {
-
-		log.Println(key, value)
-
 		addrSplit := strings.Split(strings.TrimSpace(key), "x")
 		if len(addrSplit) != 2 {
 			errors = append(errors, fmt.Errorf("invalid point key: %s", key))
@@ -279,15 +268,9 @@ NEXT:
 	}
 	return nil
 }
-
 func (m *Modbus) SelfCheck() deviceAgent.Quality {
 	return m.quality
 }
-
-func (m *Modbus) Get(cmdId string, key []string) interface{} {
-	return nil
-}
-
 func (m *Modbus) UpdatePointMap(kv map[string]interface{}) error {
 	var errors []error
 

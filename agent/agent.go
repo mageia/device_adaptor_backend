@@ -105,10 +105,6 @@ func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, met
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	flushTicker := time.NewTicker(interval * 1000)
-	defer ticker.Stop()
-	input.Input.FlushPointMap(acc)
-
 	for {
 		internal.RandomSleep(a.Config.Global.CollectionJitter.Duration, a.Ctx)
 		gatherWithTimeout(a.Ctx, input, acc, interval)
@@ -117,8 +113,6 @@ func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, met
 			return
 		case <-ticker.C:
 			continue
-		case <-flushTicker.C:
-			input.Input.FlushPointMap(acc)
 		}
 	}
 }
@@ -201,6 +195,11 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 
 	return nil
 }
+//
+//func (a *Agent) ResourceStat() {
+//	for range time.Tick(a.Config.Global.Interval.Duration) {
+//	}
+//}
 
 func (a *Agent) Run() error {
 	var wg sync.WaitGroup
@@ -265,8 +264,8 @@ func (a *Agent) Run() error {
 			acc := NewAccumulator(input, metricC)
 			acc.SetPrecision(time.Nanosecond, 0)
 			if err := p.Start(); err != nil {
-				log.Printf("E! Service for input %s failed to start, exiting:\n%s\n", input.Name(), err.Error())
-				return err
+				log.Printf("E! Service for input %s failed to start:\n%s\n", input.Name(), err.Error())
+				break
 			}
 			switch pC := p.(type) {
 			case deviceAgent.ControllerInput:
@@ -285,6 +284,29 @@ func (a *Agent) Run() error {
 			a.gatherer(in, interval, metricC)
 		}(input, inter)
 	}
+
+	//debug all stat
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for range time.Tick(time.Second * 1) {
+			log.Println(models.GlobalMetricsGathered.Name(), models.GlobalMetricsGathered.FieldName(), models.GlobalMetricsGathered.Get())
+			log.Println(NErrors.Name(), NErrors.FieldName(), NErrors.Get())
+			log.Println(MetricFieldsCount.Name(), MetricFieldsCount.FieldName(), MetricFieldsCount.Get())
+
+			for _, i := range a.Config.Inputs {
+				log.Println(i.MetricsGathered.Name(), i.MetricsGathered.FieldName(), i.MetricsGathered.Get())
+			}
+		}
+	}()
+
+	//resource self check
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		//a.ResourceStat()
+	}()
 
 	wg.Wait()
 	a.Close()

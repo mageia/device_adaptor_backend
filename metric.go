@@ -4,6 +4,17 @@ import (
 	"time"
 )
 
+type MetricType int8
+
+const (
+	_ MetricType = iota
+	Untyped
+	Counter
+	Gauge
+	Summary
+	Histogram
+)
+
 type Tag struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`

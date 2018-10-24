@@ -12,15 +12,23 @@ type metric struct {
 	fields  []*deviceAgent.Field
 	tm      time.Time
 	quality deviceAgent.Quality
+	tp      deviceAgent.MetricType
 }
 
-func New(name string, tags map[string]string, fields map[string]interface{}, quality deviceAgent.Quality, tm time.Time) (deviceAgent.Metric, error) {
+func New(name string,
+	tags map[string]string,
+	fields map[string]interface{},
+	quality deviceAgent.Quality,
+	tm time.Time,
+	tp deviceAgent.MetricType,
+) (deviceAgent.Metric, error) {
 	m := &metric{
 		name:    name,
 		tags:    nil,
 		fields:  nil,
 		quality: quality,
 		tm:      tm,
+		tp:      tp,
 	}
 	if len(tags) > 0 {
 		m.tags = make([]*deviceAgent.Tag, 0, len(tags))

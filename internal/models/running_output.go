@@ -57,6 +57,9 @@ func (ro *RunningOutput) AddMetric(m deviceAgent.Metric) {
 }
 
 func (ro *RunningOutput) WriteCached() error {
+	if !ro.failMetrics.IsEmpty() {
+		log.Println("#######@@@@@@@@@@@@##############")
+	}
 	return nil
 }
 

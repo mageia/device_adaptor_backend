@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var GlobalMetricsGathered = selfstat.Register("agent", "metrics_gathered", map[string]string{})
+
 type InputConfig struct {
 	Name         string
 	PointMapPath string
@@ -22,22 +24,36 @@ type RunningInput struct {
 }
 
 func NewRunningInput(input deviceAgent.Input, config *InputConfig) *RunningInput {
-	return &RunningInput{Input: input, Config: config}
+	return &RunningInput{
+		Input:  input,
+		Config: config,
+		MetricsGathered: selfstat.Register(
+			input.Name(),
+			"metric_count",
+			map[string]string{"input": config.Name},
+		),
+	}
 }
 
 func (r *RunningInput) Name() string {
 	return "inputs." + r.Config.Name
 }
 
-func (r *RunningInput) MakeMetric(measurement string, fields map[string]interface{}, tags map[string]string, quality deviceAgent.Quality, t time.Time) deviceAgent.Metric {
-	m, err := metric.New(measurement, tags, fields, quality, t)
+func (r *RunningInput) MakeMetric(
+	measurement string,
+	fields map[string]interface{},
+	tags map[string]string,
+	quality deviceAgent.Quality,
+	mType deviceAgent.MetricType,
+	t time.Time,
+) deviceAgent.Metric {
+	m, err := metric.New(measurement, tags, fields, quality, t, mType)
 	if err != nil {
 		log.Printf("Error adding point [%s]: %s\n", measurement, err.Error())
 		return nil
 	}
+
+	r.MetricsGathered.Incr(1)
+	GlobalMetricsGathered.Incr(1)
 	return m
 }
-
-//func (r *RunningInput) SetDefaultTags(tags map[string]string) {
-//	r.defaultTags = tags
-//}

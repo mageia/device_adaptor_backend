@@ -96,8 +96,7 @@ outer:
 		}
 	}
 
-	//TODO: quality
-	m, err := metric.New(measurementName, tags, recordFields, deviceAgent.QualityGood, metricTime)
+	m, err := metric.New(measurementName, tags, recordFields, deviceAgent.QualityGood, metricTime, deviceAgent.Untyped)
 	if err != nil {
 		return nil, err
 	}

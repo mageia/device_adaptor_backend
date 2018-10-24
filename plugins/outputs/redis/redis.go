@@ -12,12 +12,11 @@ import (
 )
 
 type Redis struct {
-	Address     string
-	Password    string
-	Timeout     internal.Duration
-	ChannelName string
-	client      *redis.Client
-	serializer  serializers.Serializer
+	UrlAddress    string
+	Timeout       internal.Duration
+	OutputChannel string
+	client        *redis.Client
+	serializer    serializers.Serializer
 }
 
 func (r *Redis) Write(metrics []deviceAgent.Metric) error {
@@ -41,8 +40,8 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 			return err
 		}
 
-		if r.ChannelName != "" {
-			if err := r.client.Publish(r.ChannelName, sV).Err(); err != nil {
+		if r.OutputChannel != "" {
+			if err := r.client.Publish(r.OutputChannel, sV).Err(); err != nil {
 				log.Println(err)
 				return err
 			}
@@ -53,14 +52,14 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 }
 
 func (r *Redis) Connect() error {
-	if r.Address == "" {
-		r.Address = "localhost:6379"
+	if r.UrlAddress == "" {
+		r.UrlAddress = "redis://localhost:6379/0"
 	}
-	c := redis.NewClient(&redis.Options{
-		Addr:         r.Address,
-		ReadTimeout:  r.Timeout.Duration,
-		WriteTimeout: r.Timeout.Duration,
-	})
+	rO, _ := redis.ParseURL(r.UrlAddress)
+	rO.ReadTimeout = r.Timeout.Duration
+	rO.WriteTimeout = r.Timeout.Duration
+
+	c := redis.NewClient(rO)
 	if _, err := c.Ping().Result(); err != nil {
 		return fmt.Errorf("failed to connect redis: %s", err)
 	}

@@ -36,7 +36,7 @@ type S7 struct {
 	NameOverride string
 }
 
-var defaultTimeout = internal.Duration{Duration: 15 * time.Second}
+var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
 func (s *S7) Name() string {
 	if s.NameOverride != "" {
@@ -87,6 +87,7 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 	defer func(s7 *S7) {
 		if e := recover(); e != nil {
 			s7.quality = deviceAgent.QualityDisconnect
+			s7.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
 		if s7.NameOverride != "" {

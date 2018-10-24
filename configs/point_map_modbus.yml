@@ -6,24 +6,28 @@
   label: running
   name: 1#开关开停状态
   tags: ["control", "ro", "rw", ]
+  point_type: 2
   option:
     1: 开启
     0: 断开
 1x0003:
   label: running
   name: 2#开关开停状态
+  point_type: 2
   option:
     1: 开启
     0: 断开
 1x0008:
   label: fault
   name: 1#开关故障
+  point_type: 2
   option:
     1: 故障
     0: 正常
 1x2004:
   label: fault
   name: 2#开关故障
+  point_type: 2
   extra:
     sub_: "abc"
     device: "002"
@@ -34,20 +38,25 @@
 4x0001:
   label: Ua
   name: 1#开关A相电压
+  point_type: 1
   parameter: 2.21234
 4x0002:
   label: Ua
   name: 2#开关A相电压
+  point_type: 1
   parameter: 0.707423
 4x0008:
   label: I0
   name: 1#开关零序电流
+  point_type: 1
   parameter: 1.732
 4x1126:
   label: I0
   name: 2#开关零序电流
+  point_type: 1
   parameter: 2.1
 4x1128:
   label: IA
   name: 2#开关A相电流
+  point_type: 1
   parameter: 2.1

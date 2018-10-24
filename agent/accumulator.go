@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	NErrors = selfstat.Register("agent", "gather_errors", map[string]string{})
+	NErrors           = selfstat.Register("agent", "error_count", map[string]string{})
+	MetricFieldsCount = selfstat.Register("agent", "field_count", nil)
 )
 
 type MetricMaker interface {
@@ -20,6 +21,7 @@ type MetricMaker interface {
 		fields map[string]interface{},
 		tags map[string]string,
 		quality deviceAgent.Quality,
+		mType deviceAgent.MetricType,
 		t time.Time,
 	) deviceAgent.Metric
 }
@@ -55,9 +57,10 @@ func (ac *accumulator) AddError(err error) {
 }
 
 func (ac *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, quality deviceAgent.Quality, t ...time.Time) {
-	if m := ac.maker.MakeMetric(measurement, fields, tags, quality, ac.getTime(t)); m != nil {
+	if m := ac.maker.MakeMetric(measurement, fields, tags, quality, deviceAgent.Untyped, ac.getTime(t)); m != nil {
 		ac.metrics <- m
 	}
+	MetricFieldsCount.Incr(int64(len(fields)))
 }
 
 func (ac *accumulator) SetPrecision(precision, interval time.Duration) {

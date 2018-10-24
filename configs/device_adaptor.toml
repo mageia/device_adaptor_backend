@@ -11,7 +11,8 @@ interval = "3s"
 address = ":9999"    # 默认端口9999
 
 [[outputs.redis]]
-channel_name = "output_test"
+url_address = "redis://localhost:6379/0"
+output_channel = "output_test"
 
 #[outputs.file]
 #files = ["stdout"]
@@ -48,14 +49,15 @@ channel_name = "output_test"
 #[[inputs.sensor_vibration]]
 
 
-#[inputs.s7]
-#interval = "1s"
-#address = "192.168.0.168"
-#rack = 0
-#slot = 1
-#point_map = "../configs/point_map_s7.yml"
-#name_override = "s7_abc"
+[inputs.s7]
+interval = "1s"
+address = "192.168.0.168"
+rack = 0
+slot = 1
+point_map = "../configs/point_map_s7.yml"
+name_override = "s7_abc"
 
 [[inputs.fake]]
-interval = "800ms"
-point_map = "../configs/point_map_modbus.yml"
+name_override = "fake_tengqing_opc"
+interval = "3s"
+point_map = "../configs/point_map_opc.yml"

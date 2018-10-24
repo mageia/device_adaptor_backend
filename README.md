@@ -15,8 +15,8 @@
 - fields:：数据字段
 - name：数据源标识
 - quality：数据质量
-  - 1：Good
-  - 2：Disconnect
+  - 0：Good
+  - 1：Disconnect
   - 。。。：待扩展
   - MaxUint8：Unknown
 - timestamp：ms时间戳
@@ -48,6 +48,7 @@ db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
   label: start				# <optional> 短名称
   name: 启动		   		   # <optional> 长名称
   unit: 单位				   # <optional> 单位字符串
+  point_type: 				# <optional> 点类型 0：模拟量，1：状态量, 默认为模拟量
   tags: ["test"]			# <optional> tag标记
   option:					# <optional> 状态量映射关系
     1: 启动
@@ -86,5 +87,5 @@ db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
 
 ## TODO:
 
-- [ ] 配置流程Server化
-- [ ] 配置更新后，程序Reload功能
+- [x] 配置流程Server化
+- [x] 配置更新后，程序Reload功能
