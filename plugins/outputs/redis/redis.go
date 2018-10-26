@@ -35,16 +35,13 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 			return err
 		}
 
-		if err := r.client.Set(metric.Name(), sV, 0).Err(); err != nil {
-			log.Println(err)
-			return err
+		if r.OutputChannel == "" {
+			r.OutputChannel = "output_test"
 		}
 
-		if r.OutputChannel != "" {
-			if err := r.client.Publish(r.OutputChannel, sV).Err(); err != nil {
-				log.Println(err)
-				return err
-			}
+		if err := r.client.Publish(r.OutputChannel, sV).Err(); err != nil {
+			log.Println(err)
+			return err
 		}
 	}
 

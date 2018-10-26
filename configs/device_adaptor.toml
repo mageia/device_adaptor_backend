@@ -7,12 +7,12 @@ test = "test"
 debug = true
 interval = "3s"
 
-[[controller.http]]
+[[controllers.http]]
 address = ":9999"    # 默认端口9999
 
 [[outputs.redis]]
-url_address = "redis://localhost:6379/0"
-output_channel = "output_test"
+#url_address = "redis://localhost:6379/0"
+#output_channel = "output_test"
 
 #[outputs.file]
 #files = ["stdout"]
@@ -59,5 +59,55 @@ name_override = "s7_abc"
 
 [[inputs.fake]]
 name_override = "fake_tengqing_opc"
-interval = "3s"
+interval = "2s"
 point_map = "../configs/point_map_opc.yml"
+
+[[inputs.fake]]
+name_override = "fake_tengqing_opc1"
+interval = "5s"
+point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc2"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc3"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc4"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc5"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc6"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc7"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc8"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc9"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"
+#
+#[[inputs.fake]]
+#name_override = "fake_tengqing_opc10"
+#interval = "200ms"
+#point_map = "../configs/point_map_opc.yml"

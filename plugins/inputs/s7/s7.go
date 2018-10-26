@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/robinson/gos7"
 	"log"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,20 +39,10 @@ type S7 struct {
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
-func (s *S7) Name() string {
-	if s.NameOverride != "" {
-		return s.NameOverride
-	}
-	return s.originName
-}
-
-func (s *S7) OriginName() string {
-	return s.originName
-}
-
 func (s *S7) getParamList() map[string][3]int {
-	var areaNumber, startAddr, endAddr, endOffset int
+	var areaNumber, startAddr, endAddr int
 	var result = make(map[string][3]int)
+	var endOffset = 4
 
 	for areaType, o := range s.addrMap {
 		areaNumber, _ = strconv.Atoi(areaType[2:])
@@ -78,7 +69,6 @@ func (s *S7) getParamList() map[string][3]int {
 
 	return result
 }
-
 func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
@@ -86,6 +76,7 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 
 	defer func(s7 *S7) {
 		if e := recover(); e != nil {
+			debug.PrintStack()
 			s7.quality = deviceAgent.QualityDisconnect
 			s7.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
@@ -101,8 +92,12 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 	for k, v := range paramMap {
 		switch k[:2] {
 		case "db":
-			s.buf[k] = make([]byte, v[2])
-			s.client.AGReadDB(v[0], v[1], v[2], s.buf[k])
+			if s.buf[k] == nil || len(s.buf[k]) != v[2] {
+				s.buf[k] = make([]byte, v[2])
+			}
+			if e := s.client.AGReadDB(v[0], v[1], v[2], s.buf[k]); e != nil {
+				return e
+			}
 		}
 	}
 
@@ -131,6 +126,15 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 	return nil
 }
 
+func (s *S7) Name() string {
+	if s.NameOverride != "" {
+		return s.NameOverride
+	}
+	return s.originName
+}
+func (s *S7) OriginName() string {
+	return s.originName
+}
 func (s *S7) Gather(acc deviceAgent.Accumulator) error {
 	if !s.connected {
 		if e := s.Start(); e != nil {
@@ -151,10 +155,9 @@ func (s *S7) Gather(acc deviceAgent.Accumulator) error {
 	wg.Wait()
 	return nil
 }
-
 func (s *S7) Start() error {
 	handler := gos7.NewTCPClientHandler(s.Address, s.Rack, s.Slot)
-	handler.IdleTimeout = defaultTimeout.Duration
+	handler.IdleTimeout = defaultTimeout.Duration * 100
 	handler.Timeout = defaultTimeout.Duration
 	//handler.Logger = log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
 	s._handler = handler
@@ -166,7 +169,6 @@ func (s *S7) Start() error {
 	s.connected = true
 	return nil
 }
-
 func (s *S7) Stop() error {
 	if s.connected {
 		s._handler.Close()
@@ -174,7 +176,6 @@ func (s *S7) Stop() error {
 	}
 	return nil
 }
-
 func (s *S7) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	s.pointMap = pointMap
 	for a := range s.pointMap {
@@ -197,7 +198,6 @@ func (s *S7) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 		s.addrMap[addrSplit[0]][addrSplit[1][:3]] = append(s.addrMap[addrSplit[0]][addrSplit[1][:3]], [2]int{offset, bit})
 	}
 }
-
 func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range s.pointMap {
@@ -206,11 +206,13 @@ func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
 	acc.AddFields("s7_point_map", pointMapFields, nil, s.SelfCheck())
 	return nil
 }
-
 func (s *S7) SelfCheck() deviceAgent.Quality {
 	return s.quality
 }
-
+func (s *S7) SetValue(map[string]interface{}) error {
+	time.Sleep(2 * time.Second)
+	return nil
+}
 func (s *S7) UpdatePointMap(kv map[string]interface{}) error {
 	var errors []error
 

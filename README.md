@@ -15,8 +15,8 @@
 - fields:：数据字段
 - name：数据源标识
 - quality：数据质量
-  - 0：Good
-  - 1：Disconnect
+  - 1：Good
+  - 2：Disconnect
   - 。。。：待扩展
   - MaxUint8：Unknown
 - timestamp：ms时间戳
@@ -61,10 +61,6 @@ db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
 
 
 
-# Structure
-
-![](structure.png)
-
 # Plugins
 
 - Controller
@@ -89,3 +85,9 @@ db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
 
 - [x] 配置流程Server化
 - [x] 配置更新后，程序Reload功能
+- [x] 输出数据格式
+- [ ] 前端原型
+- [ ] 配置管理页面开发
+- [ ] 网关自检逻辑开发
+- [ ] Metric统计逻辑开发
+- [ ] 数据基础分析逻辑开发

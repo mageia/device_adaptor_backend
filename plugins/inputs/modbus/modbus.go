@@ -157,7 +157,7 @@ func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 func (m *Modbus) connect() error {
 	_handler := modbus.NewTCPClientHandler(m.Address)
 	_handler.SlaveId = uint8(m.SlaveId)
-	_handler.IdleTimeout = defaultTimeout.Duration
+	_handler.IdleTimeout = defaultTimeout.Duration * 100
 	_handler.Timeout = defaultTimeout.Duration
 	m._handler = _handler
 

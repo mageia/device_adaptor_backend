@@ -22,6 +22,8 @@ type Agent struct {
 	Cancel       context.CancelFunc
 	ConfigServer *http.Server
 	Config       *configs.Config
+	Version      string
+	Name         string
 }
 
 func NewAgent() (*Agent, error) {
@@ -33,9 +35,11 @@ func NewAgent() (*Agent, error) {
 	}
 
 	a := &Agent{
-		Ctx:    ctx,
-		Cancel: cancel,
-		Config: c,
+		Name:    "deviceAdaptor",
+		Version: "v1.0.0",
+		Ctx:     ctx,
+		Cancel:  cancel,
+		Config:  c,
 		ConfigServer: &http.Server{
 			Addr:    ":8080",
 			Handler: InitRouter(c.Global.Debug),
@@ -187,7 +191,7 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 					a.flush()
 					<-semaphore
 				default:
-					log.Println("W! skipping a scheduled flush")
+					log.Println("I! skipping a scheduled flush")
 				}
 			}()
 		}
@@ -195,6 +199,7 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 
 	return nil
 }
+
 //
 //func (a *Agent) ResourceStat() {
 //	for range time.Tick(a.Config.Global.Interval.Duration) {
@@ -289,24 +294,27 @@ func (a *Agent) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		for range time.Tick(time.Second * 1) {
-			log.Println(models.GlobalMetricsGathered.Name(), models.GlobalMetricsGathered.FieldName(), models.GlobalMetricsGathered.Get())
-			log.Println(NErrors.Name(), NErrors.FieldName(), NErrors.Get())
-			log.Println(MetricFieldsCount.Name(), MetricFieldsCount.FieldName(), MetricFieldsCount.Get())
-
-			for _, i := range a.Config.Inputs {
-				log.Println(i.MetricsGathered.Name(), i.MetricsGathered.FieldName(), i.MetricsGathered.Get())
-			}
-		}
+		//log.Println(A.Config.Global)
+		//
+		//for range time.Tick(time.Second * 1) {
+		//	log.Println(models.GlobalMetricsGathered.Name(), models.GlobalMetricsGathered.FieldName(), models.GlobalMetricsGathered.Get())
+		//	log.Println(NErrors.Name(), NErrors.FieldName(), NErrors.Get())
+		//	log.Println(MetricFieldsCount.Name(), MetricFieldsCount.FieldName(), MetricFieldsCount.Get())
+		//
+		//	for _, i := range a.Config.Inputs {
+		//		log.Println(i.MetricsGathered.Name(), i.MetricsGathered.FieldName(), i.MetricsGathered.Get())
+		//	}
+		//}
 	}()
 
 	//resource self check
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		//a.ResourceStat()
-	}()
+	//wg.Add(1)
+	//go func() {
+	//	defer wg.Done()
+	//	//a.ResourceStat()
+	//}()
+
+	LoadConfig()
 
 	wg.Wait()
 	a.Close()

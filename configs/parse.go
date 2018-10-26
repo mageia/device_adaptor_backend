@@ -109,7 +109,7 @@ func (c *Config) LoadConfig(path string) error {
 		}
 		switch name {
 		case "agent", "global_tags", "tags":
-		case "controller":
+		case "controllers":
 			for pluginName, pluginVal := range subTable.Fields {
 				switch pluginSubTable := pluginVal.(type) {
 				case *ast.Table:
