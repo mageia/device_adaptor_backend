@@ -4,14 +4,12 @@ import (
 	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/spf13/viper"
 	"log"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type FullyConfigOld struct {
@@ -69,22 +67,67 @@ var controllerSample = map[string]map[string]interface{}{
 	},
 }
 
-func updateMap(target map[string]interface{}, keyChain string, value interface{}) {
-	t := target
+func isValidKeyChain(keyChain string) bool {
+	l := strings.Split(keyChain, ".")
+	if len(l) < 2 {
+		if len(l) == 1 && l[0] == "global_tags" {
+			return true
+		}
+		return false
+	}
+	l1 := l[1]
+	s := strings.Index(l1, "[")
+	e := strings.Index(l1, "]")
+	if s*e < 0 {
+		return false
+	}
+	if s > 0 && e > s {
+		l1 = l[1][:s]
+	}
+
+	switch l[0] {
+	case "agent", "global_tags":
+		return true
+	case "controllers":
+		if _, ok := controllers.Controllers[l1]; ok {
+			return true
+		}
+	case "inputs":
+		if _, ok := inputs.Inputs[l1]; ok {
+			return true
+		}
+	case "outputs":
+		if _, ok := outputs.Outputs[l1]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func updateMap(t map[string]interface{}, keyChain string, value interface{}) bool {
+	if !isValidKeyChain(keyChain) {
+		return false
+	}
+
 	l := strings.Split(keyChain, ".")
 	for i, k := range l {
 		s := strings.Index(k, "[")
 		e := strings.Index(k, "]")
+
 		index := 0
 		if s > 0 && e > s {
-			index, _ = strconv.Atoi(k[s+1 : e])
+			ii, e := strconv.Atoi(k[s+1 : e])
+			if e != nil || i < 0 {
+				return false
+			}
+			index = ii
 			k = k[:s]
 		}
 
 		if _, ok := t[k]; !ok {
 			if i == len(l)-1 {
 				t[k] = value
-				break
+				return true
 			}
 			t[k] = make(map[string]interface{})
 		}
@@ -93,6 +136,9 @@ func updateMap(target map[string]interface{}, keyChain string, value interface{}
 		case map[string]interface{}:
 			t = tV
 		case []interface{}:
+			if index < 0 {
+				return false
+			}
 			if index == len(tV) {
 				tV = append(tV, map[string]interface{}{})
 				t[k] = tV
@@ -102,26 +148,134 @@ func updateMap(target map[string]interface{}, keyChain string, value interface{}
 					t = tVV
 				}
 			}
+			if index > len(tV) {
+				return false
+			}
 		default:
 			t[k] = value
-			break
+			return true
 		}
 	}
+	return true
 }
 
-func Update(c *gin.Context) {
-	//viper.SetConfigName("device_adaptor")
-	////viper.AddConfigPath("../configs")
-	//if e := viper.ReadInConfig(); e != nil {
-	//	c.JSON(400, "viper.ReadInConfig Error")
-	//	return
-	//}
-	viper.Set("global_tags.test", time.Now().String())
-	viper.WriteConfig()
-
-	c.JSON(200, viper.GetString("global_tags.test"))
-	ReloadSignal <- struct{}{}
+func checkIndex(k string) (string, int, bool) {
+	index := -1
+	s := strings.Index(k, "[")
+	e := strings.Index(k, "]")
+	if s*e < 0 {
+		return k, index, false
+	}
+	if s > 0 && e > s {
+		ii, e := strconv.Atoi(k[s+1 : e])
+		if e != nil || ii < 0 {
+			return k, index, false
+		}
+		return k[:s], ii, true
+	}
+	return k, index, true
 }
+
+func updateMapNew(t map[string]interface{}, keyChain string, value interface{}) bool {
+	if !isValidKeyChain(keyChain) {
+		return false
+	}
+
+	l := strings.Split(keyChain, ".")
+	for i, k := range l {
+		k, index, ok := checkIndex(k)
+		if !ok {
+			return false
+		}
+
+		switch tV := t[k].(type) {
+		case map[string]interface{}:
+			if i == len(l)-1 { //End, 循环的出口1
+				switch value.(type) {
+				case nil:
+					delete(t, k)
+				default:
+					t[k] = value
+				}
+				return true
+			}
+			t = tV //next
+		case []interface{}:
+			log.Println(index, len(tV))
+
+			if index == len(tV) && i == len(l)-1 { //len(tV) == index: 扩展一个
+				switch value.(type) {
+				case nil:
+				default:
+					t[k] = append(t[k].([]interface{}), value)
+				}
+				return true
+			} else if len(tV) > index && index >= 0 { //remove one
+				if i == len(l)-1 {
+					switch value.(type) {
+					case []interface{}:
+						return false
+					case nil:
+						t[k] = append(tV[:index], tV[index+1:]...)
+					default:
+						t[k].([]interface{})[index] = value
+					}
+					return true
+				} else {
+					switch tVV := tV[index].(type) {
+					case map[string]interface{}:
+						t = tVV
+					default: //TODO: 数组嵌套层数受限
+						tV[index] = make(map[string]interface{})
+						t = tV[index].(map[string]interface{})
+					}
+				}
+			} else if index == -1 && (len(tV) == 0 || i == len(l)-1) {
+				switch value.(type) {
+				case nil:
+				default:
+					t[k] = value
+				}
+				return true
+			} else {
+				return false
+			}
+		case string, bool, int:
+			switch value.(type) {
+			case nil:
+				delete(t, k)
+			default:
+				t[k] = value
+			}
+			return true
+		default:
+			if index < 0 {
+				switch value.(type) {
+				case nil:
+					delete(t, k)
+				default:
+					t[k] = value
+				}
+				return true
+			} else if index == 0 {
+				switch value.(type) {
+				case nil:
+					delete(t, k)
+				default:
+					t[k] = []interface{}{value}
+				}
+				return true
+			}
+		}
+	}
+
+	return true
+}
+
+func removeMapByKey(t map[string]interface{}, keyChain string) bool {
+	return false
+}
+
 func toMapSlice(v interface{}) []map[string]interface{} {
 	switch vV := v.(type) {
 	case map[string]interface{}:
@@ -231,51 +385,31 @@ func getInitData(c *gin.Context) {
 	c.JSON(200, r)
 }
 
-func createPlugin(c *gin.Context) {
-	switch c.Param("pluginName") {
-	case "inputs":
-		c.JSON(200, "create input")
-	case "outputs":
-		c.JSON(200, "create output")
-	case "controllers":
-		c.JSON(200, "create controller")
-	default:
-		c.Error(errors.New("unknown plugin name"))
-	}
-}
 func removePlugin(c *gin.Context) {
-
-}
-func updatePlugin(c *gin.Context) {
-	pluginId := c.Param("id")
-	if pluginId == "" {
-		c.Error(errors.New("invalid plugin type"))
+	var body []string
+	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+		c.Error(err)
 		return
 	}
-	//var body struct {
-	//	Key   string      `json:"key" binding:"required"`
-	//	Value interface{} `json:"value" binding:"required"`
-	//}
+
+	for _, k := range body {
+		removeMapByKey(currentConfig, k)
+	}
+	flushFullyConfig()
+	c.JSON(200, currentConfig)
+}
+func updatePlugin(c *gin.Context) {
 	var body map[string]interface{}
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		c.Error(err)
 		return
 	}
 
-	switch c.Param("pluginName") {
-	case "input":
-		for k, v := range body {
-			updateMap(currentConfig, k, v)
-		}
-		flushFullyConfig()
-		c.JSON(200, currentConfig)
-	case "output":
-		c.JSON(200, "create output")
-	case "controller":
-		c.JSON(200, "create controller")
-	default:
-		c.Error(errors.New("unknown plugin name"))
+	for k, v := range body {
+		updateMapNew(currentConfig, k, v)
 	}
+	flushFullyConfig()
+	c.JSON(200, currentConfig)
 }
 
 func InitRouter(debug bool) *gin.Engine {
@@ -293,12 +427,9 @@ func InitRouter(debug bool) *gin.Engine {
 	router.Static("/_nuxt", "../agent/dist/_nuxt")
 	router.Static("/image", "../agent/dist/image")
 
-	router.GET("/initData", getInitData)
-
-	plugin := router.Group("/plugin/:pluginName")
-	plugin.POST("/", createPlugin)
-	plugin.PUT("/:id", updatePlugin)
-	plugin.DELETE("/:id", removePlugin)
+	router.GET("/getInitData", getInitData)
+	router.POST("/updatePlugin", updatePlugin)
+	router.POST("/removePlugin", removePlugin)
 
 	if debug {
 		gin.SetMode(gin.DebugMode)
