@@ -20,6 +20,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/onsi/gomega v1.4.2 // indirect
+	github.com/pelletier/go-toml v1.2.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/robinson/gos7 v0.0.0-20181006145426-66ae787b1f82
 	github.com/spf13/pflag v1.0.3 // indirect
@@ -27,6 +28,9 @@ require (
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
+	github.com/tidwall/gjson v1.1.3
+	github.com/tidwall/match v0.0.0-20171002075945-1731857f09b1 // indirect
+	github.com/tidwall/sjson v1.0.2
 	github.com/ugorji/go/codec v0.0.0-20181022190402-e5e69e061d4f // indirect
 	golang.org/x/net v0.0.0-20181017193950-04a2e542c03f // indirect
 	golang.org/x/sys v0.0.0-20181022134430-8a28ead16f52 // indirect

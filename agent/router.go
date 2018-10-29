@@ -1,15 +1,16 @@
 package agent
 
 import (
-	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/spf13/viper"
+	"github.com/pelletier/go-toml"
+	"github.com/tidwall/sjson"
+	"io/ioutil"
 	"log"
-	"strconv"
-	"strings"
+	"os"
 )
 
 type FullyConfigOld struct {
@@ -19,9 +20,10 @@ type FullyConfigOld struct {
 	Outputs map[string][]map[string]interface{} `json:"outputs"`
 }
 
+var tomlConfigPath = "../configs/default.toml"
+var jsonConfigPath = "../configs/device_adaptor.json"
 var ReloadSignal = make(chan struct{})
 var fullyConfig FullyConfigOld
-var currentConfig = make(map[string]interface{})
 var agentSample = map[string]interface{}{
 	"debug":               false,
 	"interval":            "300s",
@@ -33,7 +35,6 @@ var agentSample = map[string]interface{}{
 }
 var inputSample = map[string]map[string]interface{}{
 	"_base": {
-		"_base_test":    "11111111111111",
 		"interval":      "3s",
 		"point_map":     "",
 		"name_override": "",
@@ -67,233 +68,40 @@ var controllerSample = map[string]map[string]interface{}{
 	},
 }
 
-func isValidKeyChain(keyChain string) bool {
-	l := strings.Split(keyChain, ".")
-	if len(l) < 2 {
-		if len(l) == 1 && l[0] == "global_tags" {
-			return true
+func (f FullyConfigOld) setOrDeleteJson(keyChain string, value interface{}) (e error) {
+	configB, _ := json.Marshal(f)
+	defer func() {
+		json.Unmarshal(configB, &f)
+		ioutil.WriteFile(jsonConfigPath, configB, 0644)
+	}()
+
+	if value == nil {
+		log.Println(keyChain)
+
+		if configB, e = sjson.DeleteBytes(configB, keyChain); e != nil {
+			log.Println(e)
+			return e
 		}
-		return false
-	}
-	l1 := l[1]
-	s := strings.Index(l1, "[")
-	e := strings.Index(l1, "]")
-	if s*e < 0 {
-		return false
-	}
-	if s > 0 && e > s {
-		l1 = l[1][:s]
+	} else if configB, e = sjson.SetBytes(configB, keyChain, value); e != nil {
+		log.Println(e)
+		return
 	}
 
-	switch l[0] {
-	case "agent", "global_tags":
-		return true
-	case "controllers":
-		if _, ok := controllers.Controllers[l1]; ok {
-			return true
-		}
-	case "inputs":
-		if _, ok := inputs.Inputs[l1]; ok {
-			return true
-		}
-	case "outputs":
-		if _, ok := outputs.Outputs[l1]; ok {
-			return true
-		}
-	}
-	return false
+	return e
 }
 
-func updateMap(t map[string]interface{}, keyChain string, value interface{}) bool {
-	if !isValidKeyChain(keyChain) {
-		return false
-	}
-
-	l := strings.Split(keyChain, ".")
-	for i, k := range l {
-		s := strings.Index(k, "[")
-		e := strings.Index(k, "]")
-
-		index := 0
-		if s > 0 && e > s {
-			ii, e := strconv.Atoi(k[s+1 : e])
-			if e != nil || i < 0 {
-				return false
-			}
-			index = ii
-			k = k[:s]
-		}
-
-		if _, ok := t[k]; !ok {
-			if i == len(l)-1 {
-				t[k] = value
-				return true
-			}
-			t[k] = make(map[string]interface{})
-		}
-
-		switch tV := t[k].(type) {
-		case map[string]interface{}:
-			t = tV
-		case []interface{}:
-			if index < 0 {
-				return false
-			}
-			if index == len(tV) {
-				tV = append(tV, map[string]interface{}{})
-				t[k] = tV
-			}
-			if index < len(tV) {
-				if tVV, ok := tV[index].(map[string]interface{}); ok {
-					t = tVV
-				}
-			}
-			if index > len(tV) {
-				return false
-			}
-		default:
-			t[k] = value
+func IsExists(p string) bool {
+	_, err := os.Stat(p)
+	if err != nil {
+		if os.IsExist(err) {
 			return true
 		}
+		return false
 	}
 	return true
 }
 
-func checkIndex(k string) (string, int, bool) {
-	index := -1
-	s := strings.Index(k, "[")
-	e := strings.Index(k, "]")
-	if s*e < 0 {
-		return k, index, false
-	}
-	if s > 0 && e > s {
-		ii, e := strconv.Atoi(k[s+1 : e])
-		if e != nil || ii < 0 {
-			return k, index, false
-		}
-		return k[:s], ii, true
-	}
-	return k, index, true
-}
-
-func updateMapNew(t map[string]interface{}, keyChain string, value interface{}) bool {
-	if !isValidKeyChain(keyChain) {
-		return false
-	}
-
-	l := strings.Split(keyChain, ".")
-	for i, k := range l {
-		k, index, ok := checkIndex(k)
-		if !ok {
-			return false
-		}
-
-		switch tV := t[k].(type) {
-		case map[string]interface{}:
-			if i == len(l)-1 { //End, 循环的出口1
-				switch value.(type) {
-				case nil:
-					delete(t, k)
-				default:
-					t[k] = value
-				}
-				return true
-			}
-			t = tV //next
-		case []interface{}:
-			log.Println(index, len(tV))
-
-			if index == len(tV) && i == len(l)-1 { //len(tV) == index: 扩展一个
-				switch value.(type) {
-				case nil:
-				default:
-					t[k] = append(t[k].([]interface{}), value)
-				}
-				return true
-			} else if len(tV) > index && index >= 0 { //remove one
-				if i == len(l)-1 {
-					switch value.(type) {
-					case []interface{}:
-						return false
-					case nil:
-						t[k] = append(tV[:index], tV[index+1:]...)
-					default:
-						t[k].([]interface{})[index] = value
-					}
-					return true
-				} else {
-					switch tVV := tV[index].(type) {
-					case map[string]interface{}:
-						t = tVV
-					default: //TODO: 数组嵌套层数受限
-						tV[index] = make(map[string]interface{})
-						t = tV[index].(map[string]interface{})
-					}
-				}
-			} else if index == -1 && (len(tV) == 0 || i == len(l)-1) {
-				switch value.(type) {
-				case nil:
-				default:
-					t[k] = value
-				}
-				return true
-			} else {
-				return false
-			}
-		case string, bool, int:
-			switch value.(type) {
-			case nil:
-				delete(t, k)
-			default:
-				t[k] = value
-			}
-			return true
-		default:
-			if index < 0 {
-				switch value.(type) {
-				case nil:
-					delete(t, k)
-				default:
-					t[k] = value
-				}
-				return true
-			} else if index == 0 {
-				switch value.(type) {
-				case nil:
-					delete(t, k)
-				default:
-					t[k] = []interface{}{value}
-				}
-				return true
-			}
-		}
-	}
-
-	return true
-}
-
-func removeMapByKey(t map[string]interface{}, keyChain string) bool {
-	return false
-}
-
-func toMapSlice(v interface{}) []map[string]interface{} {
-	switch vV := v.(type) {
-	case map[string]interface{}:
-		return []map[string]interface{}{vV}
-	case []interface{}:
-		r := make([]map[string]interface{}, 0)
-		for _, vVItem := range vV {
-			switch vV1 := vVItem.(type) {
-			case map[string]interface{}:
-				r = append(r, vV1)
-			}
-		}
-		return r
-	}
-	return []map[string]interface{}{}
-}
-
-func flushFullyConfig() FullyConfigOld {
+func initLoadConfig() FullyConfigOld {
 	var _fullyConfig = FullyConfigOld{
 		Agent: make(map[string]interface{}, 0),
 		Inputs: make(map[string][]map[string]interface{}, 0),
@@ -301,69 +109,91 @@ func flushFullyConfig() FullyConfigOld {
 		Controllers: make(map[string][]map[string]interface{}, 0),
 	}
 
-	configItem := make(map[string]interface{})
-	for ki, vi := range agentSample {
-		configItem[ki] = vi
+	if !IsExists(tomlConfigPath) {
+		return _fullyConfig
 	}
-	for k, v := range viper.GetStringMap("agent") {
-		configItem[k] = v
-	}
-	_fullyConfig.Agent = configItem
 
-	for k := range inputs.Inputs {
-		configs := make([]map[string]interface{}, 0)
-		for _, item := range toMapSlice(viper.GetStringMap("inputs")[k]) {
-			configItem := make(map[string]interface{})
-			for ki, vi := range inputSample[k] {
-				configItem[ki] = vi
-			}
-			for ki, vi := range inputSample["_base"] {
-				configItem[ki] = vi
-			}
-			for ki, vi := range item {
-				configItem[ki] = vi
-			}
-			configs = append(configs, configItem)
-		}
-		_fullyConfig.Inputs[k] = configs
+	currentConfigTree, _ := toml.LoadFile(tomlConfigPath)
+
+	for ki, vi := range agentSample {
+		_fullyConfig.Agent[ki] = vi
 	}
-	for k := range outputs.Outputs {
-		configs := make([]map[string]interface{}, 0)
-		for _, item := range toMapSlice(viper.GetStringMap("outputs")[k]) {
-			configItem := make(map[string]interface{})
-			for ki, vi := range outputSample[k] {
-				configItem[ki] = vi
+
+	for k, v := range currentConfigTree.ToMap() {
+		if k == "agent" {
+			for kk, vv := range v.(map[string]interface{}) {
+				_fullyConfig.Agent[kk] = vv
 			}
-			for ki, vi := range outputSample["_base"] {
-				configItem[ki] = vi
-			}
-			for ki, vi := range item {
-				configItem[ki] = vi
-			}
-			configs = append(configs, configItem)
+			continue
 		}
-		_fullyConfig.Outputs[k] = configs
-	}
-	for k := range controllers.Controllers {
-		configs := make([]map[string]interface{}, 0)
-		for _, item := range toMapSlice(viper.GetStringMap("controllers")[k]) {
-			configItem := make(map[string]interface{})
-			for ki, vi := range controllerSample[k] {
-				configItem[ki] = vi
+
+		switch vV := v.(type) {
+		case []interface{}:
+			for _, vvV := range vV {
+				log.Println(k, vvV)
 			}
-			for ki, vi := range controllerSample["_base"] {
-				configItem[ki] = vi
+		case map[string]interface{}:
+			for kk, vv := range vV {
+				switch vv.(type) {
+				case []interface{}:
+					for _, vvV := range vv.([]interface{}) {
+						switch k {
+						case "inputs":
+							item := vvV.(map[string]interface{})
+							for ki, vi := range inputSample["_base"] {
+								item[ki] = vi
+							}
+							for ki, vi := range inputSample[kk] {
+								item[ki] = vi
+							}
+							_fullyConfig.Inputs[kk] = append(_fullyConfig.Inputs[kk], item)
+						case "outputs":
+							item := vvV.(map[string]interface{})
+							for ki, vi := range outputSample["_base"] {
+								item[ki] = vi
+							}
+							for ki, vi := range outputSample[kk] {
+								item[ki] = vi
+							}
+							_fullyConfig.Outputs[kk] = append(_fullyConfig.Outputs[kk], item)
+						case "controllers":
+							item := vvV.(map[string]interface{})
+							for ki, vi := range controllerSample["_base"] {
+								item[ki] = vi
+							}
+							for ki, vi := range controllerSample[kk] {
+								item[ki] = vi
+							}
+							_fullyConfig.Controllers[kk] = append(_fullyConfig.Controllers[kk], item)
+						}
+					}
+				}
 			}
-			for ki, vi := range item {
-				configItem[ki] = vi
-			}
-			configs = append(configs, configItem)
 		}
-		_fullyConfig.Controllers[k] = configs
 	}
 
 	fullyConfig = _fullyConfig
+
+	configB, _ := json.Marshal(_fullyConfig)
+	ioutil.WriteFile(jsonConfigPath, configB, 0644)
 	return _fullyConfig
+}
+
+func LoadConfig() {
+	_, err := os.Stat(jsonConfigPath)
+	if err == nil || (err != nil && os.IsExist(err)) {
+		c, e := ioutil.ReadFile(jsonConfigPath)
+		if e != nil {
+			log.Println(e)
+			return
+		}
+		if e := json.Unmarshal(c, &fullyConfig); e != nil {
+			log.Println(e)
+			return
+		}
+	} else {
+		initLoadConfig()
+	}
 }
 
 func getInitData(c *gin.Context) {
@@ -385,19 +215,6 @@ func getInitData(c *gin.Context) {
 	c.JSON(200, r)
 }
 
-func removePlugin(c *gin.Context) {
-	var body []string
-	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-		c.Error(err)
-		return
-	}
-
-	for _, k := range body {
-		removeMapByKey(currentConfig, k)
-	}
-	flushFullyConfig()
-	c.JSON(200, currentConfig)
-}
 func updatePlugin(c *gin.Context) {
 	var body map[string]interface{}
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
@@ -406,10 +223,9 @@ func updatePlugin(c *gin.Context) {
 	}
 
 	for k, v := range body {
-		updateMapNew(currentConfig, k, v)
+		fullyConfig.setOrDeleteJson(k, v)
 	}
-	flushFullyConfig()
-	c.JSON(200, currentConfig)
+	c.JSON(200, fullyConfig)
 }
 
 func InitRouter(debug bool) *gin.Engine {
@@ -429,20 +245,9 @@ func InitRouter(debug bool) *gin.Engine {
 
 	router.GET("/getInitData", getInitData)
 	router.POST("/updatePlugin", updatePlugin)
-	router.POST("/removePlugin", removePlugin)
 
 	if debug {
 		gin.SetMode(gin.DebugMode)
 	}
 	return router
-}
-
-func LoadConfig() {
-	viper.SetConfigName("device_adaptor")
-	viper.AddConfigPath("../configs")
-	if e := viper.ReadInConfig(); e != nil {
-		log.Fatalln("viper read config failed")
-	}
-	fullyConfig = flushFullyConfig()
-	currentConfig = viper.AllSettings()
 }

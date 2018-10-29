@@ -7,7 +7,7 @@ test = "test"
 debug = true
 interval = "3s"
 
-[[controller.http]]
+[[controllers.http]]
 address = ":9999"
 
 [[outputs.redis]]
