@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -240,7 +241,8 @@ NEXT:
 		switch addrSplit[0] {
 		case "4":
 			if v, ok := value.(float64); ok {
-				_, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
+				log.Println(readAddr, v)
+				_, e := m.client.WriteSingleRegister(uint16(readAddr)-1, uint16(v))
 				if e != nil {
 					errors = append(errors, e)
 					continue NEXT

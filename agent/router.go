@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/pelletier/go-toml"
+	"github.com/spf13/viper"
 	"github.com/tidwall/sjson"
 	"io/ioutil"
 	"log"
@@ -22,16 +23,17 @@ type FullyConfigOld struct {
 
 var tomlConfigPath = "../configs/default.toml"
 var jsonConfigPath = "../configs/device_adaptor.json"
+var programConfigPath = "../configs/device_adaptor.toml"
 var ReloadSignal = make(chan struct{})
 var fullyConfig FullyConfigOld
 var agentSample = map[string]interface{}{
-	"debug":               false,
-	"interval":            "300s",
-	"flush_interval":      "10s",
-	"collection_jitter":   "10ms",
-	"flush_jitter":        "10ms",
-	"metric_batch_size":   0,
-	"metric_buffer_limit": 0,
+	"debug":             false,
+	"interval":          "300s",
+	"flush_interval":    "10s",
+	"collection_jitter": "10ms",
+	"flush_jitter":      "10ms",
+	//"metric_batch_size":   0,
+	//"metric_buffer_limit": 0,
 }
 var inputSample = map[string]map[string]interface{}{
 	"_base": {
@@ -73,6 +75,7 @@ func (f FullyConfigOld) setOrDeleteJson(keyChain string, value interface{}) (e e
 	defer func() {
 		json.Unmarshal(configB, &f)
 		ioutil.WriteFile(jsonConfigPath, configB, 0644)
+		jsonToToml()
 	}()
 
 	if value == nil {
@@ -179,9 +182,24 @@ func initLoadConfig() FullyConfigOld {
 	return _fullyConfig
 }
 
+func jsonToToml() {
+	viper.SetConfigFile(jsonConfigPath)
+	viper.ReadInConfig()
+
+	viper.SetConfigFile(programConfigPath)
+	viper.SetConfigType("toml")
+	if e := viper.WriteConfig(); e != nil {
+		log.Println(e)
+	}
+	viper.Reset()
+}
+
 func LoadConfig() {
-	_, err := os.Stat(jsonConfigPath)
-	if err == nil || (err != nil && os.IsExist(err)) {
+	defer jsonToToml()
+
+	if !IsExists(jsonConfigPath) {
+		initLoadConfig()
+	} else {
 		c, e := ioutil.ReadFile(jsonConfigPath)
 		if e != nil {
 			log.Println(e)
@@ -191,8 +209,6 @@ func LoadConfig() {
 			log.Println(e)
 			return
 		}
-	} else {
-		initLoadConfig()
 	}
 }
 
@@ -225,6 +241,7 @@ func updatePlugin(c *gin.Context) {
 	for k, v := range body {
 		fullyConfig.setOrDeleteJson(k, v)
 	}
+	ReloadSignal <- struct{}{}
 	c.JSON(200, fullyConfig)
 }
 

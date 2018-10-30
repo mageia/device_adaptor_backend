@@ -1,0 +1,3 @@
+[submodule "config_frontend"]
+	path = config_frontend
+	url = git@git.leaniot.cn:project/mos/data/config_frontend.git

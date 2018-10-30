@@ -42,14 +42,11 @@ func NewConfig() *Config {
 }
 
 type GlobalConfig struct {
-	Debug bool
-
-	Interval      internal.Duration
-	FlushInterval internal.Duration
-
-	CollectionJitter internal.Duration
-	FlushJitter      internal.Duration
-
+	Debug             bool
+	Interval          internal.Duration
+	FlushInterval     internal.Duration
+	CollectionJitter  internal.Duration
+	FlushJitter       internal.Duration
 	MetricBatchSize   int
 	MetricBufferLimit int
 }

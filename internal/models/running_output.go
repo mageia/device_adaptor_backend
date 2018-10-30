@@ -5,6 +5,7 @@ import (
 	"deviceAdaptor/internal/buffer"
 	"log"
 	"sync"
+	"time"
 )
 
 type RunningOutput struct {
@@ -66,11 +67,11 @@ func (ro *RunningOutput) Write(metrics []deviceAgent.Metric) error {
 
 	ro.writeMutex.Lock()
 	defer ro.writeMutex.Unlock()
-	//start := time.Now()
+	start := time.Now()
 	err := ro.Output.Write(metrics)
-	//elapsed := time.Since(start)
+	elapsed := time.Since(start)
 	if err == nil {
-		//log.Printf("D! Output [%s] wrote batch of %d metrics in %s\n", ro.Name, len(metrics), elapsed)
+		log.Printf("D! Output [%s] wrote batch of %d metrics in %s\n", ro.Name, len(metrics), elapsed)
 	}
 	return nil
 }

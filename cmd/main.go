@@ -6,12 +6,19 @@ import (
 	_ "deviceAdaptor/plugins/controllers/all"
 	_ "deviceAdaptor/plugins/inputs/all"
 	_ "deviceAdaptor/plugins/outputs/all"
+	"log"
 )
 
 func main() {
 
 	go func() {
-		agent.A, _ = agent.NewAgent()
+		var e error
+		agent.A, e = agent.NewAgent()
+		if e != nil {
+			log.Println(e)
+			return
+		}
+
 		logger.SetupLogging(agent.A.Config.Global.Debug, "")
 
 		agent.A.Run()

@@ -1,113 +1,36 @@
-#title = "Deivce Adaptor Configuration"
-
-[global_tags]
-test = "test"
 
 [agent]
-debug = true
-interval = "3s"
+  collection_jitter = "10ms"
+  debug = true
+  flush_interval = "10s"
+  flush_jitter = "10ms"
+  interval = "3s"
 
-[[controllers.http]]
-address = ":9999"    # 默认端口9999
+[controllers]
 
-[[outputs.redis]]
-#url_address = "redis://localhost:6379/0"
-#output_channel = "output_test"
+  [[controllers.http]]
+    address = ":9999"
 
-#[outputs.file]
-#files = ["stdout"]
-#data_format = "json"
+[inputs]
 
-#[[inputs.modbus]]
-#name_override = "abc"
-#field_prefix = "abc_"
-#field_suffix = ""
-#interval = "1s"
-#address = "10.211.55.4:5021"
-#slave_id = 1
-#point_map = "../configs/point_map_modbus.yml"
+  [[inputs.fake]]
+    interval = "300ms"
+    name_override = "fake_tengqing_opc"
+    point_map = "../configs/point_map_opc.yml"
 
+  [[inputs.fake]]
+    interval = "20s"
+    name_override = "fake_tengqing_opc1"
+    point_map = "../configs/point_map_opc.yml"
 
-#[[inputs.modbus]]
-#interval = "1s"
-#
-#name_override = "abc____________"
-##field_prefix = "fuck_you"
-##field_suffix = "_333"
-#address = "10.211.55.4:502"
-#slave_id = 1
-#point_map = "../configs/point_map_modbus.yml"
+  [[inputs.modbus]]
+    address = "10.211.55.4:502"
+    interval = "3s"
+    point_map = "../configs/point_map_modbus.yml"
 
+[outputs]
 
-#[[inputs.ftp]]
-#address = "localhost"
-#username = "leaniot"
-#password = "leaniot"
-#dev_path = "/SubFile/KJ95N/dev.txt"
-#data_path = "/SubFile/KJ95N/rtdata.txt"
-
-#[[inputs.sensor_vibration]]
-
-
-#[inputs.s7]
-#interval = "1s"
-#address = "192.168.0.168"
-#rack = 0
-#slot = 1
-#point_map = "../configs/point_map_s7.yml"
-#name_override = "s7_abc"
-
-[[inputs.fake]]
-name_override = "fake_tengqing_opc"
-interval = "2s"
-point_map = "../configs/point_map_opc.yml"
-
-[[inputs.fake]]
-name_override = "fake_tengqing_opc1"
-interval = "5s"
-point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc2"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc3"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc4"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc5"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc6"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc7"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc8"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc9"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
-#
-#[[inputs.fake]]
-#name_override = "fake_tengqing_opc10"
-#interval = "200ms"
-#point_map = "../configs/point_map_opc.yml"
+  [[outputs.redis]]
+    data_format = "json"
+    output_channel = "output_test"
+    url_address = "redis://localhost:6379/0"

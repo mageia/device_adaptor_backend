@@ -52,7 +52,6 @@ func (a *Agent) Reload() {
 	A.Cancel()
 	go func() {
 		A, _ = NewAgent()
-		log.Println(A.Config.Tags)
 		A.Run()
 	}()
 }

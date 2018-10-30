@@ -148,7 +148,7 @@ func (h *HTTP) setPointValueHandler(ctx *gin.Context) {
 				cmdId: uuid.New().String(),
 			}
 			h.chanCmd <- c
-			ctx.JSON(200, gin.H{"cmdId": c.cmdId})
+			ctx.JSON(200, gin.H{"cmd_id": c.cmdId})
 			return
 		}
 	}

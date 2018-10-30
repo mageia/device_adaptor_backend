@@ -5,7 +5,7 @@ require (
 	git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/eclipse/paho.mqtt.golang v1.1.1 // indirect
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-redis/redis v6.14.2+incompatible
@@ -22,6 +22,7 @@ require (
 	github.com/pelletier/go-toml v1.2.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/robinson/gos7 v0.0.0-20181006145426-66ae787b1f82
+	github.com/spf13/viper v1.2.1
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 // indirect
 	github.com/tidwall/gjson v1.1.3 // indirect
