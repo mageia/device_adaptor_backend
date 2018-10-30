@@ -4,6 +4,7 @@ import (
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/pelletier/go-toml"
@@ -78,16 +79,19 @@ func (f FullyConfigOld) setOrDeleteJson(keyChain string, value interface{}) (e e
 		jsonToToml()
 	}()
 
-	if value == nil {
-		log.Println(keyChain)
-
+	switch value.(type) {
+	case nil:
 		if configB, e = sjson.DeleteBytes(configB, keyChain); e != nil {
 			log.Println(e)
 			return e
 		}
-	} else if configB, e = sjson.SetBytes(configB, keyChain, value); e != nil {
-		log.Println(e)
-		return
+	case []interface{}:
+		return errors.New("cannot set array as value")
+	default:
+		if configB, e = sjson.SetBytes(configB, keyChain, value); e != nil {
+			log.Println(e)
+			return
+		}
 	}
 
 	return e
