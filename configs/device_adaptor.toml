@@ -19,6 +19,7 @@
     point_map = "../configs/point_map_opc.yml"
 
   [[inputs.http_listener]]
+    address = ":8888"
     interval = "3s"
     name_override = ""
     point_map = ""

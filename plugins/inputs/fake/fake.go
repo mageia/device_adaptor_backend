@@ -49,9 +49,8 @@ func (f *Fake) Start() error {
 	}
 	return nil
 }
-func (f *Fake) Stop() error {
+func (f *Fake) Stop() {
 	f.connected = false
-	return nil
 }
 func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})

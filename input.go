@@ -42,7 +42,7 @@ type ServiceInput interface {
 	Gather(Accumulator) error
 	SetPointMap(map[string]PointDefine)
 	Start() error
-	Stop() error
+	Stop()
 }
 
 

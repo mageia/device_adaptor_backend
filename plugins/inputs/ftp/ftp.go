@@ -26,6 +26,10 @@ type FTP struct {
 	parsers   map[string]parsers.Parser
 }
 
+func (f *FTP) SelfCheck() deviceAgent.Quality {
+	return deviceAgent.QualityGood
+}
+
 func (*FTP) Name() string {
 	return "FTP"
 }

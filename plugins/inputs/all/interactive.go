@@ -23,7 +23,7 @@ func (i *Interactive) Start() error {
 	panic("implement me")
 }
 
-func (i *Interactive) Stop() error {
+func (i *Interactive) Stop()  {
 	panic("implement me")
 }
 

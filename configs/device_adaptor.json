@@ -32,6 +32,7 @@
       {
         "interval": "3s",
         "name_override": "",
+        "address": ":8888",
         "parser": {
           "data": [
             {

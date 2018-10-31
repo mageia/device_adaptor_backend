@@ -264,8 +264,6 @@ func (a *Agent) Run() error {
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
 		case deviceAgent.ServiceInput:
-			acc := NewAccumulator(input, metricC)
-			acc.SetPrecision(time.Nanosecond, 0)
 			if err := p.Start(); err != nil {
 				log.Printf("E! Service for input %s failed to start:\n%s\n", input.Name(), err.Error())
 				break

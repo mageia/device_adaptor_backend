@@ -138,8 +138,7 @@ func (v *Vibration) Start() error {
 	v.connected = true
 	return nil
 }
-func (*Vibration) Stop() error {
-	return nil
+func (*Vibration) Stop() {
 }
 func (*Vibration) SelfCheck() deviceAgent.Quality {
 	return deviceAgent.QualityGood

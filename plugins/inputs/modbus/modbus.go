@@ -30,6 +30,7 @@ type Modbus struct {
 	pointMap  map[string]deviceAgent.PointDefine
 	addrMap   map[string][]int
 	quality   deviceAgent.Quality
+	acc       deviceAgent.Accumulator
 
 	originName   string
 	FieldPrefix  string
@@ -201,12 +202,11 @@ func (m *Modbus) Start() error {
 	m.connected = false
 	return m.connect()
 }
-func (m *Modbus) Stop() error {
+func (m *Modbus) Stop() {
 	if m.connected {
 		m._handler.Close()
 		m.connected = false
 	}
-	return nil
 }
 func (m *Modbus) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	m.pointMap = pointMap

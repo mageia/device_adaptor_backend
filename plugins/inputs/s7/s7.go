@@ -29,6 +29,7 @@ type S7 struct {
 	pointMap  map[string]deviceAgent.PointDefine
 	addrMap   map[string]map[string][][2]int
 	quality   deviceAgent.Quality
+	acc       deviceAgent.Accumulator
 
 	originName string
 
@@ -169,12 +170,11 @@ func (s *S7) Start() error {
 	s.connected = true
 	return nil
 }
-func (s *S7) Stop() error {
+func (s *S7) Stop() {
 	if s.connected {
 		s._handler.Close()
 		s.connected = false
 	}
-	return nil
 }
 func (s *S7) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	s.pointMap = pointMap
