@@ -27,7 +27,7 @@ func (i *Interactive) Stop() error {
 	panic("implement me")
 }
 
-func (i *Interactive) SetParser(parser parsers.Parser) {
+func (i *Interactive) SetParser(parsers map[string]parsers.Parser) {
 	panic("implement me")
 }
 

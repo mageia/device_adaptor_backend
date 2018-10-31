@@ -23,15 +23,14 @@ type FTP struct {
 	done      chan struct{}
 	client    *ftp.ServerConn
 	pointMap  map[string]deviceAgent.PointDefine
-	parser    parsers.Parser
+	parsers   map[string]parsers.Parser
 }
 
 func (*FTP) Name() string {
 	return "FTP"
 }
-
-func (f *FTP) SetParser(parser parsers.Parser) {
-	f.parser = parser
+func (f *FTP) SetParser(parsers map[string]parsers.Parser) {
+	f.parsers = parsers
 }
 func (f *FTP) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
 	f.pointMap = pointMap

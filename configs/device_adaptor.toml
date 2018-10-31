@@ -14,14 +14,24 @@
 [inputs]
 
   [[inputs.fake]]
-    interval = "300ms"
+    interval = "3s"
     name_override = "fake_tengqing_opc"
     point_map = "../configs/point_map_opc.yml"
 
-  [[inputs.fake]]
-    interval = "20s"
-    name_override = "fake_tengqing_opc1"
-    point_map = "../configs/point_map_opc.yml"
+  [[inputs.http_listener]]
+    interval = "3s"
+    name_override = ""
+    point_map = ""
+
+    [inputs.http_listener.parser]
+
+      [[inputs.http_listener.parser.data]]
+        other = 2.0
+        parser_name = "csv"
+
+      [[inputs.http_listener.parser.dev]]
+        other = 1.0
+        parser_name = "vibration"
 
   [[inputs.modbus]]
     address = "10.211.55.4:502"

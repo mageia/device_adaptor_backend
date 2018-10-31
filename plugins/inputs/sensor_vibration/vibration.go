@@ -29,27 +29,25 @@ type VibrationData struct {
 	Freq         [3][256]float32
 }
 
-func (*Vibration) Name() string {
-	return "Sensor Vibration"
-}
-
-func (*Vibration) Round(f float64, n int) float64 {
+func (*Vibration) round(f float64, n int) float64 {
 	pow10 := math.Pow10(n)
 	return math.Trunc((f+0.5/pow10)*pow10) / pow10
 }
-
-func (v *Vibration) CalcAcc(o []byte) float64 {
+func (v *Vibration) calcAcc(o []byte) float64 {
 	if len(o) != 2 {
 		return 0
 	}
 
 	if o[1] > 128 {
-		f := -v.Round(float64(0xFFFF-int(o[1])*256-int(o[0])+1)/1024, 3)
+		f := -v.round(float64(0xFFFF-int(o[1])*256-int(o[0])+1)/1024, 3)
 		return f
 	}
-	return v.Round(float64(binary.BigEndian.Uint16(o))/1024, 3)
+	return v.round(float64(binary.BigEndian.Uint16(o))/1024, 3)
 }
 
+func (*Vibration) Name() string {
+	return "Sensor Vibration"
+}
 func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 	vData := VibrationData{}
 	if deviceIdArr, ok := v.mockData["deviceId"]; ok {
@@ -66,9 +64,9 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		for i := 0; i < len(TemperatureArr)-1; i += 9 {
 			h, _ := hex.DecodeString(strings.Join(TemperatureArr[i+5:i+7], ""))
 			if h[1] < 100 {
-				TempArr[i/9] = v.Round(float64(h[1])/100+float64(h[0]), 2)
+				TempArr[i/9] = v.round(float64(h[1])/100+float64(h[0]), 2)
 			} else {
-				TempArr[i/9] = v.Round(float64(h[1])/1000+float64(h[0]), 2)
+				TempArr[i/9] = v.round(float64(h[1])/1000+float64(h[0]), 2)
 			}
 		}
 		vData.Temperature = TempArr[v.count%len(TempArr)]
@@ -81,9 +79,9 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		z := accTmp[5+2*512 : 5+3*512]
 
 		for i := 0; i < len(x); i += 2 {
-			vData.Acc[0][i/2] = float32(v.CalcAcc(x[i : i+2]))
-			vData.Acc[1][i/2] = float32(v.CalcAcc(y[i : i+2]))
-			vData.Acc[2][i/2] = float32(v.CalcAcc(z[i : i+2]))
+			vData.Acc[0][i/2] = float32(v.calcAcc(x[i : i+2]))
+			vData.Acc[1][i/2] = float32(v.calcAcc(y[i : i+2]))
+			vData.Acc[2][i/2] = float32(v.calcAcc(z[i : i+2]))
 		}
 	}
 
@@ -93,9 +91,9 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		y := freqTmp[5+512 : 5+2*512]
 		z := freqTmp[5+2*512 : 5+3*512]
 		for i := 0; i < len(x); i += 2 {
-			vData.Freq[0][i/2] = float32(v.CalcAcc(x[i : i+2]))
-			vData.Freq[1][i/2] = float32(v.CalcAcc(y[i : i+2]))
-			vData.Freq[2][i/2] = float32(v.CalcAcc(z[i : i+2]))
+			vData.Freq[0][i/2] = float32(v.calcAcc(x[i : i+2]))
+			vData.Freq[1][i/2] = float32(v.calcAcc(y[i : i+2]))
+			vData.Freq[2][i/2] = float32(v.calcAcc(z[i : i+2]))
 		}
 	}
 	v.count += 1
@@ -110,18 +108,14 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		"acceleration": acceleration,
 		"frequency":    frequency,
 		"timestamp":    time.Now().UnixNano() / 1e6,
-	}, nil)
+	}, nil, deviceAgent.QualityGood)
 	return nil
 }
-
 func (*Vibration) SetPointMap(map[string]deviceAgent.PointDefine) {
-
 }
-
 func (*Vibration) FlushPointMap(deviceAgent.Accumulator) error {
 	return nil
 }
-
 func (v *Vibration) Start() error {
 	v.done = make(chan struct{})
 	v.mockData = make(map[string][]string)
@@ -144,9 +138,11 @@ func (v *Vibration) Start() error {
 	v.connected = true
 	return nil
 }
-
 func (*Vibration) Stop() error {
 	return nil
+}
+func (*Vibration) SelfCheck() deviceAgent.Quality {
+	return deviceAgent.QualityGood
 }
 
 func init() {

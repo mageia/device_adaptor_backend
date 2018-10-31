@@ -247,7 +247,6 @@ func (a *Agent) Run() error {
 				return err
 			}
 		}
-		log.Printf("D! Attempting connect to output: %s\n", o.Name)
 		err := o.Output.Connect()
 		if err != nil {
 			log.Printf("E! Failed to connect to output %s, retrying in 15s, "+
@@ -271,6 +270,8 @@ func (a *Agent) Run() error {
 				log.Printf("E! Service for input %s failed to start:\n%s\n", input.Name(), err.Error())
 				break
 			}
+			log.Printf("D! Successfully connected to input: %s\n", p.Name())
+
 			switch pC := p.(type) {
 			case deviceAgent.ControllerInput:
 				for _, c := range a.Config.Controllers {

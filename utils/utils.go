@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"runtime"
+	"strings"
+	"unicode"
 )
 
 func Round(f float64, n int) float64 {
@@ -79,4 +82,28 @@ func SetField(obj interface{}, name string, value interface{}) error {
 
 	structFieldValue.Set(val)
 	return nil
+}
+
+func UcFirst(str string) string {
+	for i, v := range str {
+		return string(unicode.ToUpper(v)) + str[i+1:]
+	}
+	return ""
+}
+
+func LcFirst(str string) string {
+	for i, v := range str {
+		return string(unicode.ToLower(v)) + str[i+1:]
+	}
+	return ""
+}
+
+func GetLineNo() string {
+	_, f, l, ok := runtime.Caller(1)
+	if ok {
+		fL := strings.Split(f, "/")
+		f = fL[len(fL)-1]
+		return fmt.Sprintf("%s:%d", f, l)
+	}
+	return ""
 }

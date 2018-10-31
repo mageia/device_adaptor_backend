@@ -242,7 +242,7 @@ NEXT:
 		case "4":
 			if v, ok := value.(float64); ok {
 				log.Println(readAddr, v)
-				_, e := m.client.WriteSingleRegister(uint16(readAddr)-1, uint16(v))
+				_, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
 				if e != nil {
 					errors = append(errors, e)
 					continue NEXT

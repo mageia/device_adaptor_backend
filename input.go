@@ -34,7 +34,7 @@ type Input interface {
 	Gather(Accumulator) error
 	SelfCheck() Quality
 	SetPointMap(map[string]PointDefine)
-	FlushPointMap(Accumulator) error
+	//FlushPointMap(Accumulator) error
 }
 
 type ServiceInput interface {

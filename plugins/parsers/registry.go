@@ -8,7 +8,7 @@ import (
 )
 
 type ParserInput interface {
-	SetParser(parser Parser)
+	SetParser(parsers map[string]Parser)
 }
 
 type Parser interface {
@@ -16,6 +16,8 @@ type Parser interface {
 	ParseLine(line string) (deviceAgent.Metric, error)
 	//SetDefaultTags(tags map[string]string)
 }
+
+type ParserBlob struct{}
 
 type Config struct {
 	DataFormat string
@@ -54,8 +56,6 @@ func NewParser(config *Config) (Parser, error) {
 			config.CSVTimestampColumn,
 			config.CSVTimestampFormat,
 			config.DefaultTags)
-	case "vibration":
-		parser, err = newVibrationParser()
 	default:
 		err = fmt.Errorf("unsupported data format: %s", config.DataFormat)
 	}
@@ -111,7 +111,10 @@ func newCSVParser(metricName string,
 	return parser, nil
 }
 
-func newVibrationParser() (Parser, error) {
-	parser := &vibration.Parser{}
-	return parser, nil
+func (*ParserBlob) BuildParserCsv(tbl map[string]interface{}) (Parser, error) {
+	return &csv.Parser{}, nil
+}
+
+func (*ParserBlob) BuildParserVibration(tbl map[string]interface{}) (Parser, error) {
+	return &vibration.Parser{}, nil
 }

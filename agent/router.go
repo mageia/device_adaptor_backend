@@ -22,7 +22,38 @@ type FullyConfigOld struct {
 	Outputs map[string][]map[string]interface{} `json:"outputs"`
 }
 
-var tomlConfigPath = "../configs/default.toml"
+var defaultConfig = `
+[global_tags]
+
+[agent]
+debug = false
+interval = "3s"
+
+
+[[controllers.http]]
+address = ":9999"    # 默认端口9999
+
+
+[[outputs.redis]]
+url_address = "redis://localhost:6379/0"
+output_channel = "output_test"
+
+
+[[inputs.fake]]
+name_override = "fake_tengqing_opc"
+interval = "2s"
+point_map = "../configs/point_map_opc.yml"
+
+[[inputs.http_listener]]
+[[inputs.http_listener.parser.data]]
+parser = "csv"
+other = 2
+[[inputs.http_listener.parser.dev]]
+parser = "vibration"
+other = 1
+
+`
+
 var jsonConfigPath = "../configs/device_adaptor.json"
 var programConfigPath = "../configs/device_adaptor.toml"
 var ReloadSignal = make(chan struct{})
@@ -116,17 +147,13 @@ func initLoadConfig() FullyConfigOld {
 		Controllers: make(map[string][]map[string]interface{}, 0),
 	}
 
-	if !IsExists(tomlConfigPath) {
-		return _fullyConfig
-	}
-
-	currentConfigTree, _ := toml.LoadFile(tomlConfigPath)
+	defaultConfigTree, _ := toml.Load(defaultConfig)
 
 	for ki, vi := range agentSample {
 		_fullyConfig.Agent[ki] = vi
 	}
 
-	for k, v := range currentConfigTree.ToMap() {
+	for k, v := range defaultConfigTree.ToMap() {
 		if k == "agent" {
 			for kk, vv := range v.(map[string]interface{}) {
 				_fullyConfig.Agent[kk] = vv

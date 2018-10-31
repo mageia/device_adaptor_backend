@@ -9,12 +9,14 @@ import (
 	"deviceAdaptor/plugins/outputs"
 	"deviceAdaptor/plugins/parsers"
 	"deviceAdaptor/plugins/serializers"
+	"deviceAdaptor/utils"
 	"fmt"
 	"github.com/influxdata/toml"
 	"github.com/influxdata/toml/ast"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -177,11 +179,11 @@ func (c *Config) addInput(name string, table *ast.Table) error {
 
 	switch t := input.(type) {
 	case parsers.ParserInput:
-		parser, err := buildParser(name, table)
+		pM, err := buildParserMap(name, table)
 		if err != nil {
 			return err
 		}
-		t.SetParser(parser)
+		t.SetParser(pM)
 	}
 
 	pluginConfig, err := buildInput(name, table)
@@ -292,7 +294,63 @@ func buildSerializer(name string, tbl *ast.Table) (serializers.Serializer, error
 	return serializers.NewSerializer(c)
 }
 
-func buildParser(name string, tbl *ast.Table) (parsers.Parser, error) {
+func buildParserMap(name string, tbl *ast.Table) (map[string]parsers.Parser, error) {
+	r := make(map[string]parsers.Parser)
+
+	if val, ok := tbl.Fields["parser"]; ok {
+		blobMap := make(map[string]interface{})
+		switch pV := val.(type) {
+		case *ast.Table:
+			for k, v := range pV.Fields {
+				switch vT := v.(type) {
+				case []*ast.Table:
+					for _, vP := range vT {
+						if e := toml.UnmarshalTable(vP, blobMap); e != nil {
+							return nil, e
+						}
+					}
+				case *ast.Table:
+					if e := toml.UnmarshalTable(vT, blobMap); e != nil {
+						return nil, e
+					}
+				default:
+					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+				}
+
+				if _, ok := blobMap["parser_name"]; !ok {
+					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+				}
+
+				if _, ok := blobMap["parser_name"]; !ok {
+					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+				}
+				if _, ok := blobMap["parser_name"].(string); !ok {
+					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+				}
+
+				param := []reflect.Value{reflect.ValueOf(&parsers.ParserBlob{}), reflect.ValueOf(blobMap)}
+				funcName := "BuildParser" + utils.UcFirst(blobMap["parser_name"].(string))
+				if m, ok := reflect.TypeOf(&parsers.ParserBlob{}).MethodByName(funcName); !ok {
+					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+				} else {
+					result := m.Func.Call(param)
+					if result[1].Interface() != nil {
+						return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
+					}
+					r[k] = result[0].Interface().(parsers.Parser)
+				}
+			}
+		default:
+			return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
+		}
+	}
+
+	delete(tbl.Fields, "parser")
+
+	return r, nil
+}
+
+func buildParser1(name string, tbl *ast.Table) (parsers.Parser, error) {
 	c := &parsers.Config{}
 	if node, ok := tbl.Fields["data_format"]; ok {
 		if kv, ok := node.(*ast.KeyValue); ok {

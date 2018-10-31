@@ -39,7 +39,25 @@ point_map = "../configs/point_map_modbus.yml"
 #dev_path = "/SubFile/KJ95N/dev.txt"
 #data_path = "/SubFile/KJ95N/rtdata.txt"
 
-#[[inputs.sensor_vibration]]
+[[inputs.sensor_vibration]]
+name_override = "vibration_sensor"
+
+[[inputs.sensor_vibration.parser.a]]
+[[inputs.sensor_vibration.parser.b]]
+[[inputs.sensor_vibration.parser.c]]
+
+
+[[inputs.http_listener]]
+
+[[inputs.http_listener.parser.data]]
+parser = "csv"
+other = 2
+[[inputs.http_listener.parser.dev]]
+parser = "vibration"
+other = 1
+
+#map[parser:[0xc0001f49b0]]
+
 
 
 #[inputs.s7]

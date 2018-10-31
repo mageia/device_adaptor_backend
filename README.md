@@ -48,7 +48,7 @@ db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
   label: start				# <optional> 短名称
   name: 启动		   		   # <optional> 长名称
   unit: 单位				   # <optional> 单位字符串
-  point_type: 				# <optional> 点类型 0：模拟量，1：状态量, 默认为模拟量
+  point_type: 				# <optional> 点类型 1：模拟量，2：状态量, 默认为模拟量
   tags: ["test"]			# <optional> tag标记
   option:					# <optional> 状态量映射关系
     1: 启动
