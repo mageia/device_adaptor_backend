@@ -12,8 +12,9 @@ type ParserInput interface {
 }
 
 type Parser interface {
-	Parse(line []byte) ([]deviceAgent.Metric, error)
+	Parse2(line []byte) ([]deviceAgent.Metric, error)
 	ParseLine(line string) (deviceAgent.Metric, error)
+	Parser([]byte) (interface{}, error)
 	//SetDefaultTags(tags map[string]string)
 }
 

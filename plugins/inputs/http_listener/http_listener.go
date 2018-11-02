@@ -7,6 +7,7 @@ import (
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/parsers"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net"
@@ -21,23 +22,33 @@ const (
 	DEFAULT_MAX_LINE_SIZE = 64 * 1024       // 64 KB
 )
 
+type ContentInfo struct {
+	content []byte
+	linePos int
+	lineNo  int
+}
+
 type HTTPListener struct {
 	Address       string
-	parsers       map[string]parsers.Parser
 	NameOverride  string
+	originName    string
 	MaxBodySize   int64
 	MaxLineSize   int
+	Interval      internal.Duration
 	ReadTimeout   internal.Duration
 	WriteTimeout  internal.Duration
 	BasicUsername string
 	BasicPassword string
+	MergeMetric   bool
 
 	listener net.Listener
 	mu       sync.Mutex
 	wg       sync.WaitGroup
 	acc      deviceAgent.Accumulator
 
+	parsers    map[string]parsers.Parser
 	contentMap map[string][]byte
+	resultMap  map[string]interface{}
 }
 
 func (h *HTTPListener) SetParser(parsers map[string]parsers.Parser) {
@@ -51,19 +62,42 @@ func (h *HTTPListener) SelfCheck() deviceAgent.Quality {
 }
 
 func (h *HTTPListener) Name() string {
-	return "http_listener"
+	if h.NameOverride != "" {
+		return h.NameOverride
+	}
+	return h.originName
+}
+func (h *HTTPListener) OriginName() string {
+	return h.originName
 }
 
-func (h *HTTPListener) Gather(deviceAgent.Accumulator) error {
-	//for k, v := range h.parsers {
-	//	log.Println(k, v)
-	//}
+func (h *HTTPListener) Gather(acc deviceAgent.Accumulator) (err error) {
+	if len(h.parsers) == 0 {
+		return errors.New("parsers is not set")
+	}
+
+	for k, v := range h.contentMap {
+		if _, ok := h.resultMap[k]; ok {
+			continue
+		}
+
+		if p, ok := h.parsers[k]; ok {
+			r, err := p.Parser(v)
+			if err != nil {
+				acc.AddError(err)
+				continue
+			}
+			h.resultMap[k] = r
+		}
+	}
+	if len(h.resultMap) > 0 {
+		acc.AddFields(h.Name(), h.resultMap, nil, deviceAgent.QualityGood, time.Now())
+	}
+
 	return nil
 }
 
-func (h *HTTPListener) SetPointMap(map[string]deviceAgent.PointDefine) {
-
-}
+func (h *HTTPListener) SetPointMap(map[string]deviceAgent.PointDefine) {}
 
 func renderMsg(w http.ResponseWriter, message string, statusCode ...int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -97,6 +131,10 @@ func (h *HTTPListener) serveFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for k := range r.MultipartForm.File {
+		if _, ok := h.parsers[k]; !ok {
+			continue
+		}
+
 		file, _, err := r.FormFile(k)
 		if err != nil {
 			renderMsg(w, err.Error())
@@ -198,8 +236,10 @@ func (h *HTTPListener) Stop() {
 func init() {
 	inputs.Add("http_listener", func() deviceAgent.Input {
 		return &HTTPListener{
+			originName: "http_listener",
 			parsers:    make(map[string]parsers.Parser),
 			contentMap: make(map[string][]byte),
+			resultMap:  make(map[string]interface{}),
 		}
 	})
 }

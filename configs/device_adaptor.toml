@@ -20,18 +20,25 @@
 
   [[inputs.http_listener]]
     address = ":8888"
-    interval = "3s"
-    name_override = ""
+    interval = "10s"
+    name_override = "abc"
     point_map = ""
 
     [inputs.http_listener.parser]
 
-      [[inputs.http_listener.parser.data]]
-        other = 2.0
-        parser_name = "csv"
+      [inputs.http_listener.parser.acceleration]
+        parser_name = "vibration"
 
-      [[inputs.http_listener.parser.dev]]
-        other = 1.0
+      [inputs.http_listener.parser.frequency]
+        parser_name = "vibration"
+
+      [inputs.http_listener.parser.id]
+        parser_name = "vibration"
+
+      [inputs.http_listener.parser.temperature]
+        parser_name = "vibration"
+
+      [inputs.http_listener.parser.usedId]
         parser_name = "vibration"
 
   [[inputs.modbus]]
@@ -43,5 +50,4 @@
 
   [[outputs.redis]]
     data_format = "json"
-    output_channel = "output_test"
     url_address = "redis://localhost:6379/0"

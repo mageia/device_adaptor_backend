@@ -12,11 +12,10 @@ import (
 )
 
 type Redis struct {
-	UrlAddress    string
-	Timeout       internal.Duration
-	OutputChannel string
-	client        *redis.Client
-	serializer    serializers.Serializer
+	UrlAddress  string
+	Timeout     internal.Duration
+	client      *redis.Client
+	serializer  serializers.Serializer
 }
 
 func (r *Redis) Write(metrics []deviceAgent.Metric) error {
@@ -35,11 +34,9 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 			return err
 		}
 
-		if r.OutputChannel == "" {
-			r.OutputChannel = "output_test"
-		}
+		log.Println(metric.Name())
 
-		if err := r.client.Publish(r.OutputChannel, sV).Err(); err != nil {
+		if err := r.client.Publish(metric.Name(), sV).Err(); err != nil {
 			log.Println(err)
 			return err
 		}

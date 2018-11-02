@@ -199,12 +199,6 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 	return nil
 }
 
-//
-//func (a *Agent) ResourceStat() {
-//	for range time.Tick(a.Config.Global.Interval.Duration) {
-//	}
-//}
-
 func (a *Agent) Run() error {
 	var wg sync.WaitGroup
 	// input channel
@@ -267,6 +261,8 @@ func (a *Agent) Run() error {
 			if err := p.Start(); err != nil {
 				log.Printf("E! Service for input %s failed to start:\n%s\n", input.Name(), err.Error())
 				break
+			} else {
+				defer p.Stop()
 			}
 			log.Printf("D! Successfully connected to input: %s\n", p.Name())
 
@@ -304,13 +300,6 @@ func (a *Agent) Run() error {
 		//	}
 		//}
 	}()
-
-	//resource self check
-	//wg.Add(1)
-	//go func() {
-	//	defer wg.Done()
-	//	//a.ResourceStat()
-	//}()
 
 	LoadConfig()
 

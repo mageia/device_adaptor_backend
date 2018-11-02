@@ -14,10 +14,9 @@ import (
 )
 
 type Mqtt struct {
-	UrlAddress    string
-	OutputChannel string
-	client        mqtt.Client
-	serializer    serializers.Serializer
+	UrlAddress  string
+	client      mqtt.Client
+	serializer  serializers.Serializer
 }
 
 func (mt *Mqtt) Connect() error {
@@ -28,10 +27,10 @@ func (mt *Mqtt) Connect() error {
 	if strings.ToLower(opt.Scheme) != "mqtt" {
 		return fmt.Errorf("invalid mqtt scheme: %s", opt.Scheme)
 	}
-	passwd, _ := opt.User.Password()
+	p, _ := opt.User.Password()
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", opt.Host))
 	opts.SetUsername(opt.User.Username())
-	opts.SetPassword(passwd)
+	opts.SetPassword(p)
 	// TODO: check this
 	opts.SetClientID(uuid.New().String())
 	mt.client = mqtt.NewClient(opts)
@@ -58,10 +57,7 @@ func (mt *Mqtt) Write(metrics []deviceAgent.Metric) error {
 			return err
 		}
 
-		if mt.OutputChannel == "" {
-			mt.OutputChannel = "output_test"
-		}
-		token := mt.client.Publish(mt.OutputChannel, 2, true, sV)
+		token := mt.client.Publish(metric.Name(), 2, true, sV)
 		if token.Error() != nil {
 			log.Println(err)
 			return err

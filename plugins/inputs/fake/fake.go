@@ -68,17 +68,11 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 		}
 	}(f)
 
-	//for k, v := range f.pointMap {
-	//	if v.PointType == deviceAgent.PointState {
-	//		fields[k] = rand.Intn(10) % 2
-	//	} else {
-	//		fields[k] = utils.Round(rand.Float64()/rand.Float64(), 2)
-	//	}
-	//}
 	row, e := f.mockCsvReader.Read()
 	if e != nil {
 		if e == io.EOF {
 			f.connected = false
+			return nil
 		}
 		return e
 	}
