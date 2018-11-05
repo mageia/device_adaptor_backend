@@ -94,7 +94,7 @@ func isKeyChainValid(keyChain string, value interface{}) bool {
 	switch l[0] {
 	case "inputs":
 		switch l[1] {
-		case "fake", "modbus", "s7":
+		case "fake", "modbus", "s7", "http_listener":
 			return true
 		}
 	case "outputs":

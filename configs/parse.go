@@ -66,6 +66,15 @@ func parseFile(p string) (*ast.Table, error) {
 	return toml.Parse(contents)
 }
 
+func (c *Config) LoadConfigJson(content []byte) error {
+	var config = make(map[string]interface{})
+	if e := json.Unmarshal(content, &config); e != nil {
+		return e
+	}
+
+	return nil
+}
+
 func (c *Config) LoadConfig(path string) error {
 	var err error
 	if path == "" {

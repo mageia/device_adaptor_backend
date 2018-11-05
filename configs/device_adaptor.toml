@@ -23,6 +23,9 @@
     name_override = "fake"
     point_map = ""
 
+  [[inputs.http_listener]]
+    address = ":8982"
+
 [outputs]
 
   [[outputs.redis]]

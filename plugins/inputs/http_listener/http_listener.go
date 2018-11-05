@@ -8,6 +8,7 @@ import (
 	"deviceAdaptor/plugins/parsers"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -116,6 +117,14 @@ func (h *HTTPListener) serveWrite(w http.ResponseWriter, r *http.Request) {
 			http.StatusRequestEntityTooLarge)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, h.MaxBodySize)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		renderMsg(w, fmt.Sprintf("Error reading body: %v", err), http.StatusBadRequest)
+		return
+	}
+	log.Println(string(body))
+	renderMsg(w, "")
 }
 func (h *HTTPListener) serveFile(w http.ResponseWriter, r *http.Request) {
 	if r.ContentLength > h.MaxBodySize {

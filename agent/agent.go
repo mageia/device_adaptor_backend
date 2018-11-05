@@ -32,6 +32,9 @@ func NewAgent() (*Agent, error) {
 		return nil, err
 	}
 
+	//b, _ := ioutil.ReadFile("../configs/device_adaptor.json")
+	//c.LoadConfigJson(b)
+
 	a := &Agent{
 		Name:    "deviceAdaptor",
 		Version: "v1.0.0",
