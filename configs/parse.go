@@ -54,6 +54,7 @@ type GlobalConfig struct {
 }
 
 func getDefaultConfigPath() (string, error) {
+
 	return "../configs/device_adaptor.toml", nil
 }
 

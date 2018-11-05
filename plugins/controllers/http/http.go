@@ -66,11 +66,11 @@ func (h *HTTP) Start(ctx context.Context) error {
 	h.Server = srv
 
 	go func() {
-		log.Printf("D! Start CmdServer on: %s\n", srv.Addr)
+		log.Printf("D! Successfully connected to controller: %s, address: [%s]\n", h.Name(), srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("E! Listen: %s failed: %s\n", srv.Addr, err)
 		}
-		log.Printf("I! Server: %s closed", srv.Addr)
+		log.Printf("D! Successfully closed controller: %s, address: [%s]", h.Name(), srv.Addr)
 	}()
 
 	go h.Stop(ctx)
@@ -80,6 +80,8 @@ func (h *HTTP) Start(ctx context.Context) error {
 			select {
 			case c := <-h.chanCmd:
 				h.SyncExecute(c)
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()

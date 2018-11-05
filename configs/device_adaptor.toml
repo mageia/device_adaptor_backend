@@ -15,36 +15,13 @@
 
   [[inputs.fake]]
     interval = "3s"
-    name_override = "fake_tengqing_opc"
-    point_map = "../configs/point_map_opc.yml"
-
-  [[inputs.http_listener]]
-    address = ":8888"
-    interval = "10s"
-    name_override = "abc"
+    name_override = "fake"
     point_map = ""
 
-    [inputs.http_listener.parser]
-
-      [inputs.http_listener.parser.acceleration]
-        parser_name = "vibration"
-
-      [inputs.http_listener.parser.frequency]
-        parser_name = "vibration"
-
-      [inputs.http_listener.parser.id]
-        parser_name = "vibration"
-
-      [inputs.http_listener.parser.temperature]
-        parser_name = "vibration"
-
-      [inputs.http_listener.parser.usedId]
-        parser_name = "vibration"
-
-  [[inputs.modbus]]
-    address = "10.211.55.4:502"
+  [[inputs.fake]]
     interval = "3s"
-    point_map = "../configs/point_map_modbus.yml"
+    name_override = "fake"
+    point_map = ""
 
 [outputs]
 

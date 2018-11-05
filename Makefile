@@ -29,7 +29,7 @@ run:
 
 frontend:
 	@echo "building frontend"
-	cd frontend && npm run build
+	cd frontend && npm install --registry=https://registry.npm.taobao.org --verbose && npm run generate
 
 package:
 	@echo "building image ${BIN_NAME} $(GIT_COMMIT)"

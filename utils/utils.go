@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"runtime"
 	"strings"
@@ -106,4 +107,15 @@ func GetLineNo() string {
 		return fmt.Sprintf("%s:%d", f, l)
 	}
 	return ""
+}
+
+func IsExists(p string) bool {
+	_, err := os.Stat(p)
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
 }

@@ -7,9 +7,7 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
 	"runtime"
 	"sync"
 	"time"
@@ -18,12 +16,11 @@ import (
 var A *Agent
 
 type Agent struct {
-	Ctx          context.Context
-	Cancel       context.CancelFunc
-	ConfigServer *http.Server
-	Config       *configs.Config
-	Version      string
-	Name         string
+	Ctx     context.Context
+	Cancel  context.CancelFunc
+	Config  *configs.Config
+	Version string
+	Name    string
 }
 
 func NewAgent() (*Agent, error) {
@@ -31,6 +28,7 @@ func NewAgent() (*Agent, error) {
 
 	c := configs.NewConfig()
 	if err := c.LoadConfig(""); err != nil {
+		configs.ReLoadConfig()
 		return nil, err
 	}
 
@@ -40,16 +38,14 @@ func NewAgent() (*Agent, error) {
 		Ctx:     ctx,
 		Cancel:  cancel,
 		Config:  c,
-		ConfigServer: &http.Server{
-			Addr:    ":8080",
-			Handler: InitRouter(c.Global.Debug),
-		},
 	}
 	return a, nil
 }
 
 func (a *Agent) Reload() {
 	A.Cancel()
+	log.Println("I! Reloading main program ... ")
+
 	go func() {
 		A, _ = NewAgent()
 		A.Run()
@@ -62,8 +58,14 @@ func (a *Agent) Close() error {
 		err = o.Output.Close()
 		log.Printf("D! Successfully closed output: %s\n", o.Name)
 	}
+	for _, input := range a.Config.Inputs {
+		switch p := input.Input.(type) {
+		case deviceAgent.ServiceInput:
+			p.Stop()
+			log.Printf("D! Successfully closed input: %s\n", p.Name())
+		}
+	}
 
-	a.ConfigServer.Shutdown(a.Ctx)
 	return err
 }
 
@@ -135,9 +137,9 @@ func (a *Agent) flush() {
 
 func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
 	var wg sync.WaitGroup
-	wg.Add(1)
 
 	// 从input channel 读数据并传给 output channel
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
@@ -153,9 +155,8 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 		}
 	}()
 
-	wg.Add(1)
-
 	// 从output channel 读数据传给 各个output组件
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
@@ -206,12 +207,6 @@ func (a *Agent) Run() error {
 	// output channel
 	outMetricC := make(chan deviceAgent.Metric, 100)
 
-	//ConfigServer
-	go func() {
-		gin.SetMode(gin.ReleaseMode)
-		a.ConfigServer.ListenAndServe()
-	}()
-
 	//flusher
 	wg.Add(1)
 	go func() {
@@ -236,15 +231,13 @@ func (a *Agent) Run() error {
 		switch ot := o.Output.(type) {
 		case deviceAgent.ServiceOutput:
 			if err := ot.Start(); err != nil {
-				log.Printf("E! Service for output %s failed to start, exiting\n%s\n",
-					o.Name, err.Error())
+				log.Printf("E! Service for output %s failed to start, exiting\n%s\n", o.Name, err.Error())
 				return err
 			}
 		}
 		err := o.Output.Connect()
 		if err != nil {
-			log.Printf("E! Failed to connect to output %s, retrying in 15s, "+
-				"error was '%s'\n", o.Name, err)
+			log.Printf("E! Failed to connect to output %s, retrying in 15s, error was '%s'\n", o.Name, err)
 			time.Sleep(15 * time.Second)
 			err = o.Output.Connect()
 			if err != nil {
@@ -261,8 +254,6 @@ func (a *Agent) Run() error {
 			if err := p.Start(); err != nil {
 				log.Printf("E! Service for input %s failed to start:\n%s\n", input.Name(), err.Error())
 				break
-			} else {
-				defer p.Stop()
 			}
 			log.Printf("D! Successfully connected to input: %s\n", p.Name())
 
@@ -284,24 +275,7 @@ func (a *Agent) Run() error {
 		}(input, inter)
 	}
 
-	//debug all stat
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		//log.Println(A.Config.Global)
-		//
-		//for range time.Tick(time.Second * 1) {
-		//	log.Println(models.GlobalMetricsGathered.Name(), models.GlobalMetricsGathered.FieldName(), models.GlobalMetricsGathered.Get())
-		//	log.Println(NErrors.Name(), NErrors.FieldName(), NErrors.Get())
-		//	log.Println(MetricFieldsCount.Name(), MetricFieldsCount.FieldName(), MetricFieldsCount.Get())
-		//
-		//	for _, i := range a.Config.Inputs {
-		//		log.Println(i.MetricsGathered.Name(), i.MetricsGathered.FieldName(), i.MetricsGathered.Get())
-		//	}
-		//}
-	}()
-
-	LoadConfig()
+	configs.ReLoadConfig()
 
 	wg.Wait()
 	a.Close()

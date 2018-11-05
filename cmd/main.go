@@ -6,10 +6,31 @@ import (
 	_ "deviceAdaptor/plugins/controllers/all"
 	_ "deviceAdaptor/plugins/inputs/all"
 	_ "deviceAdaptor/plugins/outputs/all"
+	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {
+	go func() {
+		ConfigServer := &http.Server{
+			Addr:    ":8080",
+			Handler: agent.InitRouter(true),
+		}
+		gin.SetMode(gin.ReleaseMode)
+		ConfigServer.ListenAndServe()
+	}()
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	//go func() {
+	//	for range time.Tick(time.Second) {
+	//		log.Println(runtime.NumGoroutine())
+	//	}
+	//}()
 
 	go func() {
 		var e error
@@ -22,19 +43,14 @@ func main() {
 		logger.SetupLogging(agent.A.Config.Global.Debug, "")
 
 		agent.A.Run()
-		defer agent.A.Cancel()
+		//defer agent.A.Cancel()
 	}()
-
-	//go func() {
-	//	for range time.Tick(time.Second) {
-	//		log.Println(runtime.NumGoroutine())
-	//	}
-	//}()
 
 	for {
 		select {
 		case <-agent.ReloadSignal:
 			agent.A.Reload()
+			//agent.A.Cancel()
 		}
 	}
 }

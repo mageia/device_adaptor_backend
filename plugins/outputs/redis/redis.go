@@ -9,13 +9,14 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/json-iterator/go"
 	"log"
+	"time"
 )
 
 type Redis struct {
-	UrlAddress  string
-	Timeout     internal.Duration
-	client      *redis.Client
-	serializer  serializers.Serializer
+	UrlAddress string
+	Timeout    internal.Duration
+	client     *redis.Client
+	serializer serializers.Serializer
 }
 
 func (r *Redis) Write(metrics []deviceAgent.Metric) error {
@@ -34,8 +35,6 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 			return err
 		}
 
-		log.Println(metric.Name())
-
 		if err := r.client.Publish(metric.Name(), sV).Err(); err != nil {
 			log.Println(err)
 			return err
@@ -50,8 +49,12 @@ func (r *Redis) Connect() error {
 		r.UrlAddress = "redis://localhost:6379/0"
 	}
 	rO, _ := redis.ParseURL(r.UrlAddress)
+	if r.Timeout.Duration == 0 {
+		r.Timeout.Duration = time.Second * 10
+	}
 	rO.ReadTimeout = r.Timeout.Duration
 	rO.WriteTimeout = r.Timeout.Duration
+	rO.IdleCheckFrequency = time.Second * 3
 
 	c := redis.NewClient(rO)
 	if _, err := c.Ping().Result(); err != nil {
