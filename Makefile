@@ -18,14 +18,19 @@ help:
 	@echo '    make clean           Clean the directory tree.'
 	@echo
 
-all: bin frontend run
+all: run
 
-bin:
+run:bin
+	cd cmd && ./${BIN_NAME}
+
+bin:assets
 	@echo "building exec ${BIN_NAME}"
 	cd cmd && go build -o ${BIN_NAME} .
 
-run:
-	cd cmd && ./${BIN_NAME}
+assets:frontend
+	@echo "building assets"
+	cp -r frontend/dist assets
+	statik -src=assets
 
 frontend:
 	@echo "building frontend"

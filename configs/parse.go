@@ -1,5 +1,6 @@
 package configs
 
+import "C"
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
@@ -10,23 +11,32 @@ import (
 	"deviceAdaptor/plugins/parsers"
 	"deviceAdaptor/plugins/serializers"
 	"deviceAdaptor/utils"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/influxdata/toml"
 	"github.com/influxdata/toml/ast"
+	"github.com/mitchellh/mapstructure"
+	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"reflect"
-	"strconv"
 	"time"
 )
 
 type Config struct {
-	Tags        map[string]string
-	Global      *GlobalConfig
-	Inputs      []*models.RunningInput
-	Outputs     []*models.RunningOutput
-	Controllers []*models.RunningController
+	Global      *GlobalConfig               `json:"agent"`
+	Inputs      []*models.RunningInput      `json:"inputs"`
+	Outputs     []*models.RunningOutput     `json:"outputs"`
+	Controllers []*models.RunningController `json:"controllers"`
+}
+
+type AgentConfig struct {
+	Agent  GlobalConfig `json:"agent"`
+	Inputs map[string][]map[string]interface{} `json:"inputs"`
+	Outputs map[string][]map[string]interface{} `json:"outputs"`
+	Controllers map[string][]map[string]interface{} `json:"controllers"`
 }
 
 func NewConfig() *Config {
@@ -36,7 +46,6 @@ func NewConfig() *Config {
 			FlushInterval: internal.Duration{Duration: 10 * time.Second},
 		},
 		Controllers: make([]*models.RunningController, 0),
-		Tags:        make(map[string]string),
 		Inputs:      make([]*models.RunningInput, 0),
 		Outputs:     make([]*models.RunningOutput, 0),
 	}
@@ -44,135 +53,36 @@ func NewConfig() *Config {
 }
 
 type GlobalConfig struct {
-	Debug             bool
-	Interval          internal.Duration
-	FlushInterval     internal.Duration
-	CollectionJitter  internal.Duration
-	FlushJitter       internal.Duration
-	MetricBatchSize   int
-	MetricBufferLimit int
-}
-
-func getDefaultConfigPath() (string, error) {
-
-	return "../configs/device_adaptor.toml", nil
-}
-
-func parseFile(p string) (*ast.Table, error) {
-	contents, err := ioutil.ReadFile(p)
-	if err != nil {
-		return nil, err
-	}
-	return toml.Parse(contents)
+	Debug             bool              `json:"debug"`
+	Interval          internal.Duration `json:"interval"`
+	FlushInterval     internal.Duration `json:"flush_interval"`
+	CollectionJitter  internal.Duration `json:"collection_jitter"`
+	FlushJitter       internal.Duration `json:"flush_jitter"`
+	MetricBatchSize   int               `json:"metric_batch_size"`
+	MetricBufferLimit int               `json:"metric_buffer_limit"`
 }
 
 func (c *Config) LoadConfigJson(content []byte) error {
-	var config = make(map[string]interface{})
-	if e := json.Unmarshal(content, &config); e != nil {
+	config := make(map[string]map[string]interface{})
+	e := json.Unmarshal(content, &config)
+	if e != nil {
 		return e
 	}
 
-	return nil
-}
-
-func (c *Config) LoadConfig(path string) error {
-	var err error
-	if path == "" {
-		if path, err = getDefaultConfigPath(); err != nil {
-			return err
-		}
-	}
-	tbl, err := parseFile(path)
-	if err != nil {
-		return fmt.Errorf("error parsing %s, %s", path, err)
-	}
-
-	for _, tableName := range []string{"tags", "global_tags"} {
-		if val, ok := tbl.Fields[tableName]; ok {
-			subTable, ok := val.(*ast.Table)
-			if !ok {
-				return fmt.Errorf("%s: invalid configuration", path)
-			}
-			if err = toml.UnmarshalTable(subTable, c.Tags); err != nil {
-				log.Printf("E! Could not parse [global_tags] config\n")
-				return fmt.Errorf("error parsing %s, %s", path, err)
-			}
-		}
-	}
-
-	if val, ok := tbl.Fields["agent"]; ok {
-		subTable, ok := val.(*ast.Table)
-		if !ok {
-			return fmt.Errorf("%s: invalid configuration", path)
-		}
-		if err = toml.UnmarshalTable(subTable, c.Global); err != nil {
-			log.Printf("E! Could not parse [agent] config\n")
-			return fmt.Errorf("error parsing %s, %s", path, err)
-		}
-	}
-
-	for name, val := range tbl.Fields {
-		subTable, ok := val.(*ast.Table)
-		if !ok {
-			return fmt.Errorf("%s: invalid configuration", path)
-		}
-		switch name {
-		case "agent", "global_tags", "tags":
-		case "controllers":
-			for pluginName, pluginVal := range subTable.Fields {
-				switch pluginSubTable := pluginVal.(type) {
-				case *ast.Table:
-					if err = c.addController(pluginName, pluginSubTable); err != nil {
-						return fmt.Errorf("error parsing %s, %s", path, err)
-					}
-				case []*ast.Table:
-					for _, t := range pluginSubTable {
-						if err = c.addController(pluginName, t); err != nil {
-							return fmt.Errorf("error parsing %s, %s", path, err)
-						}
-					}
-				default:
-					return fmt.Errorf("unsupported config format: %s, file: %s", pluginName, path)
+	for cK, cV := range config {
+		switch cK {
+		case "agent":
+			json.Unmarshal([]byte(gjson.GetBytes(content, "agent").String()), c.Global)
+		case "inputs", "outputs", "controllers":
+			for _, v := range cV {
+				vV, ok := v.(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("can't parse config content: %v", v)
 				}
-			}
-
-		case "outputs":
-			for pluginName, pluginVal := range subTable.Fields {
-				switch pluginSubTable := pluginVal.(type) {
-				case *ast.Table:
-					if err = c.addOutput(pluginName, pluginSubTable); err != nil {
-						return fmt.Errorf("error parsing %s, %s", path, err)
-					}
-				case []*ast.Table:
-					for _, t := range pluginSubTable {
-						if err = c.addOutput(pluginName, t); err != nil {
-							return fmt.Errorf("error parsing %s, %s", path, err)
-						}
-					}
-				default:
-					return fmt.Errorf("unsupported config format: %s, file: %s", pluginName, path)
+				if e := c.LoadPlugin(cK, vV["plugin_name"].(string), vV); e != nil {
+					log.Printf("LoadPlugin: %s failed: %v", cK, e)
+					return e
 				}
-			}
-		case "inputs":
-			for pluginName, pluginVal := range subTable.Fields {
-				switch pluginSubTable := pluginVal.(type) {
-				case *ast.Table:
-					if err = c.addInput(pluginName, pluginSubTable); err != nil {
-						return fmt.Errorf("error parsing %s, %s", path, err)
-					}
-				case []*ast.Table:
-					for _, t := range pluginSubTable {
-						if err = c.addInput(pluginName, t); err != nil {
-							return fmt.Errorf("error parsing %s, %s", path, err)
-						}
-					}
-				default:
-					return fmt.Errorf("unsupported config format: %s, file: %s", pluginName, path)
-				}
-			}
-		default:
-			if err = c.addInput(name, subTable); err != nil {
-				return fmt.Errorf("error parsing %s, %s", path, err)
 			}
 		}
 	}
@@ -180,30 +90,27 @@ func (c *Config) LoadConfig(path string) error {
 	return nil
 }
 
-func (c *Config) addInput(name string, table *ast.Table) error {
+func (c *Config) addInputJson(name string, table map[string]interface{}) error {
 	creator, ok := inputs.Inputs[name]
 	if !ok {
 		return fmt.Errorf("undefined but requested input: %s", name)
 	}
 	input := creator()
-
 	switch t := input.(type) {
 	case parsers.ParserInput:
-		pM, err := buildParserMap(name, table)
-		if err != nil {
-			return err
-		}
-		t.SetParser(pM)
+		t.SetParser(nil) //TODO
 	}
-
-	pluginConfig, err := buildInput(name, table)
+	pluginConfig, err := buildInputJson(name, table)
 	if err != nil {
 		return err
 	}
 
 	pointMap := make(map[string]deviceAgent.PointDefine, 0)
-	if pluginConfig.PointMapPath != "" {
-		if pMContent, err := ioutil.ReadFile(pluginConfig.PointMapPath); err != nil {
+	if pluginConfig.PointMapContent != "" {
+		yaml.UnmarshalStrict([]byte(pluginConfig.PointMapContent), &pointMap)
+	} else if pluginConfig.PointMapPath != "" {
+		pMContent, err := ioutil.ReadFile(pluginConfig.PointMapPath)
+		if err != nil {
 			log.Printf("Can't load point_map file: %s, %s", pluginConfig.PointMapPath, err)
 		} else {
 			yaml.UnmarshalStrict(pMContent, &pointMap)
@@ -211,7 +118,7 @@ func (c *Config) addInput(name string, table *ast.Table) error {
 	}
 	input.SetPointMap(pointMap)
 
-	if err := toml.UnmarshalTable(table, input); err != nil {
+	if err := mapstructure.Decode(table, input); err != nil {
 		return err
 	}
 
@@ -220,7 +127,7 @@ func (c *Config) addInput(name string, table *ast.Table) error {
 	return nil
 }
 
-func (c *Config) addOutput(name string, table *ast.Table) error {
+func (c *Config) addOutputJson(name string, table map[string]interface{}) error {
 	creator, ok := outputs.Outputs[name]
 	if !ok {
 		return fmt.Errorf("undefined but requested output: %s", name)
@@ -228,79 +135,77 @@ func (c *Config) addOutput(name string, table *ast.Table) error {
 	output := creator()
 	switch t := output.(type) {
 	case serializers.SerializerOutput:
-		serializer, err := buildSerializer(name, table)
+		serializer, err := buildSerializerJson(name, table)
 		if err != nil {
 			return err
 		}
 		t.SetSerializer(serializer)
 	}
-	if err := toml.UnmarshalTable(table, output); err != nil {
+	if err := mapstructure.Decode(table, output); err != nil {
 		return err
 	}
+
 	ro := models.NewRunningOutput(name, output, c.Global.MetricBatchSize, c.Global.MetricBufferLimit)
 	c.Outputs = append(c.Outputs, ro)
 
 	return nil
 }
 
-func (c *Config) addController(name string, table *ast.Table) error {
+func (c *Config) addControllerJson(name string, table map[string]interface{}) error {
 	creator, ok := controllers.Controllers[name]
 	if !ok {
 		return fmt.Errorf("undefined but requested controller: %s", name)
 	}
 	controller := creator()
-	if err := toml.UnmarshalTable(table, controller); err != nil {
+	if err := mapstructure.Decode(table, controller); err != nil {
 		return err
 	}
+
 	rC := models.NewRunningController(name, controller)
 	c.Controllers = append(c.Controllers, rC)
-
 	return nil
 }
 
-func buildInput(name string, table *ast.Table) (*models.InputConfig, error) {
+func (c *Config) LoadPlugin(tp string, name string, table map[string]interface{}) error {
+	switch tp {
+	case "inputs":
+		return c.addInputJson(name, table)
+	case "outputs":
+		return c.addOutputJson(name, table)
+	case "controllers":
+		return c.addControllerJson(name, table)
+	default:
+		return errors.New("unknown plugin: " + name)
+	}
+}
+func buildInputJson(name string, table map[string]interface{}) (*models.InputConfig, error) {
 	cp := &models.InputConfig{Name: name}
-
-	if node, ok := table.Fields["interval"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				dur, err := time.ParseDuration(str.Value)
-				if err != nil {
-					return nil, err
-				}
-				cp.Interval = dur
+	if node, ok := table["interval"]; ok {
+		if nodeV, ok := node.(string); ok {
+			dur, err := time.ParseDuration(nodeV)
+			if err != nil {
+				return nil, err
 			}
+			cp.Interval = dur
 		}
 	}
 
-	if node, ok := table.Fields["point_map"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				cp.PointMapPath = str.Value
-			}
+	if node, ok := table["point_map_path"]; ok {
+		if nodeV, ok := node.(string); ok {
+			cp.PointMapPath = nodeV
 		}
 	}
-	delete(table.Fields, "point_map")
-	delete(table.Fields, "interval")
+	if node, ok := table["point_map_content"]; ok {
+		if nodeV, ok := node.(string); ok {
+			cp.PointMapContent = nodeV
+		}
+	}
+
 	return cp, nil
 }
 
-func buildSerializer(name string, tbl *ast.Table) (serializers.Serializer, error) {
-	c := &serializers.Config{TimestampUnits: time.Duration(1 * time.Second)}
-
-	if node, ok := tbl.Fields["data_format"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.DataFormat = str.Value
-			}
-		}
-	}
-	if c.DataFormat == "" {
-		c.DataFormat = "json"
-	}
-
-	delete(tbl.Fields, "data_format")
-	delete(tbl.Fields, "prefix")
+func buildSerializerJson(name string, tbl map[string]interface{}) (serializers.Serializer, error) {
+	c := &serializers.Config{TimestampUnits: time.Duration(1 * time.Second), DataFormat: "json"}
 	return serializers.NewSerializer(c)
 }
 
@@ -358,140 +263,4 @@ func buildParserMap(name string, tbl *ast.Table) (map[string]parsers.Parser, err
 	delete(tbl.Fields, "parser")
 
 	return r, nil
-}
-
-func buildParser1(name string, tbl *ast.Table) (parsers.Parser, error) {
-	c := &parsers.Config{}
-	if node, ok := tbl.Fields["data_format"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.DataFormat = str.Value
-			}
-		}
-	}
-	//for csv parser
-	if node, ok := tbl.Fields["csv_column_names"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if ary, ok := kv.Value.(*ast.Array); ok {
-				for _, elem := range ary.Value {
-					if str, ok := elem.(*ast.String); ok {
-						c.CSVColumnNames = append(c.CSVColumnNames, str.Value)
-					}
-				}
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_tag_columns"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if ary, ok := kv.Value.(*ast.Array); ok {
-				for _, elem := range ary.Value {
-					if str, ok := elem.(*ast.String); ok {
-						c.CSVTagColumns = append(c.CSVTagColumns, str.Value)
-					}
-				}
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_delimiter"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.CSVDelimiter = str.Value
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_comment"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.CSVComment = str.Value
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_measurement_column"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.CSVMeasurementColumn = str.Value
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_timestamp_column"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.CSVTimestampColumn = str.Value
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_timestamp_format"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				c.CSVTimestampFormat = str.Value
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_header_row_count"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				iVal, err := strconv.Atoi(str.Value)
-				c.CSVHeaderRowCount = iVal
-				if err != nil {
-					return nil, fmt.Errorf("parsing to int: %v", err)
-				}
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_skip_rows"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				iVal, err := strconv.Atoi(str.Value)
-				c.CSVSkipRows = iVal
-				if err != nil {
-					return nil, fmt.Errorf("error parsing to int: %v", err)
-				}
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_skip_columns"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.String); ok {
-				iVal, err := strconv.Atoi(str.Value)
-				c.CSVSkipColumns = iVal
-				if err != nil {
-					return nil, fmt.Errorf("parsing to int: %v", err)
-				}
-			}
-		}
-	}
-
-	if node, ok := tbl.Fields["csv_trim_space"]; ok {
-		if kv, ok := node.(*ast.KeyValue); ok {
-			if str, ok := kv.Value.(*ast.Boolean); ok {
-				//for config with no quotes
-				val, err := strconv.ParseBool(str.Value)
-				c.CSVTrimSpace = val
-				if err != nil {
-					return nil, fmt.Errorf("parsing to bool: %v", err)
-				}
-			}
-		}
-	}
-
-	c.MetricName = name
-	delete(tbl.Fields, "data_format")
-	delete(tbl.Fields, "csv_data_columns")
-	delete(tbl.Fields, "csv_tag_columns")
-	delete(tbl.Fields, "csv_field_columns")
-	delete(tbl.Fields, "csv_name_column")
-	delete(tbl.Fields, "csv_timestamp_column")
-	delete(tbl.Fields, "csv_timestamp_format")
-	delete(tbl.Fields, "csv_delimiter")
-	delete(tbl.Fields, "csv_header")
-	return parsers.NewParser(c)
 }

@@ -1,3 +1,6 @@
+//go:generate statik -src=../assets/dist
+//go:generate go fmt ../statik/statik.go
+
 package main
 
 import (
@@ -13,6 +16,8 @@ import (
 )
 
 func main() {
+	logger.SetupLogging(true, "")
+
 	go func() {
 		ConfigServer := &http.Server{
 			Addr:    ":8080",
@@ -31,6 +36,8 @@ func main() {
 	//		log.Println(runtime.NumGoroutine())
 	//	}
 	//}()
+
+
 
 	go func() {
 		var e error

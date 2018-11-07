@@ -27,13 +27,11 @@ func NewAgent() (*Agent, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := configs.NewConfig()
-	if err := c.LoadConfig(""); err != nil {
-		configs.ReLoadConfig()
-		return nil, err
-	}
 
-	//b, _ := ioutil.ReadFile("../configs/device_adaptor.json")
-	//c.LoadConfigJson(b)
+	e := c.LoadConfigJson(configs.GetConfigContent())
+	if e != nil {
+		log.Println(e)
+	}
 
 	a := &Agent{
 		Name:    "deviceAdaptor",
@@ -278,7 +276,7 @@ func (a *Agent) Run() error {
 		}(input, inter)
 	}
 
-	configs.ReLoadConfig()
+	//configs.ReLoadConfig()
 
 	wg.Wait()
 	a.Close()

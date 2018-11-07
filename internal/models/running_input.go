@@ -11,16 +11,17 @@ import (
 var GlobalMetricsGathered = selfstat.Register("agent", "metrics_gathered", map[string]string{})
 
 type InputConfig struct {
-	Name         string
-	PointMapPath string
-	Interval     time.Duration
+	Name            string
+	PointMapPath    string
+	PointMapContent string
+	Interval        time.Duration
 }
 
 type RunningInput struct {
-	Config          *InputConfig
-	Input           deviceAgent.Input
-	PointMap        map[string]deviceAgent.PointDefine
-	MetricsGathered selfstat.Stat
+	Config          *InputConfig                       `json:"config"`
+	Input           deviceAgent.Input                  `json:"-"`
+	PointMap        map[string]deviceAgent.PointDefine `json:"point_map"`
+	MetricsGathered selfstat.Stat                      `json:"-"`
 }
 
 func NewRunningInput(input deviceAgent.Input, config *InputConfig) *RunningInput {
