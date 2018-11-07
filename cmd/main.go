@@ -1,6 +1,3 @@
-//go:generate statik -src=../assets/dist
-//go:generate go fmt ../statik/statik.go
-
 package main
 
 import (
@@ -13,14 +10,20 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"runtime"
 )
 
 func main() {
 	logger.SetupLogging(true, "")
 
 	go func() {
+		address := ":8080"
+		if runtime.GOOS == "linux" {
+			address = ":80"
+		}
+
 		ConfigServer := &http.Server{
-			Addr:    ":8080",
+			Addr:    address,
 			Handler: agent.InitRouter(true),
 		}
 		gin.SetMode(gin.ReleaseMode)
@@ -36,8 +39,6 @@ func main() {
 	//		log.Println(runtime.NumGoroutine())
 	//	}
 	//}()
-
-
 
 	go func() {
 		var e error
