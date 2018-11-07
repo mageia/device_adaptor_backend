@@ -6,6 +6,7 @@ import (
 	_ "deviceAdaptor/plugins/controllers/all"
 	_ "deviceAdaptor/plugins/inputs/all"
 	_ "deviceAdaptor/plugins/outputs/all"
+	"deviceAdaptor/router"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -24,7 +25,7 @@ func main() {
 
 		ConfigServer := &http.Server{
 			Addr:    address,
-			Handler: agent.InitRouter(true),
+			Handler: router.InitRouter(true),
 		}
 		gin.SetMode(gin.ReleaseMode)
 		ConfigServer.ListenAndServe()

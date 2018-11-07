@@ -1,13 +1,16 @@
-package agent
+package router
 
 import (
+	"deviceAdaptor/agent"
 	"deviceAdaptor/configs"
 	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
 	_ "deviceAdaptor/statik"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rakyll/statik/fs"
@@ -16,9 +19,8 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 )
-
-var ReloadSignal = make(chan struct{}, 1)
 
 func getAll(c *gin.Context) {
 	var availablePluginName = make(map[string][]string)
@@ -181,6 +183,58 @@ func getStatic(fs http.FileSystem, p string) ([]byte, error) {
 	return ioutil.ReadAll(x)
 }
 
+type Login struct {
+	Username string `form:"username" json:"username" xml:"username"  binding:"required"`
+	Password string `form:"password" json:"password" xml:"password" binding:"required"`
+}
+
+func login(c *gin.Context) {
+	var body Login
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.Error(err)
+		return
+	}
+
+	if body.Username != "admin" || body.Password != "admin" {
+		c.Error(errors.New("unauthorized"))
+		return
+	}
+
+	claims := CustomClaims{
+		body.Username,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Second * 20).Unix(),
+		},
+	}
+	token, e := NewJWT().CreateToken(&claims)
+	if e != nil {
+		c.Error(e)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token, "expire": claims.ExpiresAt})
+}
+
+func refresh(c *gin.Context) {
+	cS, ok := c.Get("claims")
+	if !ok {
+		c.AbortWithStatusJSON(403, gin.H{"error": "refresh failed, please re-login."})
+		return
+	}
+
+	if claims, ok := cS.(*CustomClaims); ok {
+		claims.StandardClaims.ExpiresAt = time.Now().Add(time.Minute * 5).Unix()
+		token, e := NewJWT().CreateToken(claims)
+		if e != nil {
+			c.Error(e)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"token": token})
+		return
+	}
+	c.AbortWithStatusJSON(403, gin.H{"error": "refresh failed, please re-login"})
+}
+
 func InitRouter(debug bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -195,7 +249,7 @@ func InitRouter(debug bool) *gin.Engine {
 		if strings.HasPrefix(c.Request.URL.Path, "/plugin") && c.Request.Method != "GET" {
 			go func() {
 				configs.FlushMemoryConfig()
-				ReloadSignal <- struct{}{}
+				agent.ReloadSignal <- struct{}{}
 			}()
 		}
 	})
@@ -243,8 +297,12 @@ func InitRouter(debug bool) *gin.Engine {
 		ctx.String(200, string(b))
 	})
 
-	router.GET("/getInitData", getAll)
-	pG := router.Group("/plugin/:pluginType")
+	auth := router.Group("/auth")
+	auth.POST("/login", login)
+	auth.POST("/refresh", JWTAuthMiddleware, refresh)
+
+	router.GET("/getInitData", JWTAuthMiddleware, getAll)
+	pG := router.Group("/plugin/:pluginType", JWTAuthMiddleware)
 	pG.GET("/:id", getConfig)
 	pG.PUT("/:id", putConfig)
 	pG.DELETE("/:id", deleteConfig)

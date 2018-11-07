@@ -15,6 +15,8 @@ import (
 
 var A *Agent
 
+var ReloadSignal = make(chan struct{}, 1)
+
 type Agent struct {
 	Ctx     context.Context
 	Cancel  context.CancelFunc
