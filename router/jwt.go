@@ -34,11 +34,6 @@ func GetSignKey() string {
 	return SignKey
 }
 
-func SetSignKey(key string) string {
-	SignKey = key
-	return SignKey
-}
-
 func JWTAuthMiddleware(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {

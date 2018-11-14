@@ -278,8 +278,6 @@ func (a *Agent) Run() error {
 		}(input, inter)
 	}
 
-	//configs.ReLoadConfig()
-
 	wg.Wait()
 	a.Close()
 

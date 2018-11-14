@@ -4,6 +4,7 @@ import "math"
 
 type PointDefine struct {
 	Name      string                 `json:"name" yaml:"name"`
+	Label     string                 `json:"label" yaml:"label"`
 	Unit      string                 `json:"unit" yaml:"unit"`
 	PointType PointType              `json:"point_type" yaml:"point_type"`
 	Parameter float64                `json:"parameter,omitempty" yaml:"parameter"`
@@ -17,8 +18,7 @@ type PointType uint8
 type Quality uint8
 
 const (
-	_ PointType = iota
-	PointAnalog
+	PointAnalog  = iota
 	PointState
 )
 const (
@@ -44,5 +44,3 @@ type ServiceInput interface {
 	Start() error
 	Stop()
 }
-
-

@@ -18,9 +18,9 @@ import (
 )
 
 type S7 struct {
-	Address string
-	Rack    int
-	Slot    int
+	Address string `json:"address"`
+	Rack    int    `json:"rack"`
+	Slot    int    `json:"slot"`
 
 	client    gos7.Client
 	_handler  *gos7.TCPClientHandler
@@ -33,9 +33,9 @@ type S7 struct {
 
 	originName string
 
-	FieldPrefix  string
-	FieldSuffix  string
-	NameOverride string
+	FieldPrefix  string `json:"field_prefix"`
+	FieldSuffix  string `json:"field_suffix"`
+	NameOverride string `json:"name_override"`
 }
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}

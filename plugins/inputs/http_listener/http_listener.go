@@ -30,7 +30,7 @@ type ContentInfo struct {
 }
 
 type HTTPListener struct {
-	Address       string
+	ListenAddress string
 	NameOverride  string
 	originName    string
 	MaxBodySize   int64
@@ -183,12 +183,12 @@ func (h *HTTPListener) Start() error {
 	}
 
 	server := &http.Server{
-		Addr:         h.Address,
+		Addr:         h.ListenAddress,
 		Handler:      h,
 		ReadTimeout:  h.ReadTimeout.Duration,
 		WriteTimeout: h.WriteTimeout.Duration,
 	}
-	listener, err := net.Listen("tcp", h.Address)
+	listener, err := net.Listen("tcp", h.ListenAddress)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (h *HTTPListener) Start() error {
 		defer h.wg.Done()
 		server.Serve(h.listener)
 	}()
-	log.Printf("I! Started HTTP listener service on %s\n", h.Address)
+	log.Printf("I! Started HTTP listener service on %s\n", h.ListenAddress)
 
 	return nil
 }
@@ -239,7 +239,7 @@ func (h *HTTPListener) Stop() {
 	defer h.mu.Unlock()
 	h.listener.Close()
 	h.wg.Wait()
-	log.Println("I! Stopped HTTP listener service on ", h.Address)
+	log.Println("I! Stopped HTTP listener service on ", h.ListenAddress)
 }
 
 func init() {

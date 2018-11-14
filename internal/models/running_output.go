@@ -11,14 +11,11 @@ import (
 type RunningOutput struct {
 	Name              string
 	Output            deviceAgent.Output
-	MetricBufferLimit int
-	MetricBatchSize   int
+	MetricBufferLimit int `json:"metric_buffer_limit"`
+	MetricBatchSize   int `json:"metric_batch_size"`
 
 	metrics     *buffer.Buffer
 	failMetrics *buffer.Buffer
-
-	Prefix string
-	Suffix string
 
 	writeMutex sync.Mutex
 }

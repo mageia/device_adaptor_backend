@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rakyll/statik/fs"
+	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -22,109 +23,200 @@ import (
 	"time"
 )
 
-func getAll(c *gin.Context) {
-	var availablePluginName = make(map[string][]string)
-	for k := range inputs.Inputs {
-		availablePluginName["inputs"] = append(availablePluginName["inputs"], k)
-	}
-	for k := range outputs.Outputs {
-		availablePluginName["outputs"] = append(availablePluginName["outputs"], k)
-	}
-	for k := range controllers.Controllers {
-		availablePluginName["controllers"] = append(availablePluginName["controllers"], k)
-	}
-
-	c.JSON(200, gin.H{
-		"current_config":        configs.MemoryConfig,
-		"available_plugin_name": availablePluginName,
-	})
+type Login struct {
+	Username string `form:"username" json:"username" xml:"username"  binding:"required"`
+	Password string `form:"password" json:"password" xml:"password" binding:"required"`
 }
 
-func getConfig(c *gin.Context) {
-	id := c.Param("id")
+func getStatic(fs http.FileSystem, p string) ([]byte, error) {
+	pp := path.Join("/dist", p)
+	x, e := fs.Open(pp)
+	if e != nil {
+		return nil, e
+	}
+	return ioutil.ReadAll(x)
+}
 
+func getConfigSample(c *gin.Context) {
+	var availableInputs = make(map[string][]configs.ConfigSample)
+	var availableOutputs = make(map[string][]configs.ConfigSample)
+	var availableControllers = make(map[string][]configs.ConfigSample)
+
+	for ki := range inputs.Inputs {
+		availableInputs[ki], _ = configs.GenConfigSampleArray("inputs", ki)
+	}
+	for ko := range outputs.Outputs {
+		availableOutputs[ko], _ = configs.GenConfigSampleArray("outputs", ko)
+	}
+	for kc := range controllers.Controllers {
+		availableControllers[kc], _ = configs.GenConfigSampleArray("controllers", kc)
+	}
+
+	var availablePluginName = map[string]interface{}{
+		"inputs":      availableInputs,
+		"outputs":     availableOutputs,
+		"controllers": availableControllers,
+	}
+	c.JSON(200, availablePluginName)
+}
+func getCurrentConfig(c *gin.Context) {
+	c.JSON(200, configs.MemoryConfig)
+}
+func getConfig(c *gin.Context) {
 	switch c.Param("pluginType") {
 	case "agent":
-		c.JSON(200, configs.MemoryConfig.Agent)
-	case "inputs":
-		c.JSON(200, configs.MemoryConfig.Inputs[id])
-	case "outputs":
-		c.JSON(200, configs.MemoryConfig.Outputs[id])
-	case "controllers":
-		c.JSON(200, configs.MemoryConfig.Controllers[id])
+		c.Data(200, "application/json", []byte(gjson.GetBytes(configs.CurrentConfig, "agent").Raw))
+	case "inputs", "outputs", "controllers":
+		idL := strings.Split(c.Param("id"), "/")
+		id := idL[len(idL)-1]
+
+		k := fmt.Sprintf(`%s.#[id=="%s"]`, c.Param("pluginType"), id)
+		c.Data(200, "application/json", []byte(gjson.GetBytes(configs.CurrentConfig, k).Raw))
 	default:
 		c.Error(fmt.Errorf("can't find config by params: %v", c.Params))
 	}
 }
-
 func deleteConfig(c *gin.Context) {
-	id := c.Param("id")
-
+	idL := strings.Split(c.Param("id"), "/")
+	id := idL[len(idL)-1]
 	switch c.Param("pluginType") {
 	case "inputs":
-		delete(configs.MemoryConfig.Inputs, id)
-		c.JSON(200, gin.H{"msg": "OK"})
+		for index, iC := range configs.MemoryConfig.Inputs {
+			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				configs.MemoryConfig.Inputs = append(configs.MemoryConfig.Inputs[:index], configs.MemoryConfig.Inputs[index+1:]...)
+				c.JSON(200, configs.MemoryConfig.Inputs)
+				return
+			}
+		}
+		c.Error(fmt.Errorf("can't find [%s] config by id: %s", c.Param("pluginType"), id))
 	case "outputs":
-		delete(configs.MemoryConfig.Outputs, id)
-		c.JSON(200, gin.H{"msg": "OK"})
+		for index, iC := range configs.MemoryConfig.Outputs {
+			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				configs.MemoryConfig.Outputs = append(configs.MemoryConfig.Outputs[:index], configs.MemoryConfig.Outputs[index+1:]...)
+				c.JSON(200, configs.MemoryConfig.Outputs)
+				return
+			}
+		}
+		c.Error(fmt.Errorf("can't find [%s] config by id: %s", c.Param("pluginType"), id))
 	case "controllers":
-		delete(configs.MemoryConfig.Controllers, id)
-		c.JSON(200, gin.H{"msg": "OK"})
+		for index, iC := range configs.MemoryConfig.Controllers {
+			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				configs.MemoryConfig.Controllers = append(configs.MemoryConfig.Controllers[:index], configs.MemoryConfig.Controllers[index+1:]...)
+				c.JSON(200, configs.MemoryConfig.Controllers)
+				return
+			}
+		}
+		c.Error(fmt.Errorf("can't find [%s] config by id: %s", c.Param("pluginType"), id))
 	default:
 		c.Error(fmt.Errorf("invalid pluginType: %v", c.Param("pluginType")))
 	}
 }
-
 func putConfig(c *gin.Context) {
-	var body map[string]interface{}
-	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-		c.Error(err)
-		return
-	}
-	id := c.Param("id")
-
-	switch c.Param("pluginType") {
-	case "agent":
-		b, _ := json.Marshal(body)
+	pluginType := c.Param("pluginType")
+	if pluginType == "agent" {
+		b, e := c.GetRawData()
+		if e != nil {
+			c.Error(e)
+			return
+		}
 		if e := json.Unmarshal(b, configs.MemoryConfig.Agent); e != nil {
 			c.Error(fmt.Errorf("update agent config failed: %v", e))
 		} else {
 			c.JSON(200, configs.MemoryConfig.Agent)
 		}
-
-	case "inputs":
-		if _, ok := configs.MemoryConfig.Inputs[id]; ok {
-			for k, v := range body {
-				if _, ok := configs.MemoryConfig.Inputs[id][k]; ok {
-					configs.MemoryConfig.Inputs[id][k] = v
-				}
-			}
-		}
-		c.JSON(200, configs.MemoryConfig.Inputs[id])
-	case "outputs":
-		if _, ok := configs.MemoryConfig.Outputs[id]; ok {
-			for k, v := range body {
-				if _, ok := configs.MemoryConfig.Outputs[id][k]; ok {
-					configs.MemoryConfig.Outputs[id][k] = v
-				}
-			}
-		}
-		c.JSON(200, configs.MemoryConfig.Inputs[id])
-	case "controllers":
-		if _, ok := configs.MemoryConfig.Controllers[id]; ok {
-			for k, v := range body {
-				if _, ok := configs.MemoryConfig.Controllers[id][k]; ok {
-					configs.MemoryConfig.Controllers[id][k] = v
-				}
-			}
-		}
-		c.JSON(200, configs.MemoryConfig.Controllers[id])
-	default:
-		c.Error(fmt.Errorf("can't find config by params: %v", c.Params))
+		return
 	}
-	configs.FlushMemoryConfig()
-}
 
+	idL := strings.Split(c.Param("id"), "/")
+	id := idL[len(idL)-1]
+	var body map[string]interface{}
+	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+		c.Error(err)
+		return
+	}
+
+	switch pluginType {
+	case "inputs":
+		for index, iC := range configs.MemoryConfig.Inputs {
+			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				pluginName, ok := iC["plugin_name"].(string)
+				if !ok {
+					c.Error(fmt.Errorf("unenabled plugin_name: %s", pluginName))
+					return
+				}
+				if _, ok := configs.InputSample[pluginName]; !ok {
+					c.Error(fmt.Errorf("unsupported plugin_name: %s", pluginName))
+					return
+				}
+
+				for k, v := range body {
+					if _, ok := configs.InputSample[pluginName][k]; !ok {
+						if _, ok := configs.InputSample["_base"][k]; !ok {
+							continue
+						}
+					}
+					configs.MemoryConfig.Inputs[index][k] = v
+				}
+
+				c.JSON(200, configs.MemoryConfig.Inputs[index])
+				return
+			}
+		}
+	case "outputs":
+		for index, iC := range configs.MemoryConfig.Outputs {
+			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				pluginName, ok := iC["plugin_name"].(string)
+				if !ok {
+					c.Error(fmt.Errorf("unenabled plugin_name: %s", pluginName))
+					return
+				}
+				if _, ok := configs.OutputSample[pluginName]; !ok {
+					c.Error(fmt.Errorf("unsupported plugin_name: %s", pluginName))
+					return
+				}
+
+				for k, v := range body {
+					if _, ok := configs.OutputSample[pluginName][k]; !ok {
+						if _, ok := configs.OutputSample["_base"][k]; !ok {
+							continue
+						}
+					}
+					configs.MemoryConfig.Outputs[index][k] = v
+				}
+
+				c.JSON(200, configs.MemoryConfig.Outputs[index])
+				return
+			}
+		}
+	case "controllers":
+		for index, iC := range configs.MemoryConfig.Controllers {
+			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				pluginName, ok := iC["plugin_name"].(string)
+				if !ok {
+					c.Error(fmt.Errorf("unenabled plugin_name: %s", pluginName))
+					return
+				}
+				if _, ok := configs.ControllerSample[pluginName]; !ok {
+					c.Error(fmt.Errorf("unsupported plugin_name: %s", pluginName))
+					return
+				}
+
+				for k, v := range body {
+					if _, ok := configs.ControllerSample[pluginName][k]; !ok {
+						if _, ok := configs.ControllerSample["_base"][k]; !ok {
+							continue
+						}
+					}
+					configs.MemoryConfig.Controllers[index][k] = v
+				}
+
+				c.JSON(200, configs.MemoryConfig.Controllers[index])
+				return
+			}
+		}
+	}
+	c.Error(fmt.Errorf("can't find config by params: %v", c.Params))
+}
 func postConfig(c *gin.Context) {
 	var body map[string]interface{}
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
@@ -150,9 +242,6 @@ func postConfig(c *gin.Context) {
 		}
 	}
 
-	id := s["id"].(string)
-	delete(s, "id")
-
 	switch pluginType {
 	case "inputs":
 		for _, v := range configs.MemoryConfig.Inputs {
@@ -161,33 +250,18 @@ func postConfig(c *gin.Context) {
 				return
 			}
 		}
-		configs.MemoryConfig.Inputs[id] = s
+		configs.MemoryConfig.Inputs = append(configs.MemoryConfig.Inputs, s)
 	case "outputs":
-		configs.MemoryConfig.Outputs[id] = s
+		configs.MemoryConfig.Outputs = append(configs.MemoryConfig.Outputs, s)
 	case "controllers":
-		configs.MemoryConfig.Controllers[id] = s
+		configs.MemoryConfig.Controllers = append(configs.MemoryConfig.Controllers, s)
 	default:
 		c.Error(fmt.Errorf("unknown pluginType: %s", pluginType))
 		return
 	}
 
-	c.JSON(200, gin.H{id: s})
+	c.JSON(200, s)
 }
-
-func getStatic(fs http.FileSystem, p string) ([]byte, error) {
-	pp := path.Join("/dist", p)
-	x, e := fs.Open(pp)
-	if e != nil {
-		return nil, e
-	}
-	return ioutil.ReadAll(x)
-}
-
-type Login struct {
-	Username string `form:"username" json:"username" xml:"username"  binding:"required"`
-	Password string `form:"password" json:"password" xml:"password" binding:"required"`
-}
-
 func login(c *gin.Context) {
 	var body Login
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -203,7 +277,7 @@ func login(c *gin.Context) {
 	claims := CustomClaims{
 		body.Username,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Second * 20).Unix(),
+			ExpiresAt: time.Now().Add(time.Minute * 500).Unix(),
 		},
 	}
 	token, e := NewJWT().CreateToken(&claims)
@@ -214,7 +288,24 @@ func login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token, "expire": claims.ExpiresAt})
 }
-
+func reset(c *gin.Context) {
+	var body struct {
+		Username    string `json:"username" binding:"required"`
+		OldPassword string `json:"old_password" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.Error(err)
+		return
+	}
+	if configs.MemoryConfig.User[body.Username]["password"] == body.OldPassword {
+		configs.MemoryConfig.User[body.Username]["password"] = body.NewPassword
+		c.JSON(200, gin.H{"msg": fmt.Sprintf("reset password of: %s success", body.Username)})
+		log.Println(configs.MemoryConfig.User)
+	} else {
+		c.Error(fmt.Errorf("reset password of: %s failed", body.Username))
+	}
+}
 func refresh(c *gin.Context) {
 	cS, ok := c.Get("claims")
 	if !ok {
@@ -223,7 +314,7 @@ func refresh(c *gin.Context) {
 	}
 
 	if claims, ok := cS.(*CustomClaims); ok {
-		claims.StandardClaims.ExpiresAt = time.Now().Add(time.Minute * 5).Unix()
+		claims.StandardClaims.ExpiresAt = time.Now().Add(time.Minute * 500).Unix()
 		token, e := NewJWT().CreateToken(claims)
 		if e != nil {
 			c.Error(e)
@@ -268,6 +359,33 @@ func InitRouter(debug bool) *gin.Engine {
 		ctx.Header("Content-type", "text/html; charset=UTF-8")
 		ctx.String(200, string(b))
 	})
+	router.GET("/inputs", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, "inputs/index.html")
+		if e != nil {
+			ctx.Error(e)
+			return
+		}
+		ctx.Header("Content-type", "text/html; charset=UTF-8")
+		ctx.String(200, string(b))
+	})
+	router.GET("/outputs", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, "outputs/index.html")
+		if e != nil {
+			ctx.Error(e)
+			return
+		}
+		ctx.Header("Content-type", "text/html; charset=UTF-8")
+		ctx.String(200, string(b))
+	})
+	router.GET("/login", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, "login/index.html")
+		if e != nil {
+			ctx.Error(e)
+			return
+		}
+		ctx.Header("Content-type", "text/html; charset=UTF-8")
+		ctx.String(200, string(b))
+	})
 	router.GET("/favicon.ico", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, "favicon.ico")
 		if e != nil {
@@ -299,13 +417,15 @@ func InitRouter(debug bool) *gin.Engine {
 
 	auth := router.Group("/auth")
 	auth.POST("/login", login)
+	auth.POST("/reset", JWTAuthMiddleware, reset)
 	auth.POST("/refresh", JWTAuthMiddleware, refresh)
 
-	router.GET("/getInitData", JWTAuthMiddleware, getAll)
+	router.GET("/getConfigSample", JWTAuthMiddleware, getConfigSample)
+	router.GET("/getCurrentConfig", JWTAuthMiddleware, getCurrentConfig)
 	pG := router.Group("/plugin/:pluginType", JWTAuthMiddleware)
-	pG.GET("/:id", getConfig)
-	pG.PUT("/:id", putConfig)
-	pG.DELETE("/:id", deleteConfig)
+	pG.GET("/*id", getConfig)
+	pG.PUT("/*id", putConfig)
+	pG.DELETE("/*id", deleteConfig)
 	pG.POST("/", postConfig)
 
 	if debug {

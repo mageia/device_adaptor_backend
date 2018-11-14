@@ -21,8 +21,8 @@ const HoleWidth = 200
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
 type Modbus struct {
-	Address string
-	SlaveId int
+	Address string `json:"address"`
+	SlaveId int    `json:"slave_id"`
 
 	client    modbus.Client
 	_handler  *modbus.TCPClientHandler
@@ -33,9 +33,9 @@ type Modbus struct {
 	acc       deviceAgent.Accumulator
 
 	originName   string
-	FieldPrefix  string
-	FieldSuffix  string
-	NameOverride string
+	FieldPrefix  string `json:"field_prefix"`
+	FieldSuffix  string `json:"field_suffix"`
+	NameOverride string `json:"name_override"`
 }
 
 func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {

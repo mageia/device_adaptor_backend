@@ -5,8 +5,8 @@ import (
 	"deviceAdaptor/plugins/inputs"
 	"encoding/csv"
 	"fmt"
+	"github.com/rakyll/statik/fs"
 	"io"
-	"os"
 	"strconv"
 	"time"
 )
@@ -19,9 +19,9 @@ type Fake struct {
 	mockCsvReader *csv.Reader
 
 	originName   string
-	FieldPrefix  string
-	FieldSuffix  string
-	NameOverride string
+	FieldPrefix  string `json:"field_prefix"`
+	FieldSuffix  string `json:"field_suffix"`
+	NameOverride string `json:"name_override"`
 }
 
 func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
@@ -34,19 +34,24 @@ func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
 }
 
 func (f *Fake) Start() error {
-	if _csvFile, e := os.Open("../configs/mock_data_opc.csv"); e != nil {
+	sFs, e := fs.New()
+	if e != nil {
 		return e
-	} else {
-		_mockCsvReader := csv.NewReader(_csvFile)
-		_mockKeyList, e := _mockCsvReader.Read()
-		if e != nil {
-			return e
-		}
-
-		f.connected = true
-		f.mockCsvReader = _mockCsvReader
-		f.mockKeyList = _mockKeyList
 	}
+
+	_csvFile, e := sFs.Open("/configs/mock_data_opc.csv")
+	if e != nil {
+		return e
+	}
+	_mockCsvReader := csv.NewReader(_csvFile)
+	_mockKeyList, e := _mockCsvReader.Read()
+	if e != nil {
+		return e
+	}
+
+	f.connected = true
+	f.mockCsvReader = _mockCsvReader
+	f.mockKeyList = _mockKeyList
 	return nil
 }
 func (f *Fake) Stop() {
