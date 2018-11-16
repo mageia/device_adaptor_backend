@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rakyll/statik/fs"
 	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -73,12 +74,16 @@ func getPointMap(c *gin.Context) {
 
 	pointArray := make([]points.PointDefine, 0)
 	pointMap := make(map[string]points.PointDefine)
-	points.SqliteDB.Where(map[string]interface{}{"input_name": iC["name_override"]}).Find(&pointArray)
+	points.SqliteDB.Where("input_name = ?", iC["name_override"]).Find(&pointArray)
 	for _, p := range pointArray {
 		pointMap[p.Address] = p
 	}
 
-	c.JSON(200, pointMap)
+	b, _ := json.Marshal(pointMap)
+	c.JSON(200, gin.H{
+		"point_map_content": string(b),
+		"point_map_path":    "",  //TODO  path
+	})
 }
 func putPointMap(c *gin.Context) {
 	id := c.Param("id")
@@ -91,18 +96,24 @@ func putPointMap(c *gin.Context) {
 	inputName := iC["name_override"].(string)
 
 	var body struct {
-		PointMapPath    string                        `json:"point_map_path"`
-		PointMapContent map[string]points.PointDefine `json:"point_map_content"`
+		PointMapPath    string `json:"point_map_path"`
+		PointMapContent string `json:"point_map_content"`
 	}
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
 		c.Error(err)
 		return
 	}
 
-	log.Println(body)
+	pointMap := make(map[string]points.PointDefine)
+	if e := yaml.UnmarshalStrict([]byte(body.PointMapContent), &pointMap); e != nil {
+		if e = json.Unmarshal([]byte(body.PointMapContent), &pointMap); e != nil {
+			c.Error(fmt.Errorf("point_map_content is neither json nor yaml format: %v", e))
+			return
+		}
+	}
 
 	points.SqliteDB.Unscoped().Delete(&points.PointDefine{}, "input_name = ?", inputName)
-	for k, v := range body.PointMapContent {
+	for k, v := range pointMap {
 		v.InputName = inputName
 		v.Address = k
 		points.SqliteDB.Create(&v)

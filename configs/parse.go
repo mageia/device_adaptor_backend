@@ -88,32 +88,6 @@ func (c *Config) addInputBytes(table []byte) error {
 		return err
 	}
 
-	//pointMap := make(map[string]deviceAgent.PointDefine)
-	//
-	//if inputConfig.PointMapContent != "" {
-	//	e := yaml.UnmarshalStrict([]byte(inputConfig.PointMapContent), &pointMap)
-	//	if e != nil {
-	//		log.Println(e)
-	//	}
-	//} else if inputConfig.PointMapPath != "" {
-	//	pMContent, err := ioutil.ReadFile(inputConfig.PointMapPath)
-	//	if err != nil {
-	//		log.Printf("Can't load point_map file: %s, %s", inputConfig.PointMapPath, err)
-	//	} else {
-	//		yaml.UnmarshalStrict(pMContent, &pointMap)
-	//	}
-	//}
-	//input.SetPointMap(pointMap)
-	//if nameOverride == "" {
-	//	nameOverride = pluginName
-	//}
-	//
-	//for k, v := range pointMap {
-	//	v.Address = k
-	//	v.InputName = nameOverride
-	//	point.SqliteDB.Create(v)
-	//}
-
 	//set point map to per input plugin
 	nameOverride := gjson.GetBytes(table, "name_override").String()
 	if nameOverride == "" {
