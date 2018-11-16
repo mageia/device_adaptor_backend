@@ -2,6 +2,7 @@ package all
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/parsers"
 )
 
@@ -15,7 +16,7 @@ func (i *Interactive) Gather(deviceAgent.Accumulator) error {
 	panic("implement me")
 }
 
-func (i *Interactive) SetPointMap(map[string]deviceAgent.PointDefine) {
+func (i *Interactive) SetPointMap(map[string]points.PointDefine) {
 	panic("implement me")
 }
 

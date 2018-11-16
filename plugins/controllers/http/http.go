@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/controllers"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -111,7 +112,7 @@ func (h *HTTP) getPointMapHandler(ctx *gin.Context) {
 		return
 	}
 
-	r := make(map[string]map[string]deviceAgent.PointDefine)
+	r := make(map[string]map[string]points.PointDefine)
 	if len(getBody.Inputs) == 0 {
 		for _, iV := range h.Inputs {
 			r[iV.Name()] = iV.RetrievePointMap(nil)

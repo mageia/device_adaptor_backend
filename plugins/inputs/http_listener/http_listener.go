@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/parsers"
 	"encoding/json"
@@ -98,7 +99,7 @@ func (h *HTTPListener) Gather(acc deviceAgent.Accumulator) (err error) {
 	return nil
 }
 
-func (h *HTTPListener) SetPointMap(map[string]deviceAgent.PointDefine) {}
+func (h *HTTPListener) SetPointMap(map[string]points.PointDefine) {}
 
 func renderMsg(w http.ResponseWriter, message string, statusCode ...int) {
 	w.Header().Set("Content-Type", "application/json")

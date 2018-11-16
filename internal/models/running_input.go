@@ -2,6 +2,7 @@ package models
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/metric"
 	"deviceAdaptor/selfstat"
 	"log"
@@ -11,16 +12,16 @@ import (
 var GlobalMetricsGathered = selfstat.Register("agent", "metrics_gathered", map[string]string{})
 
 type InputConfig struct {
-	Name            string        
-	PointMapPath    string        
-	PointMapContent string        
-	Interval        time.Duration 
+	Name            string
+	//PointMapPath    string
+	//PointMapContent string
+	Interval        time.Duration
 }
 
 type RunningInput struct {
 	Config          *InputConfig
 	Input           deviceAgent.Input
-	PointMap        map[string]deviceAgent.PointDefine
+	PointMap        map[string]points.PointDefine
 	MetricsGathered selfstat.Stat
 }
 

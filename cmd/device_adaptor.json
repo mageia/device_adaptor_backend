@@ -1,1 +1,48 @@
-{"agent":{"debug":true,"interval":"3s","flush_interval":"10s","collection_jitter":"10ms","flush_jitter":"10ms","metric_batch_size":0,"metric_buffer_limit":10},"inputs":[{"created_at":1541487113347,"id":"9f54b4b2-efb1-4f01-ad27-6b6da8d676a0","interval":"4s","name_override":"fake_123","plugin_name":"fake","point_map":""},{"address":"192.168.0.168","created_at":1542171427329,"field_prefix":"","field_suffix":"","id":"fa738ffd-aaed-4bf5-91a8-aeaddf415ce9","interval":"1s","name_override":"s7_test1","plugin_name":"s7","point_map_content":"","point_map_path":"","rack":0,"slot":1}],"outputs":[{"created_at":1541487113347,"id":"62b3328f-b1cf-4a9f-a456-e33e3a8c22c6","plugin_name":"redis","url_address":"redis://:leaniot@192.168.1.52:6379/0"}],"controllers":[{"address":":9999","created_at":1541487113347,"id":"d9019649-f2f7-431b-ac16-449ef7ca8ba1","plugin_name":"http"}]}
+{
+  "agent": {
+    "debug": true,
+    "interval": "3s",
+    "flush_interval": "10s",
+    "collection_jitter": "10ms",
+    "flush_jitter": "10ms",
+    "metric_batch_size": 0,
+    "metric_buffer_limit": 0
+  },
+  "inputs": [
+    {
+      "created_at": 1541487113347,
+      "id": "9f54b4b2-efb1-4f01-ad27-6b6da8d676a0",
+      "interval": "3s",
+      "name_override": "fake",
+      "plugin_name": "fake"
+    },
+    {
+      "address": "192.168.0.168",
+      "created_at": 1542349093453,
+      "field_prefix": "",
+      "field_suffix": "",
+      "id": "f6711475-958a-41fb-a7a4-3594676351fe",
+      "interval": "3s",
+      "name_override": "s7_test1",
+      "plugin_name": "s7",
+      "rack": 0,
+      "slot": 1
+    }
+  ],
+  "outputs": [
+    {
+      "created_at": 1541487113347,
+      "id": "62b3328f-b1cf-4a9f-a456-e33e3a8c22c6",
+      "plugin_name": "redis",
+      "url_address": "redis://:leaniot@192.168.1.56:6379/0"
+    }
+  ],
+  "controllers": [
+    {
+      "address": ":9999",
+      "created_at": 1541487113347,
+      "id": "d9019649-f2f7-431b-ac16-449ef7ca8ba1",
+      "plugin_name": "http"
+    }
+  ]
+}

@@ -4,6 +4,8 @@ git.leaniot.cn/publicLib/go-modbus
 git.leaniot.cn/publicLib/go-modbus-serial
 # github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 github.com/axgle/mahonia
+# github.com/dgrijalva/jwt-go v3.2.0+incompatible
+github.com/dgrijalva/jwt-go
 # github.com/eclipse/paho.mqtt.golang v1.1.1
 github.com/eclipse/paho.mqtt.golang
 github.com/eclipse/paho.mqtt.golang/packets
@@ -27,26 +29,26 @@ github.com/go-redis/redis/internal/util
 github.com/golang/protobuf/proto
 # github.com/google/uuid v1.0.0
 github.com/google/uuid
-# github.com/influxdata/toml v0.0.0-20180607005434-2a2e3012f7cf
-github.com/influxdata/toml
-github.com/influxdata/toml/ast
+# github.com/jinzhu/gorm v1.9.1
+github.com/jinzhu/gorm
+github.com/jinzhu/gorm/dialects/sqlite
+# github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
+github.com/jinzhu/inflection
 # github.com/jlaffaye/ftp v0.0.0-20181101112434-47f21d10f0ee
 github.com/jlaffaye/ftp
 # github.com/json-iterator/go v1.1.5
 github.com/json-iterator/go
 # github.com/mattn/go-isatty v0.0.4
 github.com/mattn/go-isatty
-# github.com/mitchellh/mapstructure v1.1.2
-github.com/mitchellh/mapstructure
+# github.com/mattn/go-sqlite3 v1.10.0
+github.com/mattn/go-sqlite3
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/naoina/go-stringutil v0.1.0
-github.com/naoina/go-stringutil
 # github.com/rakyll/statik v0.1.5
 github.com/rakyll/statik/fs
-# github.com/robinson/gos7 v0.0.0-20181006145426-66ae787b1f82
+# github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b
 github.com/robinson/gos7
 # github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 github.com/tarm/serial
@@ -56,11 +58,11 @@ github.com/tidwall/gjson
 github.com/tidwall/match
 # github.com/ugorji/go/codec v0.0.0-20181022190402-e5e69e061d4f
 github.com/ugorji/go/codec
-# golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+# golang.org/x/net v0.0.0-20181114220301-adae6a3d119a
 golang.org/x/net/proxy
 golang.org/x/net/websocket
 golang.org/x/net/internal/socks
-# golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e
+# golang.org/x/sys v0.0.0-20181107165924-66b7b1311ac8
 golang.org/x/sys/unix
 # gopkg.in/go-playground/validator.v8 v8.18.2
 gopkg.in/go-playground/validator.v8

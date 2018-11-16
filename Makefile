@@ -24,7 +24,7 @@ run:
 	cd cmd && ./${BIN_NAME}
 
 pi:
-	cd cmd && GOARM=7 GOARCH=arm GOOS=linux go build -o ../deviceAdaptorLinux
+	cd cmd && CGO_ENABLED=1 CC=/Volumes/arm-linux/bin/arm-none-linux-gnueabi-gcc GOARM=6 GOARCH=arm GOOS=linux go build -o ../deviceAdaptorLinux
 
 bin:
 	@echo "building exec ${BIN_NAME}"

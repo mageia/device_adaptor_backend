@@ -1,9 +1,9 @@
 package configs
 
 import (
-	"deviceAdaptor"
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
@@ -12,9 +12,6 @@ import (
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
 	"time"
 )
 
@@ -91,28 +88,44 @@ func (c *Config) addInputBytes(table []byte) error {
 		return err
 	}
 
-	pointMap := make(map[string]deviceAgent.PointDefine, 0)
-	if inputConfig.PointMapContent != "" {
-		yaml.UnmarshalStrict([]byte(inputConfig.PointMapContent), &pointMap)
-	} else if inputConfig.PointMapPath != "" {
-		pMContent, err := ioutil.ReadFile(inputConfig.PointMapPath)
-		if err != nil {
-			log.Printf("Can't load point_map file: %s, %s", inputConfig.PointMapPath, err)
-		} else {
-			yaml.UnmarshalStrict(pMContent, &pointMap)
-		}
+	//pointMap := make(map[string]deviceAgent.PointDefine)
+	//
+	//if inputConfig.PointMapContent != "" {
+	//	e := yaml.UnmarshalStrict([]byte(inputConfig.PointMapContent), &pointMap)
+	//	if e != nil {
+	//		log.Println(e)
+	//	}
+	//} else if inputConfig.PointMapPath != "" {
+	//	pMContent, err := ioutil.ReadFile(inputConfig.PointMapPath)
+	//	if err != nil {
+	//		log.Printf("Can't load point_map file: %s, %s", inputConfig.PointMapPath, err)
+	//	} else {
+	//		yaml.UnmarshalStrict(pMContent, &pointMap)
+	//	}
+	//}
+	//input.SetPointMap(pointMap)
+	//if nameOverride == "" {
+	//	nameOverride = pluginName
+	//}
+	//
+	//for k, v := range pointMap {
+	//	v.Address = k
+	//	v.InputName = nameOverride
+	//	point.SqliteDB.Create(v)
+	//}
+
+	//set point map to per input plugin
+	nameOverride := gjson.GetBytes(table, "name_override").String()
+	if nameOverride == "" {
+		nameOverride = pluginName
+	}
+	pointMap := make(map[string]points.PointDefine)
+	pointArray := make([]points.PointDefine, 0)
+	points.SqliteDB.Where("input_name = ?", nameOverride).Find(&pointArray)
+	for _, p := range pointArray {
+		pointMap[p.Address] = p
 	}
 	input.SetPointMap(pointMap)
-
-	//pointMap["a"] = deviceAgent.PointDefine{
-	//	Name: "test",
-	//}
-	//x, _ := jsoniter.Marshal(pointMap)
-	//log.Println(string(x))
-	//
-	//pM := point.PointDefine{}
-	//proto.Unmarshal(x, &pM)
-	//log.Println(pM.Name)
 
 	if err := jsoniter.Unmarshal(table, &input); err != nil {
 		return err
@@ -178,16 +191,16 @@ func buildInputJson(name string, table map[string]interface{}) (*models.InputCon
 			cp.Interval = dur
 		}
 	}
-	if node, ok := table["point_map_path"]; ok {
-		if nodeV, ok := node.(string); ok {
-			cp.PointMapPath = nodeV
-		}
-	}
-	if node, ok := table["point_map_content"]; ok {
-		if nodeV, ok := node.(string); ok {
-			cp.PointMapContent = nodeV
-		}
-	}
+	//if node, ok := table["point_map_path"]; ok {
+	//	if nodeV, ok := node.(string); ok {
+	//		cp.PointMapPath = nodeV
+	//	}
+	//}
+	//if node, ok := table["point_map_content"]; ok {
+	//	if nodeV, ok := node.(string); ok {
+	//		cp.PointMapContent = nodeV
+	//	}
+	//}
 
 	return cp, nil
 }

@@ -52,7 +52,6 @@ var defaultConfigJson = `
       "interval": "3s",
       "name_override": "fake",
       "plugin_name": "fake",
-      "point_map": ""
     }
   ],
   "outputs": [
@@ -76,45 +75,43 @@ var defaultConfigJson = `
 var jsonConfigPath = "device_adaptor.json"
 var InputSample = map[string]map[string]ConfigSample{
 	"_base": {
-		"created_at": ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", 0},
+		"created_at": ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", -100},
 	},
 	"modbus": {
-		"name_override":     ConfigSample{"name_override", "数据源名称", "modbus", "input", 1},
-		"address":           ConfigSample{"address", "数据源地址", "10.211.55.4:502", "input", 2},
-		"slave_id":          ConfigSample{"slave_id", "从站地址", 1, "input", 3},
-		"interval":          ConfigSample{"interval", "采集周期", "3s", "combine", 20},
-		"field_prefix":      ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
-		"field_suffix":      ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
-		"point_map_content": ConfigSample{"point_map_content", "点表内容", "", "text", 101},
-		"point_map_path":    ConfigSample{"point_map_path", "点表地址", "", "input", 100},
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "modbus", "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "modbus", "input", 2},
+		"address":       ConfigSample{"address", "数据源地址", "10.211.55.4:502", "input", 3},
+		"slave_id":      ConfigSample{"slave_id", "从站地址", 1, "input", 4},
+		"interval":      ConfigSample{"interval", "采集周期", "3s", "combine", 20},
+		"field_prefix":  ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
+		"field_suffix":  ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
 	},
 	"fake": {
-		"name_override":     ConfigSample{"name_override", "数据源名称", "fake", "input", 1},
-		"interval":          ConfigSample{"interval", "采集周期", "3s", "combine", 20},
-		"field_prefix":      ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
-		"field_suffix":      ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
-		"point_map_content": ConfigSample{"point_map_content", "点表内容", "", "text", 101},
-		"point_map_path":    ConfigSample{"point_map_path", "点表地址", "", "input", 100},
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "fake", "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "fake", "input", 2},
+		"interval":      ConfigSample{"interval", "采集周期", "3s", "combine", 20},
+		"field_prefix":  ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
+		"field_suffix":  ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
 	},
 	"s7": {
-		"name_override":     ConfigSample{"name_override", "数据源名称", "s7", "input", 1},
-		"address":           ConfigSample{"address", "数据源地址", "192.168.0.168", "input", 2},
-		"rack":              ConfigSample{"rack", "机架号", 0, "input", 3},
-		"slot":              ConfigSample{"slot", "槽号", 1, "input", 4},
-		"interval":          ConfigSample{"interval", "采集周期", "3s", "combine", 20},
-		"field_prefix":      ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
-		"field_suffix":      ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
-		"point_map_content": ConfigSample{"point_map_content", "点表内容", "", "text", 101},
-		"point_map_path":    ConfigSample{"point_map_path", "点表地址", "", "input", 100},
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "s7", "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "s7", "input", 2},
+		"address":       ConfigSample{"address", "数据源地址", "192.168.0.168", "input", 3},
+		"rack":          ConfigSample{"rack", "机架号", 0, "input", 4},
+		"slot":          ConfigSample{"slot", "槽号", 1, "input", 5},
+		"interval":      ConfigSample{"interval", "采集周期", "3s", "combine", 20},
+		"field_prefix":  ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
+		"field_suffix":  ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
 	},
 	"http_listener": {
-		"listen_address": ConfigSample{"listen_address", "监听地址", "0.0.0.0:19999", "input", 1},
-		"max_body_size":  ConfigSample{"max_body_size", "最大消息体大小", 5 * 1024 * 1024, "input", 2},
-		"max_line_size":  ConfigSample{"max_line_size", "最大文件行数", 64 * 1024, "input", 3},
-		"read_timeout":   ConfigSample{"read_timeout", "读超时时间", "10s", "combine", 4},
-		"write_timeout":  ConfigSample{"write_timeout", "写超时时间", "10s", "combine", 5},
-		"basic_username": ConfigSample{"basic_username", "认证账户", "", "input", 6},
-		"basic_password": ConfigSample{"basic_password", "认证密码", "", "input", 7},
+		"plugin_name":    ConfigSample{"plugin_name", "插件名称", "http_listener", "select", 1},
+		"listen_address": ConfigSample{"listen_address", "监听地址", "0.0.0.0:19999", "input", 2},
+		"max_body_size":  ConfigSample{"max_body_size", "最大消息体大小", 5 * 1024 * 1024, "input", 3},
+		"max_line_size":  ConfigSample{"max_line_size", "最大文件行数", 64 * 1024, "input", 4},
+		"read_timeout":   ConfigSample{"read_timeout", "读超时时间", "10s", "combine", 5},
+		"write_timeout":  ConfigSample{"write_timeout", "写超时时间", "10s", "combine", 6},
+		"basic_username": ConfigSample{"basic_username", "认证账户", "", "input", 7},
+		"basic_password": ConfigSample{"basic_password", "认证密码", "", "input", 8},
 	},
 }
 var OutputSample = map[string]map[string]ConfigSample{
@@ -124,10 +121,12 @@ var OutputSample = map[string]map[string]ConfigSample{
 		"created_at":          ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", 0},
 	},
 	"redis": {
-		"url_address": ConfigSample{"url_address", "地址URL", "redis://localhost:6379/0", "input", 1},
+		"plugin_name": ConfigSample{"plugin_name", "插件名称", "redis", "select", 1},
+		"url_address": ConfigSample{"url_address", "地址URL", "redis://localhost:6379/0", "input", 2},
 	},
 	"file": {
-		"files": ConfigSample{"files", "输出地址", []string{"stdout"}, "multi-select", 1},
+		"plugin_name": ConfigSample{"plugin_name", "插件名称", "file", "select", 1},
+		"files":       ConfigSample{"files", "输出地址", []string{"stdout"}, "multi-input", 2},
 	},
 }
 var ControllerSample = map[string]map[string]ConfigSample{
@@ -135,7 +134,8 @@ var ControllerSample = map[string]map[string]ConfigSample{
 		"created_at": ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", 0},
 	},
 	"http": {
-		"address": ConfigSample{"address", "监听地址", "0.0.0.0:9999", "input", 2},
+		"plugin_name": ConfigSample{"plugin_name", "插件名称", "http", "select", 1},
+		"address":     ConfigSample{"address", "监听地址", "0.0.0.0:9999", "input", 2},
 	},
 }
 
@@ -147,6 +147,15 @@ func (c ConfigSampleArray) Swap(i, j int) {
 }
 func (c ConfigSampleArray) Less(i, j int) bool {
 	return c[i].Order < c[j].Order
+}
+
+func GetInputConfigById(id string) (map[string]interface{}, bool) {
+	for _, v := range MemoryConfig.Inputs {
+		if v["id"] == id && v["name_override"] != "" {
+			return v, true
+		}
+	}
+	return nil, false
 }
 
 func GenConfigSample(pluginType, pluginName string, exclude ...string) (map[string]interface{}, error) {
@@ -168,20 +177,20 @@ func GenConfigSample(pluginType, pluginName string, exclude ...string) (map[stri
 			return nil, fmt.Errorf("unknown pluginName: %s", pluginName)
 		}
 		for k, v := range OutputSample["_base"] {
-			r[k] = v
+			r[k] = v.Default
 		}
 		for k, v := range OutputSample[pluginName] {
-			r[k] = v
+			r[k] = v.Default
 		}
 	case "controllers":
 		if _, ok := ControllerSample[pluginName]; !ok {
 			return nil, fmt.Errorf("unknown pluginName: %s", pluginName)
 		}
 		for k, v := range ControllerSample["_base"] {
-			r[k] = v
+			r[k] = v.Default
 		}
 		for k, v := range ControllerSample[pluginName] {
-			r[k] = v
+			r[k] = v.Default
 		}
 	}
 	r["id"] = uuid.New().String()

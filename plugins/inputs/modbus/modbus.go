@@ -3,6 +3,7 @@ package modbus
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/utils"
 	"encoding/binary"
@@ -27,7 +28,7 @@ type Modbus struct {
 	client    modbus.Client
 	_handler  *modbus.TCPClientHandler
 	connected bool
-	pointMap  map[string]deviceAgent.PointDefine
+	pointMap  map[string]points.PointDefine
 	addrMap   map[string][]int
 	quality   deviceAgent.Quality
 	acc       deviceAgent.Accumulator
@@ -208,7 +209,7 @@ func (m *Modbus) Stop() {
 		m.connected = false
 	}
 }
-func (m *Modbus) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
+func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 	m.pointMap = pointMap
 	m.addrMap = make(map[string][]int, 0)
 
@@ -308,11 +309,11 @@ NEXT:
 	}
 	return nil
 }
-func (m *Modbus) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
+func (m *Modbus) RetrievePointMap(keys []string) map[string]points.PointDefine {
 	if len(keys) == 0 {
 		return m.pointMap
 	}
-	result := make(map[string]deviceAgent.PointDefine, len(keys))
+	result := make(map[string]points.PointDefine, len(keys))
 	for _, key := range keys {
 		if p, ok := m.pointMap[key]; ok {
 			result[key] = p

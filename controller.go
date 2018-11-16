@@ -1,6 +1,9 @@
 package deviceAgent
 
-import "context"
+import (
+	"context"
+	"deviceAdaptor/internal/points"
+)
 
 type Controller interface {
 	Name() string
@@ -14,5 +17,5 @@ type ControllerInput interface {
 	OriginName() string
 	SetValue(map[string]interface{}) error
 	UpdatePointMap(map[string]interface{}) error
-	RetrievePointMap([]string) map[string]PointDefine
+	RetrievePointMap([]string) map[string]points.PointDefine
 }

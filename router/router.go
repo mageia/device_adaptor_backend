@@ -3,6 +3,7 @@ package router
 import (
 	"deviceAdaptor/agent"
 	"deviceAdaptor/configs"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
@@ -61,6 +62,53 @@ func getConfigSample(c *gin.Context) {
 }
 func getCurrentConfig(c *gin.Context) {
 	c.JSON(200, configs.MemoryConfig)
+}
+func getPointMap(c *gin.Context) {
+	id := c.Param("id")
+	iC, ok := configs.GetInputConfigById(id)
+	if !ok {
+		c.Error(fmt.Errorf("can't find input plugin by id: %s", id))
+		return
+	}
+
+	pointArray := make([]points.PointDefine, 0)
+	pointMap := make(map[string]points.PointDefine)
+	points.SqliteDB.Where(map[string]interface{}{"input_name": iC["name_override"]}).Find(&pointArray)
+	for _, p := range pointArray {
+		pointMap[p.Address] = p
+	}
+
+	c.JSON(200, pointMap)
+}
+func putPointMap(c *gin.Context) {
+	id := c.Param("id")
+	iC, ok := configs.GetInputConfigById(id)
+	if !ok {
+		c.Error(fmt.Errorf("can't find input plugin by id: %s", id))
+		return
+	}
+
+	inputName := iC["name_override"].(string)
+
+	var body struct {
+		PointMapPath    string                        `json:"point_map_path"`
+		PointMapContent map[string]points.PointDefine `json:"point_map_content"`
+	}
+	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+		c.Error(err)
+		return
+	}
+
+	log.Println(body)
+
+	points.SqliteDB.Unscoped().Delete(&points.PointDefine{}, "input_name = ?", inputName)
+	for k, v := range body.PointMapContent {
+		v.InputName = inputName
+		v.Address = k
+		points.SqliteDB.Create(&v)
+	}
+
+	c.JSON(200, body)
 }
 func getConfig(c *gin.Context) {
 	switch c.Param("pluginType") {
@@ -148,14 +196,28 @@ func putConfig(c *gin.Context) {
 					c.Error(fmt.Errorf("unsupported plugin_name: %s", pluginName))
 					return
 				}
-
 				for k, v := range body {
-					if _, ok := configs.InputSample[pluginName][k]; !ok {
-						if _, ok := configs.InputSample["_base"][k]; !ok {
-							continue
+					switch k {
+					case "point_map_path":
+					case "point_map_content":
+						//	pointMap := make(map[string]points.PointDefine)
+						//	switch vB := v.(type) {
+						//	case string:
+						//		yaml.UnmarshalStrict([]byte(vB), &pointMap)
+						//	case []byte:
+						//		yaml.UnmarshalStrict(vB, &pointMap)
+						//	default:
+						//		continue
+						//	}
+						//
+					default:
+						if _, ok := configs.InputSample[pluginName][k]; !ok {
+							if _, ok := configs.InputSample["_base"][k]; !ok {
+								continue
+							}
 						}
+						configs.MemoryConfig.Inputs[index][k] = v
 					}
-					configs.MemoryConfig.Inputs[index][k] = v
 				}
 
 				c.JSON(200, configs.MemoryConfig.Inputs[index])
@@ -337,7 +399,7 @@ func InitRouter(debug bool) *gin.Engine {
 			return
 		}
 
-		if strings.HasPrefix(c.Request.URL.Path, "/plugin") && c.Request.Method != "GET" {
+		if c.Request.Method != "GET" && (strings.HasPrefix(c.Request.URL.Path, "/plugin") || strings.HasPrefix(c.Request.URL.Path, "/pointMap")) {
 			go func() {
 				configs.FlushMemoryConfig()
 				agent.ReloadSignal <- struct{}{}
@@ -427,6 +489,10 @@ func InitRouter(debug bool) *gin.Engine {
 	pG.PUT("/*id", putConfig)
 	pG.DELETE("/*id", deleteConfig)
 	pG.POST("/", postConfig)
+
+	pM := router.Group("/pointMap/", JWTAuthMiddleware)
+	pM.GET("/:id", getPointMap)
+	pM.PUT("/:id", putPointMap)
 
 	if debug {
 		gin.SetMode(gin.DebugMode)

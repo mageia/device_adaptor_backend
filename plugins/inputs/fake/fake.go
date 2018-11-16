@@ -2,6 +2,7 @@ package fake
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
 	"encoding/csv"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 
 type Fake struct {
 	connected     bool
-	pointMap      map[string]deviceAgent.PointDefine
+	pointMap      map[string]points.PointDefine
 	quality       deviceAgent.Quality
 	mockKeyList   []string
 	mockCsvReader *csv.Reader
@@ -91,7 +92,7 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 func (f *Fake) SelfCheck() deviceAgent.Quality {
 	return f.quality
 }
-func (f *Fake) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
+func (f *Fake) SetPointMap(pointMap map[string]points.PointDefine) {
 	f.pointMap = pointMap
 }
 func (f *Fake) Name() string {
@@ -106,11 +107,11 @@ func (f *Fake) OriginName() string {
 func (f *Fake) UpdatePointMap(map[string]interface{}) error {
 	panic("implement me")
 }
-func (f *Fake) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
+func (f *Fake) RetrievePointMap(keys []string) map[string]points.PointDefine {
 	if len(keys) == 0 {
 		return f.pointMap
 	}
-	result := make(map[string]deviceAgent.PointDefine, len(keys))
+	result := make(map[string]points.PointDefine, len(keys))
 	for _, key := range keys {
 		if p, ok := f.pointMap[key]; ok {
 			result[key] = p
