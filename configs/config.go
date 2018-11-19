@@ -78,10 +78,13 @@ var InputSample = map[string]map[string]ConfigSample{
 		"created_at": ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", -100},
 	},
 	"opc": {
-		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "opc", "select", 1},
-		"name_override": ConfigSample{"name_override", "数据源名称", "opc", "input", 2},
-		"address":       ConfigSample{"address", "数据源地址", "10.211.55.4:502", "input", 3},
-		"interval":      ConfigSample{"interval", "采集周期", "5s", "combine", 20},
+		"plugin_name":     ConfigSample{"plugin_name", "插件名称", "opc", "select", 1},
+		"name_override":   ConfigSample{"name_override", "数据源名称", "opc", "input", 2},
+		"address":         ConfigSample{"address", "数据源地址", "10.211.55.4:2048", "input", 3},
+		"opc_server_name": ConfigSample{"opc_server_name", "OPC名称", "Kepware.KepServerEx.V5", "input", 4},
+		"interval":        ConfigSample{"interval", "采集周期", "5s", "combine", 20},
+		"field_prefix":    ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
+		"field_suffix":    ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
 	},
 	"modbus": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "modbus", "select", 1},

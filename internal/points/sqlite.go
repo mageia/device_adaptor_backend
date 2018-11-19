@@ -27,10 +27,10 @@ type PointDefine struct {
 	Address    string          `json:"address" yaml:"address"`
 	PointType  PointType       `json:"point_type" yaml:"point_type"`
 	Parameter  float64         `json:"parameter,omitempty" yaml:"parameter"`
-	Option     HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text,default:'{}'"`
-	Control    HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text,default:'{}'"`
-	Tags       ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text,default:''"`
-	Extra      HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text,default:'{}'"`
+	Option     HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text"`
+	Control    HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text"`
+	Tags       ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text"`
+	Extra      HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`
 }
 
 const (
@@ -97,6 +97,6 @@ func init() {
 		panic("failed to connect database")
 	}
 
-	//SqliteDB.LogMode(true)
+	SqliteDB.LogMode(true)
 	SqliteDB.AutoMigrate(&PointDefine{})
 }
