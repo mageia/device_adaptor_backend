@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 	"runtime"
 )
 
@@ -31,9 +31,9 @@ func main() {
 		ConfigServer.ListenAndServe()
 	}()
 
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	//go func() {
+	//	log.Println(http.ListenAndServe("localhost:6060", nil))
+	//}()
 
 	//go func() {
 	//	for range time.Tick(time.Second) {

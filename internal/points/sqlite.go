@@ -8,6 +8,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"log"
 	"math"
+	"runtime"
 	"strings"
 )
 
@@ -91,12 +92,17 @@ func (hs HashMapType) Value() (driver.Value, error) {
 
 func init() {
 	var err error
-	SqliteDB, err = gorm.Open("sqlite3", "point_map.db")
-	if err != nil {
-		log.Println(err)
-		panic("failed to connect database")
+	dbPath := "point_map.db"
+	if runtime.GOOS == "linux" {
+		dbPath = "/var/run/deviceAdaptor/point_map.db"
 	}
 
-	SqliteDB.LogMode(true)
+	SqliteDB, err = gorm.Open("sqlite3", dbPath)
+	if err != nil {
+		log.Printf("failed to connect database: %v", err)
+		//panic("failed to connect database")
+	}
+
+	//SqliteDB.LogMode(true)
 	SqliteDB.AutoMigrate(&PointDefine{})
 }

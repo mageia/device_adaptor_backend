@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
 	"log"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,27 +41,24 @@ type Modbus struct {
 }
 
 func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
-	tmpR := [2]int{}
-	var lastIndex = -1
+	lastIndex := -1
+	lastStartAddress := 0
 	R := make([][2]int, 0)
 
 	for i, d := range addrList {
 		if lastIndex == -1 {
-			tmpR[0] = addrList[i]
+			lastStartAddress = d
 			lastIndex = i
 		}
 
 		if i == len(addrList)-1 || //遍历结束，剩余的必然小于窗口宽度
-			(addrList[i+1]-d >= HoleWidth) || //相邻两个地址相差大于空洞大小
-			(lastIndex >= 0 && (i-lastIndex+1 >= WinWidth || //左边界确定，当前游标处地址与左边界地址距离超过窗口宽度
-				addrList[i+1]-addrList[lastIndex]+1 >= WinWidth)) { //左边界确定，当前游标的下一个地址与左边界地址距离超过窗口宽度
+			(addrList[i+1]-d > HoleWidth) || //相邻两个地址相差大于空洞大小
+			(lastIndex >= 0 && (addrList[i+1]-addrList[lastIndex] > WinWidth-1)) { //左边界确定，当前游标的下一个地址与左边界地址距离超过窗口宽度
 
-			tmpR[1] = addrList[i] - addrList[lastIndex] + 1
-			R = append(R, tmpR)
+			R = append(R, [2]int{lastStartAddress, addrList[i] - addrList[lastIndex]+1})
 			lastIndex = -1
 		}
 	}
-
 	return R
 }
 func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
@@ -73,7 +71,9 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
 			m.quality = deviceAgent.QualityDisconnect
-			m.connected = false
+			trace := make([]byte, 2048)
+			runtime.Stack(trace, true)
+			log.Printf("E! FATAL: Input [modbus] panicked: %s, Stack:\n%s\n", e, trace)
 		}
 		if modbus.NameOverride != "" {
 			acc.AddFields(modbus.NameOverride, fields, tags, modbus.SelfCheck())
@@ -82,51 +82,71 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 		}
 	}(m)
 
-	for k, l := range m.addrMap {
-		sort.Ints(l)
+	var wg sync.WaitGroup
+
+	for k := range m.addrMap {
 		switch k {
 		case "0", "1":
-			for _, param := range getParamList(l, HoleWidth, 1000) {
-				r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
-				if e != nil {
-					m.quality = deviceAgent.QualityDisconnect
-					m.connected = false
-					return e
-				}
-				for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
-					tmpDataMap[k] = append(tmpDataMap[k], utils.GetBit(r, uint(i)))
-				}
+			pList := getParamList(m.addrMap[k], HoleWidth, 1500)
+			wg.Add(len(pList))
+
+			for _, param := range pList {
+				go func(k string, param [2]int) {
+					defer wg.Done()
+
+					r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
+					if e != nil {
+						m.quality = deviceAgent.QualityDisconnect
+						return
+					}
+					for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
+						tmpDataMap[k] = append(tmpDataMap[k], utils.GetBit(r, uint(i)))
+					}
+				}(k, param)
 			}
+
 		case "4":
-			for _, param := range getParamList(l, HoleWidth, 125) {
-				r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
-				if e != nil {
-					m.quality = deviceAgent.QualityDisconnect
-					m.connected = false
-					return e
-				}
-				for i := 0; i < len(r); i += 2 {
-					tmpDataMap[k] = append(tmpDataMap[k], int16(binary.BigEndian.Uint16(r[i:i+2])))
-				}
+			pList := getParamList(m.addrMap[k], HoleWidth, 100)
+			wg.Add(len(pList))
+
+			for _, param := range pList {
+				go func(k string, param [2]int) {
+					defer wg.Done()
+
+					r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
+					if e != nil {
+						m.quality = deviceAgent.QualityDisconnect
+						return
+					}
+					for i := 0; i < len(r); i += 2 {
+						tmpDataMap[k] = append(tmpDataMap[k], int16(binary.BigEndian.Uint16(r[i:i+2])))
+					}
+				}(k, param)
 			}
 		}
 	}
 
-	for k, l := range m.addrMap {
-		x1, x4 := 0, 0
+	wg.Wait()
 
+	for k, l := range m.addrMap {
+		if len(tmpDataMap[k]) != len(l) {
+			continue
+		}
+
+		x1, x4 := 0, 0
 		for i, a := range l {
 			pointAddr := m.FieldPrefix + fmt.Sprintf("%sx%04d", k, a) + m.FieldSuffix
 			switch k {
 			case "0", "1":
-				if i > 0 && a-l[i-1]-1 <= HoleWidth {
-					x1 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
+				if i > 0 && a-l[i-1] < HoleWidth {
+					x1 = a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
 				fields[pointAddr] = tmpDataMap[k][i+x1].(byte)
 			case "4":
-				if i > 0 && a-l[i-1]-1 <= HoleWidth {
-					x4 += a - l[i-1] - 1 //计算并剔除被忽略的小空洞
+				if i > 0 && a-l[i-1] < HoleWidth {
+					x4 = a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
+				log.Println(len(tmpDataMap), i, x4, i+x4)
 				fields[pointAddr] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
 			}
 		}
@@ -217,6 +237,9 @@ func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 		addrSplit := strings.Split(a, "x")
 		readAddr, _ := strconv.Atoi(addrSplit[1])
 		m.addrMap[addrSplit[0]] = append(m.addrMap[addrSplit[0]], readAddr)
+	}
+	for k := range m.addrMap {
+		sort.Ints(m.addrMap[k])
 	}
 }
 func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {

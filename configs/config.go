@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
+	"runtime"
 	"sort"
 	"time"
 )
@@ -73,6 +74,7 @@ var defaultConfigJson = `
 }
 `
 var jsonConfigPath = "device_adaptor.json"
+
 var InputSample = map[string]map[string]ConfigSample{
 	"_base": {
 		"created_at": ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", -100},
@@ -276,4 +278,10 @@ func GetConfigContent() []byte {
 	ioutil.WriteFile(jsonConfigPath, CurrentConfig, 0644)
 
 	return CurrentConfig
+}
+
+func init() {
+	if runtime.GOOS == "linux" {
+		jsonConfigPath = "/var/run/deviceAdaptor/device_adaptor.json"
+	}
 }
