@@ -20,6 +20,7 @@ type Config struct {
 	Inputs      []*models.RunningInput      `json:"inputs"`
 	Outputs     []*models.RunningOutput     `json:"outputs"`
 	Controllers []*models.RunningController `json:"controllers"`
+	Processors  []*models.RunningProcessor  `json:"processors"`
 }
 
 type AgentConfig struct {
@@ -58,11 +59,11 @@ func (c *Config) LoadConfigJson(content []byte) error {
 	for _, inputConfig := range gjson.GetBytes(content, "inputs").Array() {
 		c.addInputBytes([]byte(inputConfig.Raw))
 	}
-	for _, inputConfig := range gjson.GetBytes(content, "outputs").Array() {
-		c.addOutputBytes([]byte(inputConfig.Raw))
+	for _, outputConfig := range gjson.GetBytes(content, "outputs").Array() {
+		c.addOutputBytes([]byte(outputConfig.Raw))
 	}
-	for _, inputConfig := range gjson.GetBytes(content, "controllers").Array() {
-		c.addControllersBytes([]byte(inputConfig.Raw))
+	for _, controllerConfig := range gjson.GetBytes(content, "controllers").Array() {
+		c.addControllersBytes([]byte(controllerConfig.Raw))
 	}
 
 	return nil
@@ -96,8 +97,8 @@ func (c *Config) addInputBytes(table []byte) error {
 	pointMap := make(map[string]points.PointDefine)
 	pointArray := make([]points.PointDefine, 0)
 	points.SqliteDB.Where("input_name = ?", nameOverride).Find(&pointArray)
-	for _, p := range pointArray {
-		pointMap[p.Address] = p
+	for _, v := range pointArray {
+		pointMap[v.Address] = v
 	}
 	input.SetPointMap(pointMap)
 

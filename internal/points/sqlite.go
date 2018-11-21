@@ -10,6 +10,7 @@ import (
 	"math"
 	"runtime"
 	"strings"
+	"time"
 )
 
 var SqliteDB *gorm.DB
@@ -20,18 +21,21 @@ type ArrayStringType []string
 type PointType uint8
 
 type PointDefine struct {
-	gorm.Model `json:"-"`
-	InputName  string          `json:"-" gorm:"not null"`
-	Name       string          `json:"name" yaml:"name"`
-	Label      string          `json:"label" yaml:"label"`
-	Unit       string          `json:"unit" yaml:"unit"`
-	Address    string          `json:"address" yaml:"address"`
-	PointType  PointType       `json:"point_type" yaml:"point_type"`
-	Parameter  float64         `json:"parameter,omitempty" yaml:"parameter"`
-	Option     HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text"`
-	Control    HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text"`
-	Tags       ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text"`
-	Extra      HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`
+	//gorm.Model `json:"-"`
+	ID        uint            `gorm:"primary_key" json:"-"`
+	CreatedAt time.Time       `json:"-"`
+	UpdatedAt time.Time       `json:"-"`
+	InputName string          `json:"-" gorm:"not null"`
+	Name      string          `json:"name" yaml:"name"`
+	Label     string          `json:"label" yaml:"label"`
+	Unit      string          `json:"unit" yaml:"unit"`
+	Address   string          `json:"address" yaml:"address"`
+	PointType PointType       `json:"point_type" yaml:"point_type"`
+	Parameter float64         `json:"parameter,omitempty" yaml:"parameter"`
+	Option    HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text"`
+	Control   HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text"`
+	Tags      ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text"`
+	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`
 }
 
 const (
@@ -103,6 +107,6 @@ func init() {
 		//panic("failed to connect database")
 	}
 
-	//SqliteDB.LogMode(true)
+	SqliteDB.LogMode(true)
 	SqliteDB.AutoMigrate(&PointDefine{})
 }

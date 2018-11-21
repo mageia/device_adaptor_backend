@@ -35,36 +35,6 @@ type opcServerResponse struct {
 	Result  interface{} `json:"result"`
 }
 
-func (t *OPC) SelfCheck() deviceAgent.Quality {
-	return t.quality
-}
-
-func (t *OPC) Name() string {
-	if t.NameOverride != "" {
-		return t.NameOverride
-	}
-	return t.originName
-}
-
-func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
-	if e := t.sendGetRealMsg(acc); e != nil {
-		acc.AddError(e)
-		return e
-	}
-
-	return nil
-}
-
-func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
-	t.pointMap = pointMap
-	t.pointKeys = make([]string, len(t.pointMap))
-	i := 0
-	for _, v := range t.pointMap {
-		t.pointKeys[i] = v.Address
-		i++
-	}
-}
-
 func (t *OPC) sendInitMsg() error {
 	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
 	if e != nil {
@@ -113,7 +83,6 @@ func (t *OPC) sendInitMsg() error {
 
 	return nil
 }
-
 func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
 	if e != nil {
@@ -164,18 +133,46 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
 			return nil
 		}
+	} else {
+		t.sendInitMsg()
 	}
 
 	return nil
 }
 
+func (t *OPC) SelfCheck() deviceAgent.Quality {
+	return t.quality
+}
+func (t *OPC) Name() string {
+	if t.NameOverride != "" {
+		return t.NameOverride
+	}
+	return t.originName
+}
+func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
+	if e := t.sendGetRealMsg(acc); e != nil {
+		acc.AddError(e)
+		return e
+	}
+
+	return nil
+}
+func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
+	t.pointMap = pointMap
+	t.pointKeys = make([]string, len(t.pointMap))
+	i := 0
+	for _, v := range t.pointMap {
+		t.pointKeys[i] = v.Address
+		i++
+	}
+}
 func (t *OPC) Start() error {
 	if e := t.sendInitMsg(); e != nil {
 		return e
 	}
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 10)
+		ticker := time.NewTicker(time.Second * 60)
 		for {
 			select {
 			case <-ticker.C:
@@ -188,7 +185,6 @@ func (t *OPC) Start() error {
 
 	return nil
 }
-
 func (t *OPC) Stop() {
 	t.cancel()
 }

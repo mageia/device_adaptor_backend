@@ -7,7 +7,7 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
 	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"runtime"
 	"sync"
 	"time"
@@ -32,7 +32,7 @@ func NewAgent() (*Agent, error) {
 
 	e := c.LoadConfigJson(configs.GetConfigContent())
 	if e != nil {
-		log.Println(e)
+		log.Error().Err(e)
 	}
 
 	a := &Agent{
@@ -47,7 +47,7 @@ func NewAgent() (*Agent, error) {
 
 func (a *Agent) Reload() {
 	A.Cancel()
-	log.Println("I! Reloading main program ... ")
+	log.Info().Msg("I! Reloading main program ... ")
 
 	go func() {
 		A, _ = NewAgent()
@@ -59,13 +59,13 @@ func (a *Agent) Close() error {
 	var err error
 	for _, o := range a.Config.Outputs {
 		err = o.Output.Close()
-		log.Printf("D! Successfully closed output: %s\n", o.Name)
+		log.Info().Msgf("Successfully closed output: %s", o.Name)
 	}
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
 		case deviceAgent.ServiceInput:
 			p.Stop()
-			log.Printf("D! Successfully closed input: %s\n", p.Name())
+			log.Info().Msgf("Successfully closed input: %s", p.Name())
 		}
 	}
 
@@ -76,7 +76,7 @@ func panicRecover(input *models.RunningInput) {
 	if err := recover(); err != nil {
 		trace := make([]byte, 2048)
 		runtime.Stack(trace, true)
-		log.Printf("E! FATAL: Input [%s] panicked: %s, Stack:\n%s\n", input.Name(), err, trace)
+		log.Info().Msgf("FATAL: Input [%s] panicked: %s, Stack:\n%s", input.Name(), err, trace)
 	}
 }
 
@@ -86,7 +86,10 @@ func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc devi
 
 	done := make(chan error)
 	go func() {
+		//start := time.Now()
 		done <- input.Input.Gather(acc)
+		//elapsed := time.Since(start)
+		//log.Debug().Msg(time.Since(start).String())
 	}()
 
 	for {
@@ -96,12 +99,10 @@ func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc devi
 				acc.AddError(err)
 			}
 			return
-		case <-ticker.C:
-			err := fmt.Errorf("took longer to collect than collection interval (%s)", timeout)
-			acc.AddError(err)
-			continue
 		case <-ctx.Done():
 			return
+		case <-ticker.C:
+			acc.AddError(fmt.Errorf("took longer to collect than collection interval (%s)", timeout))
 		}
 	}
 }
@@ -132,13 +133,13 @@ func (a *Agent) flush() {
 		go func(output *models.RunningOutput) {
 			defer wg.Done()
 			if err := output.WriteCached(); err != nil {
-				log.Printf("E! Error writing to output [%s]: %s\n", output.Name, err.Error())
+				log.Info().Msgf("Error writing to output [%s]: %s", output.Name, err.Error())
 			}
 		}(o)
 	}
 }
 
-func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
+func (a *Agent) flusher(inMetricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
 	var wg sync.WaitGroup
 
 	// 从input channel 读数据并传给 output channel
@@ -149,9 +150,10 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 			select {
 			case <-a.Ctx.Done():
 				return
-			case metric := <-metricC:
+			case metric := <-inMetricC:
 				metrics := []deviceAgent.Metric{metric}
 				for _, metric := range metrics {
+					log.Debug().Msgf("Input [%s] got metric, fields count: %d", metric.Name(), len(metric.Fields()))
 					outMetricC <- metric
 				}
 			}
@@ -194,7 +196,7 @@ func (a *Agent) flusher(metricC chan deviceAgent.Metric, outMetricC chan deviceA
 					a.flush()
 					<-semaphore
 				default:
-					log.Println("I! skipping a scheduled flush")
+					log.Info().Msg("I! skipping a scheduled flush")
 				}
 			}()
 		}
@@ -215,7 +217,7 @@ func (a *Agent) Run() error {
 	go func() {
 		defer wg.Done()
 		if err := a.flusher(metricC, outMetricC); err != nil {
-			log.Printf("E! Flusher roution failed, exiting: %s\n", err.Error())
+			log.Error().Msgf("Flusher routine failed, exiting: %s", err.Error())
 		}
 	}()
 
@@ -224,7 +226,7 @@ func (a *Agent) Run() error {
 		switch p := controller.Controller.(type) {
 		case deviceAgent.Controller:
 			if err := p.Start(a.Ctx); err != nil {
-				log.Printf("E! starting controller: %s failed, exiting\n%s\n", controller.Name, err.Error())
+				log.Error().Msgf("Starting controller: %s failed, exiting\n%s", controller.Name, err.Error())
 				return err
 			}
 		}
@@ -234,20 +236,20 @@ func (a *Agent) Run() error {
 		switch ot := o.Output.(type) {
 		case deviceAgent.ServiceOutput:
 			if err := ot.Start(); err != nil {
-				log.Printf("E! Service for output %s failed to start, exiting\n%s\n", o.Name, err.Error())
+				log.Error().Msgf("Service for output %s failed to start, exiting\n%s", o.Name, err.Error())
 				return err
 			}
 		}
 		err := o.Output.Connect()
 		if err != nil {
-			log.Printf("E! Failed to connect to output %s, retrying in 15s, error was '%s'\n", o.Name, err)
+			log.Error().Msgf("Failed to connect to output %s, retrying in 15s, error was '%s'", o.Name, err.Error())
 			time.Sleep(15 * time.Second)
 			err = o.Output.Connect()
 			if err != nil {
 				return err
 			}
 		}
-		log.Printf("D! Successfully connected to output: %s\n", o.Name)
+		log.Info().Msgf("Successfully connected to output: %s", o.Name)
 	}
 
 	wg.Add(len(a.Config.Inputs))
@@ -255,10 +257,10 @@ func (a *Agent) Run() error {
 		switch p := input.Input.(type) {
 		case deviceAgent.ServiceInput:
 			if err := p.Start(); err != nil {
-				log.Printf("E! Service for input %s failed to start:\n%s\n", input.Name(), err.Error())
+				log.Info().Msgf("Service for input %s failed to start: %s", input.Name(), err.Error())
 				break
 			}
-			log.Printf("D! Successfully connected to input: %s\n", p.Name())
+			log.Info().Msgf("Successfully connected to input: %s", p.Name())
 
 			switch pC := p.(type) {
 			case deviceAgent.ControllerInput:

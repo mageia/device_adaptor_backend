@@ -51,7 +51,7 @@ func (r *RunningInput) MakeMetric(
 ) deviceAgent.Metric {
 	m, err := metric.New(measurement, tags, fields, quality, t, mType)
 	if err != nil {
-		log.Printf("Error adding point [%s]: %s\n", measurement, err.Error())
+		log.Printf("Error adding point [%s]: %s", measurement, err.Error())
 		return nil
 	}
 

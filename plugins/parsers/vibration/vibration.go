@@ -163,11 +163,9 @@ func (p *Parser) ParseLine(line string) (deviceAgent.Metric, error) {
 func (p *Parser) parseId(line []byte) int {
 	return 0
 }
-
 func (p *Parser) parseTemp(line []byte) int {
 	return 0
 }
-
 func (p *Parser) parseAcc(line []byte) int {
 	return 0
 }

@@ -79,6 +79,16 @@ var InputSample = map[string]map[string]ConfigSample{
 	"_base": {
 		"created_at": ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, "none", -100},
 	},
+	"serial": {
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "serial", "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "serial", "input", 2},
+		"address":       ConfigSample{"address", "串口地址", "", "input", 3},
+		"baud_rate":     ConfigSample{"baud_rate", "波特率", 115200, "input", 4},
+		"interactive":   ConfigSample{"interactive", "交互式", true, "radio", 5},
+		"interval":      ConfigSample{"interval", "采集周期", "5s", "combine", 20},
+		"field_prefix":  ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
+		"field_suffix":  ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
+	},
 	"opc": {
 		"plugin_name":     ConfigSample{"plugin_name", "插件名称", "opc", "select", 1},
 		"name_override":   ConfigSample{"name_override", "数据源名称", "opc", "input", 2},

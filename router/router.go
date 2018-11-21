@@ -15,10 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rakyll/statik/fs"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -82,7 +82,7 @@ func getPointMap(c *gin.Context) {
 	b, _ := json.Marshal(pointMap)
 	c.JSON(200, gin.H{
 		"point_map_content": string(b),
-		"point_map_path":    "",  //TODO  path
+		"point_map_path":    "", //TODO  path
 	})
 }
 func putPointMap(c *gin.Context) {
@@ -111,12 +111,22 @@ func putPointMap(c *gin.Context) {
 			return
 		}
 	}
+	pointMapKeys := make([]string, len(pointMap))
 
-	points.SqliteDB.Unscoped().Delete(&points.PointDefine{}, "input_name = ?", inputName)
+	i := 0
+	for _, v := range pointMap {
+		pointMapKeys[i] = v.Address
+		i += 1
+	}
+
+	//points.SqliteDB.Unscoped().Delete(&points.PointDefine{}, "input_name = ? AND address NOT IN ?", inputName, pointMapKeys)
+	points.SqliteDB.Unscoped().Where("input_name = ?", inputName).Not("address", pointMapKeys).Delete(points.PointDefine{})
 	for k, v := range pointMap {
 		v.InputName = inputName
-		v.Address = k
-		points.SqliteDB.Create(&v)
+		if v.Name == "" {
+			v.Name = k
+		}
+		points.SqliteDB.Unscoped().Assign(v).FirstOrCreate(&v, "input_name = ? AND address = ?", inputName, v.Address)
 	}
 
 	c.JSON(200, body)
@@ -209,18 +219,13 @@ func putConfig(c *gin.Context) {
 				}
 				for k, v := range body {
 					switch k {
-					case "point_map_path":
-					case "point_map_content":
-						//	pointMap := make(map[string]points.PointDefine)
-						//	switch vB := v.(type) {
-						//	case string:
-						//		yaml.UnmarshalStrict([]byte(vB), &pointMap)
-						//	case []byte:
-						//		yaml.UnmarshalStrict(vB, &pointMap)
-						//	default:
-						//		continue
-						//	}
-						//
+					case "point_map_path", "point_map_content":
+					case "name_override":
+						err := points.SqliteDB.Model(&points.PointDefine{}).Where("input_name = ?", configs.MemoryConfig.Inputs[index]["name_override"]).Updates(map[string]interface{}{"input_name": v}).Error
+						if err != nil {
+							log.Error().Str("input_name", v.(string)).Err(err).Msg("update name_override failed")
+						}
+						configs.MemoryConfig.Inputs[index][k] = v
 					default:
 						if _, ok := configs.InputSample[pluginName][k]; !ok {
 							if _, ok := configs.InputSample["_base"][k]; !ok {
@@ -374,7 +379,6 @@ func reset(c *gin.Context) {
 	if configs.MemoryConfig.User[body.Username]["password"] == body.OldPassword {
 		configs.MemoryConfig.User[body.Username]["password"] = body.NewPassword
 		c.JSON(200, gin.H{"msg": fmt.Sprintf("reset password of: %s success", body.Username)})
-		log.Println(configs.MemoryConfig.User)
 	} else {
 		c.Error(fmt.Errorf("reset password of: %s failed", body.Username))
 	}
@@ -420,7 +424,7 @@ func InitRouter(debug bool) *gin.Engine {
 
 	sFs, e := fs.New()
 	if e != nil {
-		log.Fatalln(e)
+		log.Fatal().Err(e)
 	}
 
 	router.GET("/", func(ctx *gin.Context) {

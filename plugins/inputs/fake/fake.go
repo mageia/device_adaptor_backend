@@ -59,6 +59,10 @@ func (f *Fake) Stop() {
 	f.connected = false
 }
 func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
+	if !f.connected {
+		f.Start()
+	}
+
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	f.quality = deviceAgent.QualityGood
@@ -67,20 +71,15 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
 		}
-		if fake.NameOverride != "" {
-			acc.AddFields(fake.NameOverride, fields, tags, f.SelfCheck())
-		} else {
-			acc.AddFields(f.Name(), fields, tags, f.SelfCheck())
-		}
+		acc.AddFields(fake.Name(), fields, tags, f.SelfCheck())
 	}(f)
 
 	row, e := f.mockCsvReader.Read()
 	if e != nil {
 		if e == io.EOF {
 			f.connected = false
-			return nil
 		}
-		return e
+		panic(e)
 	}
 
 	for i, k := range f.mockKeyList {

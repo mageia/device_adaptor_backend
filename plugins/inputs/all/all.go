@@ -8,4 +8,5 @@ import (
 	//_ "deviceAdaptor/plugins/inputs/sensor_vibration"
 	_ "deviceAdaptor/plugins/inputs/http_listener"
 	_ "deviceAdaptor/plugins/inputs/opc"
+	_ "deviceAdaptor/plugins/inputs/serial"
 )
