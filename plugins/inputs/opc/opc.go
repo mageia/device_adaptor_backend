@@ -127,8 +127,8 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 	if tmpResp.Cmd == "real_time_data" && tmpResp.Success {
 		switch r := tmpResp.Result.(type) {
 		case map[string]interface{}:
-			for k, v := range r {
-				fields[k] = v
+			for k, v := range t.pointMap {
+				fields[v.Name] = r[k]
 			}
 			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
 			return nil

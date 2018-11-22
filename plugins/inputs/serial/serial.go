@@ -5,7 +5,7 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
-	"deviceAdaptor/utils"
+	"deviceAdaptor/plugins/parsers"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -14,12 +14,16 @@ import (
 	"time"
 )
 
+type HexString string
+
 type Serial struct {
 	Address      string            `json:"address"`
 	BaudRate     int               `json:"baud_rate"`
 	Interval     internal.Duration `json:"interval"`
 	Timeout      internal.Duration `json:"timeout"`
 	Interactive  bool              `json:"interactive"`
+	StartFlag    string            `json:"start_flag"`
+	StopFlag     string            `json:"stop_flag"`
 	FieldPrefix  string            `json:"field_prefix"`
 	FieldSuffix  string            `json:"field_suffix"`
 	NameOverride string            `json:"name_override"`
@@ -28,18 +32,11 @@ type Serial struct {
 	originName string
 	client     *serial.Port
 	connected  bool
+	parsers    map[string]parsers.Parser
 }
 
-func calcAcc(o []byte) float64 {
-	if len(o) != 2 {
-		return 0
-	}
-
-	if o[1] > 128 {
-		f := -utils.Round(float64(0xFFFF-int(o[1])*256-int(o[0])+1)/1024, 3)
-		return f
-	}
-	return utils.Round(float64(binary.BigEndian.Uint16(o))/1024, 3)
+func (s *Serial) SetParser(parsers map[string]parsers.Parser) {
+	s.parsers = parsers
 }
 
 func (s *Serial) Start() error {
@@ -108,6 +105,30 @@ func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
 					break
 				}
 				buf = append(buf, b[:n]...)
+
+				startFlag, e := hex.DecodeString(s.StartFlag)
+				if e != nil {
+					break
+				}
+				stopFlag, e := hex.DecodeString(s.StopFlag)
+				if e != nil {
+					break
+				}
+				if n < len(startFlag)+len(stopFlag) {
+					break
+				}
+
+				for i, v := range startFlag {
+					if b[i] != v {
+						break
+					}
+				}
+				for i, v := range stopFlag {
+					if b[i] != v {
+						break
+					}
+				}
+
 				if n > 4 && b[0] == 0xa5 && b[1] == 0x5a {
 					cmdLen = binary.BigEndian.Uint16(b[2:4])
 				}
@@ -116,33 +137,13 @@ func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
 					break
 				}
 			}
-			//fields[v.Name] = buf
-
-			//TODO: delete later
-			if len(v.Address) != 14 {
-				continue
-			}
-			switch v.Address[8:10] {
-			case "01", "02":
-				fields[v.Name] = hex.EncodeToString(buf[5:7])
-			case "03":
-				fields[v.Name] = utils.Round(float64(binary.BigEndian.Uint16(buf[5:7])/1000), 2)
-			case "04", "05":
-				x := buf[5 : 5+512]
-				y := buf[5+512 : 5+2*512]
-				z := buf[5+2*512 : 5+3*512]
-				acceleration := [3][256]float32{}
-
-				for i := 0; i < len(x); i += 2 {
-					acceleration[0][i/2] = float32(calcAcc(x[i : i+2]))
-					acceleration[1][i/2] = float32(calcAcc(y[i : i+2]))
-					acceleration[2][i/2] = float32(calcAcc(z[i : i+2]))
+			if len(s.parsers) == 1 {
+				for _, p := range s.parsers {
+					if pV, e := p.ParseCmd(v.Address, buf); e != nil {
+						fields[v.Name] = pV
+					}
 				}
-				fields[v.Name] = acceleration
-			default:
-				continue
 			}
-			//TODO: delete later
 		}
 
 		acc.AddFields(s.Name(), fields, nil, s.SelfCheck())
@@ -162,6 +163,7 @@ func init() {
 		return &Serial{
 			Interactive: true,
 			Timeout:     internal.Duration{Duration: time.Second * 5},
+			parsers:     make(map[string]parsers.Parser),
 		}
 	})
 }

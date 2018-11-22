@@ -1,7 +1,6 @@
 package parsers
 
 import (
-	"deviceAdaptor"
 	"deviceAdaptor/plugins/parsers/csv"
 	"deviceAdaptor/plugins/parsers/vibration"
 	"fmt"
@@ -12,10 +11,11 @@ type ParserInput interface {
 }
 
 type Parser interface {
-	Parse2(line []byte) ([]deviceAgent.Metric, error)
-	ParseLine(line string) (deviceAgent.Metric, error)
-	Parser([]byte) (interface{}, error)
-	//SetDefaultTags(tags map[string]string)
+	//Parse2(line []byte) ([]deviceAgent.Metric, error)
+	//ParseLine(line string) (deviceAgent.Metric, error)
+
+	Parse([]byte) (interface{}, error)
+	ParseCmd(string, []byte) (interface{}, error)
 }
 
 type ParserBlob struct{}

@@ -21,11 +21,11 @@ type ArrayStringType []string
 type PointType uint8
 
 type PointDefine struct {
-	//gorm.Model `json:"-"`
 	ID        uint            `gorm:"primary_key" json:"-"`
 	CreatedAt time.Time       `json:"-"`
 	UpdatedAt time.Time       `json:"-"`
 	InputName string          `json:"-" gorm:"not null"`
+	PointKey  string          `json:"point_key" yaml:"point_key" gorm:"not null"`
 	Name      string          `json:"name" yaml:"name"`
 	Label     string          `json:"label" yaml:"label"`
 	Unit      string          `json:"unit" yaml:"unit"`
@@ -42,6 +42,7 @@ const (
 	_ PointType = iota
 	PointAnalog
 	PointDigital
+	PointString
 	PointUnknown = math.MaxUint8
 )
 

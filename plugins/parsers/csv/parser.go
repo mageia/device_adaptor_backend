@@ -27,9 +27,15 @@ type Parser struct {
 	//DefaultTags       map[string]string
 }
 
-func (p *Parser) Parser([]byte) (interface{}, error) {
+func (p *Parser) ParseCmd(string, []byte) (interface{}, error) {
+	panic("implement me")
+}
+
+func (p *Parser) Parse([]byte) (interface{}, error) {
 	return nil, nil
 }
+
+
 func (p *Parser) initReader(r *bytes.Reader) (*csv.Reader, error) {
 	csvReader := csv.NewReader(r)
 	csvReader.FieldsPerRecord = -1
@@ -180,3 +186,4 @@ func (p *Parser) ParseLine(line string) (deviceAgent.Metric, error) {
 //func (p *Parser) SetDefaultTags(tags map[string]string) {
 //	p.DefaultTags = tags
 //}
+

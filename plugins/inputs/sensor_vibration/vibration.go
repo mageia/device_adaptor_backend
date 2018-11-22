@@ -2,6 +2,7 @@ package sensor_vibration
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/parsers"
 	"encoding/binary"
@@ -33,7 +34,7 @@ func (*Vibration) round(f float64, n int) float64 {
 	pow10 := math.Pow10(n)
 	return math.Trunc((f+0.5/pow10)*pow10) / pow10
 }
-func (v *Vibration) calcAcc(o []byte) float64 {
+func (v *Vibration) calcAcc1(o []byte) float64 {
 	if len(o) != 2 {
 		return 0
 	}
@@ -79,9 +80,9 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		z := accTmp[5+2*512 : 5+3*512]
 
 		for i := 0; i < len(x); i += 2 {
-			vData.Acc[0][i/2] = float32(v.calcAcc(x[i : i+2]))
-			vData.Acc[1][i/2] = float32(v.calcAcc(y[i : i+2]))
-			vData.Acc[2][i/2] = float32(v.calcAcc(z[i : i+2]))
+			vData.Acc[0][i/2] = float32(v.calcAcc1(x[i : i+2]))
+			vData.Acc[1][i/2] = float32(v.calcAcc1(y[i : i+2]))
+			vData.Acc[2][i/2] = float32(v.calcAcc1(z[i : i+2]))
 		}
 	}
 
@@ -91,9 +92,9 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		y := freqTmp[5+512 : 5+2*512]
 		z := freqTmp[5+2*512 : 5+3*512]
 		for i := 0; i < len(x); i += 2 {
-			vData.Freq[0][i/2] = float32(v.calcAcc(x[i : i+2]))
-			vData.Freq[1][i/2] = float32(v.calcAcc(y[i : i+2]))
-			vData.Freq[2][i/2] = float32(v.calcAcc(z[i : i+2]))
+			vData.Freq[0][i/2] = float32(v.calcAcc1(x[i : i+2]))
+			vData.Freq[1][i/2] = float32(v.calcAcc1(y[i : i+2]))
+			vData.Freq[2][i/2] = float32(v.calcAcc1(z[i : i+2]))
 		}
 	}
 	v.count += 1
@@ -111,7 +112,7 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 	}, nil, deviceAgent.QualityGood)
 	return nil
 }
-func (*Vibration) SetPointMap(map[string]deviceAgent.PointDefine) {
+func (*Vibration) SetPointMap(map[string]points.PointDefine) {
 }
 func (*Vibration) FlushPointMap(deviceAgent.Accumulator) error {
 	return nil

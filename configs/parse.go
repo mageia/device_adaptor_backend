@@ -9,9 +9,11 @@ import (
 	"deviceAdaptor/plugins/outputs"
 	"deviceAdaptor/plugins/parsers"
 	"deviceAdaptor/plugins/serializers"
+	"deviceAdaptor/utils"
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
+	"reflect"
 	"time"
 )
 
@@ -81,7 +83,11 @@ func (c *Config) addInputBytes(table []byte) error {
 	input := creator()
 	switch t := input.(type) {
 	case parsers.ParserInput:
-		t.SetParser(nil) //TODO
+		parserMap, err := buildParserMapJson(pluginName, pluginConf)
+		if err != nil {
+			return err
+		}
+		t.SetParser(parserMap)
 	}
 
 	inputConfig, err := buildInputJson(pluginName, pluginConf)
@@ -166,23 +172,45 @@ func buildInputJson(name string, table map[string]interface{}) (*models.InputCon
 			cp.Interval = dur
 		}
 	}
-	//if node, ok := table["point_map_path"]; ok {
-	//	if nodeV, ok := node.(string); ok {
-	//		cp.PointMapPath = nodeV
-	//	}
-	//}
-	//if node, ok := table["point_map_content"]; ok {
-	//	if nodeV, ok := node.(string); ok {
-	//		cp.PointMapContent = nodeV
-	//	}
-	//}
-
 	return cp, nil
 }
 
 func buildSerializerJson(name string, tbl map[string]interface{}) (serializers.Serializer, error) {
 	c := &serializers.Config{TimestampUnits: time.Duration(1 * time.Second), DataFormat: "json"}
 	return serializers.NewSerializer(c)
+}
+
+func buildParserByName(name string, table map[string]interface{}) (parsers.Parser, error) {
+	param := []reflect.Value{reflect.ValueOf(&parsers.ParserBlob{}), reflect.ValueOf(table)}
+	funcName := "BuildParser" + utils.UcFirst(name)
+
+	if m, ok := reflect.TypeOf(&parsers.ParserBlob{}).MethodByName(funcName); !ok {
+		return nil, fmt.Errorf("[%s]: invalid parser configuration: %s", utils.GetLineNo(), name)
+	} else {
+		result := m.Func.Call(param)
+		if result[1].Interface() != nil {
+			return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
+		}
+		return result[0].Interface().(parsers.Parser), nil
+	}
+
+	return nil, nil
+}
+func buildParserMapJson(name string, table map[string]interface{}) (map[string]parsers.Parser, error) {
+	r := make(map[string]parsers.Parser)
+	if val, ok := table["parser"]; ok {
+		if pV, ok := val.(map[string]interface{}); ok {
+			for k, v := range pV {
+				if vV, ok := v.(map[string]interface{}); ok {
+					p, e := buildParserByName(k, vV)
+					if e == nil {
+						r[k] = p
+					}
+				}
+			}
+		}
+	}
+	return r, nil
 }
 
 //func buildParserMap(name string, tbl *ast.Table) (map[string]parsers.Parser, error) {

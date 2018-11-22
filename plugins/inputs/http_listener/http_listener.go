@@ -78,19 +78,19 @@ func (h *HTTPListener) Gather(acc deviceAgent.Accumulator) (err error) {
 		return errors.New("parsers is not set")
 	}
 
-	for k, v := range h.contentMap {
+	for k, _ := range h.contentMap {
 		if _, ok := h.resultMap[k]; ok {
 			continue
 		}
 
-		if p, ok := h.parsers[k]; ok {
-			r, err := p.Parser(v)
-			if err != nil {
-				acc.AddError(err)
-				continue
-			}
-			h.resultMap[k] = r
-		}
+		//if p, ok := h.parsers[k]; ok {
+		//	r, err := p.Parser2(v)
+		//	if err != nil {
+		//		acc.AddError(err)
+		//		continue
+		//	}
+		//	h.resultMap[k] = r
+		//}
 	}
 	if len(h.resultMap) > 0 {
 		acc.AddFields(h.Name(), h.resultMap, nil, deviceAgent.QualityGood, time.Now())

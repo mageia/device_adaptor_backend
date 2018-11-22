@@ -230,6 +230,9 @@ func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 
 	for _, p := range m.pointMap {
 		addrSplit := strings.Split(p.Address, "x")
+		if len(addrSplit) != 2 {
+			return
+		}
 		readAddr, _ := strconv.Atoi(addrSplit[1])
 		m.addrMap[addrSplit[0]] = append(m.addrMap[addrSplit[0]], readAddr)
 	}

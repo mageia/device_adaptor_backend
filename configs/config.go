@@ -85,6 +85,7 @@ var InputSample = map[string]map[string]ConfigSample{
 		"address":       ConfigSample{"address", "串口地址", "", "input", 3},
 		"baud_rate":     ConfigSample{"baud_rate", "波特率", 115200, "input", 4},
 		"interactive":   ConfigSample{"interactive", "交互式", true, "radio", 5},
+		"parser":        ConfigSample{"parser", "解析器", map[string]interface{}{"vibration": map[string]interface{}{}}, "text", 6},
 		"interval":      ConfigSample{"interval", "采集周期", "5s", "combine", 20},
 		"field_prefix":  ConfigSample{"field_prefix", "测点前缀", "", "input", 21},
 		"field_suffix":  ConfigSample{"field_suffix", "测点前缀", "", "input", 22},
