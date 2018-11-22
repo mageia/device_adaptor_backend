@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/tarm/serial"
 	"io"
 	"time"
@@ -37,6 +38,7 @@ type Serial struct {
 
 func (s *Serial) SetParser(parsers map[string]parsers.Parser) {
 	s.parsers = parsers
+	//log.Debug().Interface("parsers", parsers).Msg("SetParser")
 }
 
 func (s *Serial) Start() error {
@@ -85,6 +87,8 @@ func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
 		}
 	}
 
+	//log.Debug().Interface("pointMap", s.pointMap).Bool("interactive", s.Interactive).Int("parse_count", len(s.parsers)).Msg("Gather")
+
 	if s.Interactive {
 		fields := make(map[string]interface{})
 		for _, v := range s.pointMap {
@@ -106,28 +110,28 @@ func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
 				}
 				buf = append(buf, b[:n]...)
 
-				startFlag, e := hex.DecodeString(s.StartFlag)
-				if e != nil {
-					break
-				}
-				stopFlag, e := hex.DecodeString(s.StopFlag)
-				if e != nil {
-					break
-				}
-				if n < len(startFlag)+len(stopFlag) {
-					break
-				}
-
-				for i, v := range startFlag {
-					if b[i] != v {
-						break
-					}
-				}
-				for i, v := range stopFlag {
-					if b[i] != v {
-						break
-					}
-				}
+				//startFlag, e := hex.DecodeString(s.StartFlag)
+				//if e != nil {
+				//	break
+				//}
+				//stopFlag, e := hex.DecodeString(s.StopFlag)
+				//if e != nil {
+				//	break
+				//}
+				//if n < len(startFlag)+len(stopFlag) {
+				//	break
+				//}
+				//
+				//for i, v := range startFlag {
+				//	if b[i] != v {
+				//		break
+				//	}
+				//}
+				//for i, v := range stopFlag {
+				//	if b[i] != v {
+				//		break
+				//	}
+				//}
 
 				if n > 4 && b[0] == 0xa5 && b[1] == 0x5a {
 					cmdLen = binary.BigEndian.Uint16(b[2:4])
@@ -140,6 +144,8 @@ func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
 			if len(s.parsers) == 1 {
 				for _, p := range s.parsers {
 					if pV, e := p.ParseCmd(v.Address, buf); e != nil {
+						log.Error().Err(e).Str("address", v.Address).Msg("ParseCmd")
+					} else {
 						fields[v.Name] = pV
 					}
 				}

@@ -104,7 +104,7 @@ func (c *Config) addInputBytes(table []byte) error {
 	pointArray := make([]points.PointDefine, 0)
 	points.SqliteDB.Where("input_name = ?", nameOverride).Find(&pointArray)
 	for _, v := range pointArray {
-		pointMap[v.Address] = v
+		pointMap[v.PointKey] = v
 	}
 	input.SetPointMap(pointMap)
 

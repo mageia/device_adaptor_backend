@@ -40,7 +40,7 @@ func (p *Parser) validation(cmd string, line []byte) bool {
 	}
 	if line[0] == 0xa5 && line[1] == 0x5a && line[len(line)-2] == 0x0d && line[len(line)-1] == 0x0a {
 		if int(binary.BigEndian.Uint16(line[2:4])) == len(line) {
-			return false
+			return true
 		}
 	}
 	return false
