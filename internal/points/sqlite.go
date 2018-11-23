@@ -25,10 +25,10 @@ type PointDefine struct {
 	CreatedAt time.Time       `json:"-"`
 	UpdatedAt time.Time       `json:"-"`
 	InputName string          `json:"-" gorm:"not null"`
-	PointKey  string          `json:"point_key" yaml:"point_key" gorm:"not null"`
-	Name      string          `json:"name" yaml:"name"`
-	Label     string          `json:"label" yaml:"label"`
-	Unit      string          `json:"unit" yaml:"unit"`
+	PointKey  string          `json:"point_key" yaml:"point_key" gorm:"not null"` //纯ASCII码命名，一般作为点表主key
+	Name      string          `json:"name" yaml:"name"`                           //命名任意，唯一即可，类似于short description
+	Label     string          `json:"label,omitempty" yaml:"label"`
+	Unit      string          `json:"unit,omitempty" yaml:"unit"`
 	Address   string          `json:"address" yaml:"address"`
 	PointType PointType       `json:"point_type" yaml:"point_type"`
 	Parameter float64         `json:"parameter,omitempty" yaml:"parameter"`

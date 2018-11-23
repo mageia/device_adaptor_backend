@@ -153,7 +153,7 @@ func (a *Agent) flusher(inMetricC chan deviceAgent.Metric, outMetricC chan devic
 			case metric := <-inMetricC:
 				metrics := []deviceAgent.Metric{metric}
 				for _, metric := range metrics {
-					log.Debug().Msgf("Input [%s] got metric, fields count: %d", metric.Name(), len(metric.Fields()))
+					log.Debug().Str("input", metric.Name()).Int("fields_count", len(metric.Fields())).Msg("Agent.flusher")
 					outMetricC <- metric
 				}
 			}
@@ -236,20 +236,20 @@ func (a *Agent) Run() error {
 		switch ot := o.Output.(type) {
 		case deviceAgent.ServiceOutput:
 			if err := ot.Start(); err != nil {
-				log.Error().Msgf("Service for output %s failed to start, exiting\n%s", o.Name, err.Error())
+				log.Error().Err(err).Str("plugin", o.Name).Msg("ServiceOutput Start failed")
 				return err
 			}
 		}
 		err := o.Output.Connect()
 		if err != nil {
-			log.Error().Msgf("Failed to connect to output %s, retrying in 15s, error was '%s'", o.Name, err.Error())
+			log.Error().Err(err).Str("plugin", o.Name).Msg("Output Connect failed, retrying in 15s")
 			time.Sleep(15 * time.Second)
 			err = o.Output.Connect()
 			if err != nil {
 				return err
 			}
 		}
-		log.Info().Msgf("Successfully connected to output: %s", o.Name)
+		log.Info().Str("plugin", o.Name).Msg("output start success")
 	}
 
 	wg.Add(len(a.Config.Inputs))
@@ -257,10 +257,10 @@ func (a *Agent) Run() error {
 		switch p := input.Input.(type) {
 		case deviceAgent.ServiceInput:
 			if err := p.Start(); err != nil {
-				log.Info().Msgf("Service for input %s failed to start: %s", input.Name(), err.Error())
+				log.Error().Err(err).Str("plugin", input.Name()).Msg("ServiceInput start failed")
 				break
 			}
-			log.Info().Msgf("Successfully connected to input: %s", p.Name())
+			log.Info().Str("plugin", input.Name()).Msg("ServiceInput start success")
 
 			switch pC := p.(type) {
 			case deviceAgent.ControllerInput:

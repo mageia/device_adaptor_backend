@@ -68,7 +68,7 @@ func (ro *RunningOutput) Write(metrics []deviceAgent.Metric) error {
 	err := ro.Output.Write(metrics)
 	elapsed := time.Since(start)
 	if err == nil {
-		log.Debug().Msgf("Output [%s] wrote batch of %d metrics in %s", ro.Name, len(metrics), elapsed)
+		log.Debug().Str("output", ro.Name).Int("wrote_count", len(metrics)).Dur("time_since", elapsed).Msg("RunningOutput.Write")
 	}
 	return nil
 }

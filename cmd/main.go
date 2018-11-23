@@ -23,7 +23,7 @@ func main() {
 		TimeFormat: time.RFC3339,
 		FormatCaller: func(i interface{}) string {
 			l := strings.Split(i.(string), "/")
-			return l[len(l)-1]
+			return "[" + l[len(l)-1] + "]"
 		},
 	}).With().Caller().Timestamp().Logger()
 

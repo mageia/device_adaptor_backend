@@ -66,11 +66,11 @@ func (h *HTTP) Start(ctx context.Context) error {
 	h.Server = srv
 
 	go func() {
-		log.Info().Msgf("Successfully connected to controller: %s, address: [%s]", h.Name(), srv.Addr)
+		log.Info().Str("plugin", h.Name()).Str("address", srv.Addr).Msg("http controller start success")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Info().Msgf("E! Listen: %s failed: %s", srv.Addr, err)
+			log.Error().Err(err).Str("address", srv.Addr).Msg("http controller listen failed")
 		}
-		log.Info().Msgf("Successfully closed controller: %s, address: [%s]", h.Name(), srv.Addr)
+		log.Info().Str("plugin", h.Name()).Str("address", srv.Addr).Msg("http controller close success")
 	}()
 
 	go h.Stop(ctx)
