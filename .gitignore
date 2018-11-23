@@ -3,3 +3,5 @@
 node_modules
 deviceAdaptor
 statics
+point_map.db
+deviceAdaptorLinux
