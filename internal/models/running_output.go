@@ -3,7 +3,7 @@ package models
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/internal/buffer"
-	"log"
+	"github.com/rs/zerolog/log"
 	"sync"
 	"time"
 )
@@ -11,14 +11,11 @@ import (
 type RunningOutput struct {
 	Name              string
 	Output            deviceAgent.Output
-	MetricBufferLimit int
-	MetricBatchSize   int
+	MetricBufferLimit int `json:"metric_buffer_limit"`
+	MetricBatchSize   int `json:"metric_batch_size"`
 
 	metrics     *buffer.Buffer
 	failMetrics *buffer.Buffer
-
-	Prefix string
-	Suffix string
 
 	writeMutex sync.Mutex
 }
@@ -71,7 +68,7 @@ func (ro *RunningOutput) Write(metrics []deviceAgent.Metric) error {
 	err := ro.Output.Write(metrics)
 	elapsed := time.Since(start)
 	if err == nil {
-		log.Printf("D! Output [%s] wrote batch of %d metrics in %s\n", ro.Name, len(metrics), elapsed)
+		log.Debug().Str("output", ro.Name).Int("wrote_count", len(metrics)).Dur("time_since", elapsed).Msg("RunningOutput.Write")
 	}
 	return nil
 }

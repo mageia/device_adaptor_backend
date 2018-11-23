@@ -1,7 +1,7 @@
 .idea
 .DS_Store
+*.db
 node_modules
 deviceAdaptor
-statics
 point_map.db
 deviceAdaptorLinux

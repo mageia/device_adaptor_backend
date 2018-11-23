@@ -3,12 +3,13 @@ package http
 import (
 	"context"
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/controllers"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
@@ -26,7 +27,6 @@ type HTTP struct {
 }
 
 func (h *HTTP) SyncExecute(c *Command) error {
-	log.Println(c)
 	if e := c.input.SetValue(c.kv); e != nil {
 		return e
 	}
@@ -66,11 +66,11 @@ func (h *HTTP) Start(ctx context.Context) error {
 	h.Server = srv
 
 	go func() {
-		log.Printf("D! Successfully connected to controller: %s, address: [%s]\n", h.Name(), srv.Addr)
+		log.Info().Str("plugin", h.Name()).Str("address", srv.Addr).Msg("http controller start success")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("E! Listen: %s failed: %s\n", srv.Addr, err)
+			log.Error().Err(err).Str("address", srv.Addr).Msg("http controller listen failed")
 		}
-		log.Printf("D! Successfully closed controller: %s, address: [%s]", h.Name(), srv.Addr)
+		log.Info().Str("plugin", h.Name()).Str("address", srv.Addr).Msg("http controller close success")
 	}()
 
 	go h.Stop(ctx)
@@ -94,7 +94,7 @@ func (h *HTTP) Stop(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			if err := h.Server.Shutdown(ctx); err != nil {
-				log.Printf("E! CmdServer shutdown: %s", err)
+				log.Info().Msgf("E! CmdServer shutdown: %s", err)
 				return err
 			}
 			return nil
@@ -111,7 +111,7 @@ func (h *HTTP) getPointMapHandler(ctx *gin.Context) {
 		return
 	}
 
-	r := make(map[string]map[string]deviceAgent.PointDefine)
+	r := make(map[string]map[string]points.PointDefine)
 	if len(getBody.Inputs) == 0 {
 		for _, iV := range h.Inputs {
 			r[iV.Name()] = iV.RetrievePointMap(nil)

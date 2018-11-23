@@ -41,17 +41,6 @@ func (s *serializer) SerializeBatch(metrics []deviceAgent.Metric) ([]byte, error
 func (s *serializer) SerializeMap(metric deviceAgent.Metric) (map[string]interface{}, error) {
 	m := s.createObject(metric)
 	return m, nil
-
-	//r := make(map[string]interface{})
-	//
-	//for k, v := range m {
-	//	//serialized, err := jsoniter.MarshalToString(v)
-	//	//if err != nil {
-	//	//	return nil, err
-	//	//}
-	//	r[k] = v
-	//}
-	//return r, nil
 }
 
 func (s *serializer) createObject(metric deviceAgent.Metric) map[string]interface{} {

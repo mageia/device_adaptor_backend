@@ -2,26 +2,27 @@ package fake
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
 	"encoding/csv"
 	"fmt"
+	"github.com/rakyll/statik/fs"
 	"io"
-	"os"
 	"strconv"
 	"time"
 )
 
 type Fake struct {
 	connected     bool
-	pointMap      map[string]deviceAgent.PointDefine
+	pointMap      map[string]points.PointDefine
 	quality       deviceAgent.Quality
 	mockKeyList   []string
 	mockCsvReader *csv.Reader
 
 	originName   string
-	FieldPrefix  string
-	FieldSuffix  string
-	NameOverride string
+	FieldPrefix  string `json:"field_prefix"`
+	FieldSuffix  string `json:"field_suffix"`
+	NameOverride string `json:"name_override"`
 }
 
 func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
@@ -34,25 +35,34 @@ func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
 }
 
 func (f *Fake) Start() error {
-	if _csvFile, e := os.Open("../configs/mock_data_opc.csv"); e != nil {
+	sFs, e := fs.New()
+	if e != nil {
 		return e
-	} else {
-		_mockCsvReader := csv.NewReader(_csvFile)
-		_mockKeyList, e := _mockCsvReader.Read()
-		if e != nil {
-			return e
-		}
-
-		f.connected = true
-		f.mockCsvReader = _mockCsvReader
-		f.mockKeyList = _mockKeyList
 	}
+
+	_csvFile, e := sFs.Open("/configs/mock_data_opc.csv")
+	if e != nil {
+		return e
+	}
+	_mockCsvReader := csv.NewReader(_csvFile)
+	_mockKeyList, e := _mockCsvReader.Read()
+	if e != nil {
+		return e
+	}
+
+	f.connected = true
+	f.mockCsvReader = _mockCsvReader
+	f.mockKeyList = _mockKeyList
 	return nil
 }
 func (f *Fake) Stop() {
 	f.connected = false
 }
 func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
+	if !f.connected {
+		f.Start()
+	}
+
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	f.quality = deviceAgent.QualityGood
@@ -61,20 +71,15 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
 		}
-		if fake.NameOverride != "" {
-			acc.AddFields(fake.NameOverride, fields, tags, f.SelfCheck())
-		} else {
-			acc.AddFields(f.Name(), fields, tags, f.SelfCheck())
-		}
+		acc.AddFields(fake.Name(), fields, tags, f.SelfCheck())
 	}(f)
 
 	row, e := f.mockCsvReader.Read()
 	if e != nil {
 		if e == io.EOF {
 			f.connected = false
-			return nil
 		}
-		return e
+		panic(e)
 	}
 
 	for i, k := range f.mockKeyList {
@@ -86,7 +91,7 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 func (f *Fake) SelfCheck() deviceAgent.Quality {
 	return f.quality
 }
-func (f *Fake) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
+func (f *Fake) SetPointMap(pointMap map[string]points.PointDefine) {
 	f.pointMap = pointMap
 }
 func (f *Fake) Name() string {
@@ -101,11 +106,11 @@ func (f *Fake) OriginName() string {
 func (f *Fake) UpdatePointMap(map[string]interface{}) error {
 	panic("implement me")
 }
-func (f *Fake) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
+func (f *Fake) RetrievePointMap(keys []string) map[string]points.PointDefine {
 	if len(keys) == 0 {
 		return f.pointMap
 	}
-	result := make(map[string]deviceAgent.PointDefine, len(keys))
+	result := make(map[string]points.PointDefine, len(keys))
 	for _, key := range keys {
 		if p, ok := f.pointMap[key]; ok {
 			result[key] = p

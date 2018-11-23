@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/utils"
 	"encoding/binary"
@@ -18,24 +19,24 @@ import (
 )
 
 type S7 struct {
-	Address string
-	Rack    int
-	Slot    int
+	Address string `json:"address"`
+	Rack    int    `json:"rack"`
+	Slot    int    `json:"slot"`
 
 	client    gos7.Client
 	_handler  *gos7.TCPClientHandler
 	buf       map[string][]byte
 	connected bool
-	pointMap  map[string]deviceAgent.PointDefine
+	pointMap  map[string]points.PointDefine
 	addrMap   map[string]map[string][][2]int
 	quality   deviceAgent.Quality
 	acc       deviceAgent.Accumulator
 
 	originName string
 
-	FieldPrefix  string
-	FieldSuffix  string
-	NameOverride string
+	FieldPrefix  string `json:"field_prefix"`
+	FieldSuffix  string `json:"field_suffix"`
+	NameOverride string `json:"name_override"`
 }
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
@@ -176,7 +177,7 @@ func (s *S7) Stop() {
 		s.connected = false
 	}
 }
-func (s *S7) SetPointMap(pointMap map[string]deviceAgent.PointDefine) {
+func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
 	for a := range s.pointMap {
 		addrSplit := strings.SplitN(strings.TrimSpace(a), ".", 2)
@@ -248,11 +249,11 @@ NEXT:
 	}
 	return nil
 }
-func (s *S7) RetrievePointMap(keys []string) map[string]deviceAgent.PointDefine {
+func (s *S7) RetrievePointMap(keys []string) map[string]points.PointDefine {
 	if len(keys) == 0 {
 		return s.pointMap
 	}
-	result := make(map[string]deviceAgent.PointDefine, len(keys))
+	result := make(map[string]points.PointDefine, len(keys))
 	for _, key := range keys {
 		if p, ok := s.pointMap[key]; ok {
 			result[key] = p

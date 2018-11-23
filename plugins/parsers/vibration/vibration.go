@@ -3,8 +3,10 @@ package vibration
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/metric"
+	"deviceAdaptor/utils"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"math"
 	"strings"
 	"time"
@@ -28,7 +30,50 @@ func calcAcc(o []byte) float64 {
 	}
 	return round(float64(binary.BigEndian.Uint16(o))/1024, 3)
 }
-func (p *Parser) Parser(line []byte) (interface{}, error) {
+
+func (p *Parser) Parse([]byte) (interface{}, error) {
+	return nil, nil
+}
+func (p *Parser) validation(cmd string, line []byte) bool {
+	if len(cmd) < 7 || len(line) < 7 {
+		return false
+	}
+	if line[0] == 0xa5 && line[1] == 0x5a && line[len(line)-2] == 0x0d && line[len(line)-1] == 0x0a {
+		if int(binary.BigEndian.Uint16(line[2:4])) == len(line) {
+			return true
+		}
+	}
+	return false
+}
+func (p *Parser) ParseCmd(cmd string, line []byte) (interface{}, error) {
+	if !p.validation(cmd, line) {
+		return nil, errors.New("invalid content to parse")
+	}
+	cmdB, _ := hex.DecodeString(cmd)
+	switch cmdB[4] {
+	case 0x01, 0x02:
+		return hex.EncodeToString(line[5:7]), nil
+	case 0x03:
+		return utils.Round(float64(binary.BigEndian.Uint16(line[5:7]))/1000, 2), nil
+	case 0x04, 0x05:
+		x := line[5 : 5+512]
+		y := line[5+512 : 5+2*512]
+		z := line[5+2*512 : 5+3*512]
+		r := [3][256]float32{}
+		for i := 0; i < len(x); i += 2 {
+			r[0][i/2] = float32(calcAcc(x[i : i+2]))
+			r[1][i/2] = float32(calcAcc(y[i : i+2]))
+			r[2][i/2] = float32(calcAcc(z[i : i+2]))
+		}
+		return r, nil
+	default:
+		return nil, errors.New("unsupported cmdId")
+	}
+
+	return nil, nil
+}
+
+func (p *Parser) ParserString(line []byte) (interface{}, error) {
 	dataMap := make(map[string][]interface{}, 0)
 
 	for _, l := range strings.Split(string(line), "\n") {
@@ -163,14 +208,13 @@ func (p *Parser) ParseLine(line string) (deviceAgent.Metric, error) {
 func (p *Parser) parseId(line []byte) int {
 	return 0
 }
-
 func (p *Parser) parseTemp(line []byte) int {
 	return 0
 }
-
 func (p *Parser) parseAcc(line []byte) int {
 	return 0
 }
 func (p *Parser) parseFreq(line []byte) int {
 	return 0
 }
+

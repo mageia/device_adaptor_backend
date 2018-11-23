@@ -1,26 +1,18 @@
 package configs
 
-import "C"
 import (
-	"deviceAdaptor"
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
 	"deviceAdaptor/plugins/parsers"
 	"deviceAdaptor/plugins/serializers"
 	"deviceAdaptor/utils"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/influxdata/toml"
-	"github.com/influxdata/toml/ast"
-	"github.com/mitchellh/mapstructure"
+	"github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
 	"reflect"
 	"time"
 )
@@ -30,6 +22,7 @@ type Config struct {
 	Inputs      []*models.RunningInput      `json:"inputs"`
 	Outputs     []*models.RunningOutput     `json:"outputs"`
 	Controllers []*models.RunningController `json:"controllers"`
+	Processors  []*models.RunningProcessor  `json:"processors"`
 }
 
 type AgentConfig struct {
@@ -63,121 +56,111 @@ type GlobalConfig struct {
 }
 
 func (c *Config) LoadConfigJson(content []byte) error {
-	config := make(map[string]map[string]interface{})
-	e := json.Unmarshal(content, &config)
-	if e != nil {
-		return e
-	}
+	jsoniter.Unmarshal([]byte(gjson.GetBytes(content, "agent").String()), c.Global)
 
-	for cK, cV := range config {
-		switch cK {
-		case "agent":
-			json.Unmarshal([]byte(gjson.GetBytes(content, "agent").String()), c.Global)
-		case "inputs", "outputs", "controllers":
-			for _, v := range cV {
-				vV, ok := v.(map[string]interface{})
-				if !ok {
-					return fmt.Errorf("can't parse config content: %v", v)
-				}
-				if e := c.LoadPlugin(cK, vV["plugin_name"].(string), vV); e != nil {
-					log.Printf("LoadPlugin: %s failed: %v", cK, e)
-					return e
-				}
-			}
-		}
+	for _, inputConfig := range gjson.GetBytes(content, "inputs").Array() {
+		c.addInputBytes([]byte(inputConfig.Raw))
+	}
+	for _, outputConfig := range gjson.GetBytes(content, "outputs").Array() {
+		c.addOutputBytes([]byte(outputConfig.Raw))
+	}
+	for _, controllerConfig := range gjson.GetBytes(content, "controllers").Array() {
+		c.addControllersBytes([]byte(controllerConfig.Raw))
 	}
 
 	return nil
 }
 
-func (c *Config) addInputJson(name string, table map[string]interface{}) error {
-	creator, ok := inputs.Inputs[name]
+func (c *Config) addInputBytes(table []byte) error {
+	pluginConf := make(map[string]interface{})
+	jsoniter.Unmarshal(table, &pluginConf)
+
+	pluginName := gjson.GetBytes(table, "plugin_name").String()
+	creator, ok := inputs.Inputs[pluginName]
 	if !ok {
-		return fmt.Errorf("undefined but requested input: %s", name)
+		return fmt.Errorf("undefined but requested input: %s", pluginName)
 	}
 	input := creator()
 	switch t := input.(type) {
 	case parsers.ParserInput:
-		t.SetParser(nil) //TODO
+		parserMap, err := buildParserMapJson(pluginName, pluginConf)
+		if err != nil {
+			return err
+		}
+		t.SetParser(parserMap)
 	}
-	pluginConfig, err := buildInputJson(name, table)
+
+	inputConfig, err := buildInputJson(pluginName, pluginConf)
 	if err != nil {
 		return err
 	}
 
-	pointMap := make(map[string]deviceAgent.PointDefine, 0)
-	if pluginConfig.PointMapContent != "" {
-		yaml.UnmarshalStrict([]byte(pluginConfig.PointMapContent), &pointMap)
-	} else if pluginConfig.PointMapPath != "" {
-		pMContent, err := ioutil.ReadFile(pluginConfig.PointMapPath)
-		if err != nil {
-			log.Printf("Can't load point_map file: %s, %s", pluginConfig.PointMapPath, err)
-		} else {
-			yaml.UnmarshalStrict(pMContent, &pointMap)
-		}
+	//set point map to per input plugin
+	nameOverride := gjson.GetBytes(table, "name_override").String()
+	if nameOverride == "" {
+		nameOverride = pluginName
+	}
+	pointMap := make(map[string]points.PointDefine)
+	pointArray := make([]points.PointDefine, 0)
+	points.SqliteDB.Where("input_name = ?", nameOverride).Find(&pointArray)
+	for _, v := range pointArray {
+		pointMap[v.PointKey] = v
 	}
 	input.SetPointMap(pointMap)
 
-	if err := mapstructure.Decode(table, input); err != nil {
+	if err := jsoniter.Unmarshal(table, &input); err != nil {
 		return err
 	}
 
-	rp := models.NewRunningInput(input, pluginConfig)
+	rp := models.NewRunningInput(input, inputConfig)
 	c.Inputs = append(c.Inputs, rp)
 	return nil
 }
 
-func (c *Config) addOutputJson(name string, table map[string]interface{}) error {
-	creator, ok := outputs.Outputs[name]
+func (c *Config) addOutputBytes(table []byte) error {
+	pluginConf := make(map[string]interface{})
+	jsoniter.Unmarshal(table, &pluginConf)
+	pluginName := gjson.GetBytes(table, "plugin_name").String()
+
+	creator, ok := outputs.Outputs[pluginName]
 	if !ok {
-		return fmt.Errorf("undefined but requested output: %s", name)
+		return fmt.Errorf("undefined but requested output: %s", pluginName)
 	}
 	output := creator()
 	switch t := output.(type) {
 	case serializers.SerializerOutput:
-		serializer, err := buildSerializerJson(name, table)
+		serializer, err := buildSerializerJson(pluginName, pluginConf)
 		if err != nil {
 			return err
 		}
 		t.SetSerializer(serializer)
 	}
-	if err := mapstructure.Decode(table, output); err != nil {
-		return err
-	}
 
-	ro := models.NewRunningOutput(name, output, c.Global.MetricBatchSize, c.Global.MetricBufferLimit)
+	jsoniter.Unmarshal(table, &output)
+	ro := models.NewRunningOutput(pluginName, output, c.Global.MetricBatchSize, c.Global.MetricBufferLimit)
 	c.Outputs = append(c.Outputs, ro)
 
 	return nil
 }
 
-func (c *Config) addControllerJson(name string, table map[string]interface{}) error {
-	creator, ok := controllers.Controllers[name]
+func (c *Config) addControllersBytes(table []byte) error {
+	pluginConf := make(map[string]interface{})
+	jsoniter.Unmarshal(table, &pluginConf)
+	pluginName := gjson.GetBytes(table, "plugin_name").String()
+
+	creator, ok := controllers.Controllers[pluginName]
 	if !ok {
-		return fmt.Errorf("undefined but requested controller: %s", name)
+		return fmt.Errorf("undefined but requested controller: %s", pluginName)
 	}
 	controller := creator()
-	if err := mapstructure.Decode(table, controller); err != nil {
-		return err
-	}
+	jsoniter.Unmarshal(table, &controller)
 
-	rC := models.NewRunningController(name, controller)
+	rC := models.NewRunningController(pluginName, controller)
 	c.Controllers = append(c.Controllers, rC)
+
 	return nil
 }
 
-func (c *Config) LoadPlugin(tp string, name string, table map[string]interface{}) error {
-	switch tp {
-	case "inputs":
-		return c.addInputJson(name, table)
-	case "outputs":
-		return c.addOutputJson(name, table)
-	case "controllers":
-		return c.addControllerJson(name, table)
-	default:
-		return errors.New("unknown plugin: " + name)
-	}
-}
 func buildInputJson(name string, table map[string]interface{}) (*models.InputConfig, error) {
 	cp := &models.InputConfig{Name: name}
 	if node, ok := table["interval"]; ok {
@@ -189,18 +172,6 @@ func buildInputJson(name string, table map[string]interface{}) (*models.InputCon
 			cp.Interval = dur
 		}
 	}
-
-	if node, ok := table["point_map_path"]; ok {
-		if nodeV, ok := node.(string); ok {
-			cp.PointMapPath = nodeV
-		}
-	}
-	if node, ok := table["point_map_content"]; ok {
-		if nodeV, ok := node.(string); ok {
-			cp.PointMapContent = nodeV
-		}
-	}
-
 	return cp, nil
 }
 
@@ -209,58 +180,91 @@ func buildSerializerJson(name string, tbl map[string]interface{}) (serializers.S
 	return serializers.NewSerializer(c)
 }
 
-func buildParserMap(name string, tbl *ast.Table) (map[string]parsers.Parser, error) {
-	r := make(map[string]parsers.Parser)
+func buildParserByName(name string, table map[string]interface{}) (parsers.Parser, error) {
+	param := []reflect.Value{reflect.ValueOf(&parsers.ParserBlob{}), reflect.ValueOf(table)}
+	funcName := "BuildParser" + utils.UcFirst(name)
 
-	if val, ok := tbl.Fields["parser"]; ok {
-		blobMap := make(map[string]interface{})
-		switch pV := val.(type) {
-		case *ast.Table:
-			for k, v := range pV.Fields {
-				switch vT := v.(type) {
-				case []*ast.Table:
-					for _, vP := range vT {
-						if e := toml.UnmarshalTable(vP, blobMap); e != nil {
-							return nil, e
-						}
-					}
-				case *ast.Table:
-					if e := toml.UnmarshalTable(vT, blobMap); e != nil {
-						return nil, e
-					}
-				default:
-					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
-				}
-
-				if _, ok := blobMap["parser_name"]; !ok {
-					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
-				}
-
-				if _, ok := blobMap["parser_name"]; !ok {
-					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
-				}
-				if _, ok := blobMap["parser_name"].(string); !ok {
-					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
-				}
-
-				param := []reflect.Value{reflect.ValueOf(&parsers.ParserBlob{}), reflect.ValueOf(blobMap)}
-				funcName := "BuildParser" + utils.UcFirst(blobMap["parser_name"].(string))
-				if m, ok := reflect.TypeOf(&parsers.ParserBlob{}).MethodByName(funcName); !ok {
-					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
-				} else {
-					result := m.Func.Call(param)
-					if result[1].Interface() != nil {
-						return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
-					}
-					r[k] = result[0].Interface().(parsers.Parser)
-				}
-			}
-		default:
+	if m, ok := reflect.TypeOf(&parsers.ParserBlob{}).MethodByName(funcName); !ok {
+		return nil, fmt.Errorf("[%s]: invalid parser configuration: %s", utils.GetLineNo(), name)
+	} else {
+		result := m.Func.Call(param)
+		if result[1].Interface() != nil {
 			return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
 		}
+		return result[0].Interface().(parsers.Parser), nil
 	}
 
-	delete(tbl.Fields, "parser")
-
+	return nil, nil
+}
+func buildParserMapJson(name string, table map[string]interface{}) (map[string]parsers.Parser, error) {
+	r := make(map[string]parsers.Parser)
+	if val, ok := table["parser"]; ok {
+		if pV, ok := val.(map[string]interface{}); ok {
+			for k, v := range pV {
+				if vV, ok := v.(map[string]interface{}); ok {
+					p, e := buildParserByName(k, vV)
+					if e == nil {
+						r[k] = p
+					}
+				}
+			}
+		}
+	}
 	return r, nil
 }
+
+//func buildParserMap(name string, tbl *ast.Table) (map[string]parsers.Parser, error) {
+//	r := make(map[string]parsers.Parser)
+//
+//	if val, ok := tbl.Fields["parser"]; ok {
+//		blobMap := make(map[string]interface{})
+//		switch pV := val.(type) {
+//		case *ast.Table:
+//			for k, v := range pV.Fields {
+//				switch vT := v.(type) {
+//				case []*ast.Table:
+//					for _, vP := range vT {
+//						if e := toml.UnmarshalTable(vP, blobMap); e != nil {
+//							return nil, e
+//						}
+//					}
+//				case *ast.Table:
+//					if e := toml.UnmarshalTable(vT, blobMap); e != nil {
+//						return nil, e
+//					}
+//				default:
+//					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+//				}
+//
+//				if _, ok := blobMap["parser_name"]; !ok {
+//					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+//				}
+//
+//				if _, ok := blobMap["parser_name"]; !ok {
+//					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+//				}
+//				if _, ok := blobMap["parser_name"].(string); !ok {
+//					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+//				}
+//
+//				param := []reflect.Value{reflect.ValueOf(&parsers.ParserBlob{}), reflect.ValueOf(blobMap)}
+//				funcName := "BuildParser" + utils.UcFirst(blobMap["parser_name"].(string))
+//				if m, ok := reflect.TypeOf(&parsers.ParserBlob{}).MethodByName(funcName); !ok {
+//					return nil, fmt.Errorf("[%s] %s: invalid parser configuration: %s", utils.GetLineNo(), name, k)
+//				} else {
+//					result := m.Func.Call(param)
+//					if result[1].Interface() != nil {
+//						return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
+//					}
+//					r[k] = result[0].Interface().(parsers.Parser)
+//				}
+//			}
+//		default:
+//			return nil, fmt.Errorf("[%s] %s: invalid parser configuration", utils.GetLineNo(), name)
+//		}
+//	}
+//
+//	delete(tbl.Fields, "parser")
+//
+//	return r, nil
+//}

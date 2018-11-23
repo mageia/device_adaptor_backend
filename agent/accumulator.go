@@ -3,9 +3,7 @@ package agent
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/selfstat"
-	"log"
-	"runtime"
-	"strings"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -46,14 +44,7 @@ func (ac *accumulator) AddError(err error) {
 		return
 	}
 	NErrors.Incr(1)
-	_, f, l, ok := runtime.Caller(1)
-	if ok {
-		fL := strings.Split(f, "/")
-		f = fL[len(fL)-1]
-		log.Printf("E! Error in plugin [%s][%s:%d]: %v", ac.maker.Name(), f, l, err)
-	} else {
-		log.Printf("E! Error in plugin [%s]: %v", ac.maker.Name(), err)
-	}
+	log.Error().Err(err).Str("plugin", ac.maker.Name()).Msg("ACC ERROR")
 }
 
 func (ac *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, quality deviceAgent.Quality, t ...time.Time) {

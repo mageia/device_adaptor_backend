@@ -1,4 +1,4 @@
-.PHONY: all bin build build-alpine frontend clean test help default
+.PHONY: all bin build assets build-alpine frontend clean test help default
 
 BIN_NAME=deviceAdaptor
 GIT_COMMIT=$(shell git rev-parse HEAD)
@@ -23,7 +23,10 @@ all: bin
 run:
 	cd cmd && ./${BIN_NAME}
 
-bin:assets
+pi:
+	cd cmd && CGO_ENABLED=1 CC=/Volumes/arm-linux/bin/arm-none-linux-gnueabi-gcc GOARM=6 GOARCH=arm GOOS=linux go build -o ../deviceAdaptorLinux
+
+bin:
 	@echo "building exec ${BIN_NAME}"
 	cd cmd && go build -o ${BIN_NAME} .
 
@@ -34,6 +37,7 @@ assets:
 
 frontend:
 	@echo "building frontend"
+	rm -rf frontend/dist
 	cd frontend && npm install --registry=https://registry.npm.taobao.org --verbose && npm run generate
 
 package:

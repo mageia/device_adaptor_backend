@@ -2,6 +2,7 @@ package models
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/internal/points"
 	"deviceAdaptor/metric"
 	"deviceAdaptor/selfstat"
 	"log"
@@ -12,16 +13,16 @@ var GlobalMetricsGathered = selfstat.Register("agent", "metrics_gathered", map[s
 
 type InputConfig struct {
 	Name            string
-	PointMapPath    string
-	PointMapContent string
+	//PointMapPath    string
+	//PointMapContent string
 	Interval        time.Duration
 }
 
 type RunningInput struct {
-	Config          *InputConfig                       `json:"config"`
-	Input           deviceAgent.Input                  `json:"-"`
-	PointMap        map[string]deviceAgent.PointDefine `json:"point_map"`
-	MetricsGathered selfstat.Stat                      `json:"-"`
+	Config          *InputConfig
+	Input           deviceAgent.Input
+	PointMap        map[string]points.PointDefine
+	MetricsGathered selfstat.Stat
 }
 
 func NewRunningInput(input deviceAgent.Input, config *InputConfig) *RunningInput {
@@ -50,7 +51,7 @@ func (r *RunningInput) MakeMetric(
 ) deviceAgent.Metric {
 	m, err := metric.New(measurement, tags, fields, quality, t, mType)
 	if err != nil {
-		log.Printf("Error adding point [%s]: %s\n", measurement, err.Error())
+		log.Printf("Error adding point [%s]: %s", measurement, err.Error())
 		return nil
 	}
 

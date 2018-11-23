@@ -2,19 +2,30 @@ package main
 
 import (
 	"deviceAdaptor/agent"
-	"deviceAdaptor/logger"
 	_ "deviceAdaptor/plugins/controllers/all"
 	_ "deviceAdaptor/plugins/inputs/all"
 	_ "deviceAdaptor/plugins/outputs/all"
+	_ "deviceAdaptor/plugins/processors/all"
+	"deviceAdaptor/router"
 	"github.com/gin-gonic/gin"
-	"log"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"net/http"
-	_ "net/http/pprof"
+	"os"
 	"runtime"
+	"strings"
+	"time"
 )
 
 func main() {
-	logger.SetupLogging(true, "")
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: time.RFC3339,
+		FormatCaller: func(i interface{}) string {
+			l := strings.Split(i.(string), "/")
+			return "[" + l[len(l)-1] + "]"
+		},
+	}).With().Caller().Timestamp().Logger()
 
 	go func() {
 		address := ":8080"
@@ -24,15 +35,15 @@ func main() {
 
 		ConfigServer := &http.Server{
 			Addr:    address,
-			Handler: agent.InitRouter(true),
+			Handler: router.InitRouter(true),
 		}
 		gin.SetMode(gin.ReleaseMode)
 		ConfigServer.ListenAndServe()
 	}()
 
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	//go func() {
+	//	log.Println(http.ListenAndServe("localhost:6060", nil))
+	//}()
 
 	//go func() {
 	//	for range time.Tick(time.Second) {
@@ -44,14 +55,11 @@ func main() {
 		var e error
 		agent.A, e = agent.NewAgent()
 		if e != nil {
-			log.Println(e)
+			log.Error().Err(e)
 			return
 		}
 
-		logger.SetupLogging(agent.A.Config.Global.Debug, "")
-
 		agent.A.Run()
-		//defer agent.A.Cancel()
 	}()
 
 	for {

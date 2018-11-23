@@ -13,8 +13,8 @@ import (
 )
 
 type Redis struct {
-	UrlAddress string
-	Timeout    internal.Duration
+	UrlAddress string            `json:"url_address"`
+	Timeout    internal.Duration `json:"timeout"`
 	client     *redis.Client
 	serializer serializers.Serializer
 }
