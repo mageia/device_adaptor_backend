@@ -44,7 +44,8 @@
 # 点表格式
 
 ```yaml
-db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
+db40.dbx102.0:				# <required> 点名称，ASCII编码，便于跨语言使用, 可以自定义
+  address: ""				# <required> point在设备中的物理地址，程序用来访问实时数据
   label: start				# <optional> 短名称
   name: 启动		   		   # <optional> 长名称
   unit: 单位				   # <optional> 单位字符串
@@ -71,6 +72,9 @@ db40.dbx102.0:				# <required> point在设备中的物理地址，唯一标识
   - [x] ftp
   - [x] modbus
   - [x] s7
+  - [x] opc
+  - [x] serial
+  - [x] fake
 - Output
   - [x] file
   - [x] redis
