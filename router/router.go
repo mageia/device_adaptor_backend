@@ -153,6 +153,7 @@ func deleteConfig(c *gin.Context) {
 	case "inputs":
 		for index, iC := range configs.MemoryConfig.Inputs {
 			if idI, ok := iC["id"]; ok && idI.(string) == id {
+				points.SqliteDB.Where("input_name = ?", iC["name_override"]).Delete(points.PointDefine{})
 				configs.MemoryConfig.Inputs = append(configs.MemoryConfig.Inputs[:index], configs.MemoryConfig.Inputs[index+1:]...)
 				c.JSON(200, configs.MemoryConfig.Inputs)
 				return
@@ -434,8 +435,7 @@ func InitRouter(debug bool) *gin.Engine {
 			ctx.Error(e)
 			return
 		}
-		ctx.Header("Content-type", "text/html; charset=UTF-8")
-		ctx.String(200, string(b))
+		ctx.Data(200, "text/html; charset=UTF-8", b)
 	})
 	router.GET("/inputs", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, "inputs/index.html")
@@ -480,8 +480,7 @@ func InitRouter(debug bool) *gin.Engine {
 			ctx.Error(e)
 			return
 		}
-		ctx.Header("Content-type", "text/html; charset=UTF-8")
-		ctx.String(200, string(b))
+		ctx.Data(200, "application/javascript", b)
 	})
 	router.GET("/image/*filename", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, path.Join("/image", ctx.Param("filename")))
@@ -489,8 +488,7 @@ func InitRouter(debug bool) *gin.Engine {
 			ctx.Error(e)
 			return
 		}
-		ctx.Header("Content-type", "text/html; charset=UTF-8")
-		ctx.String(200, string(b))
+		ctx.Data(200, "image/png; charset=UTF-8", b)
 	})
 
 	auth := router.Group("/auth")

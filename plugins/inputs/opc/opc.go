@@ -13,20 +13,19 @@ import (
 )
 
 type OPC struct {
-	Address       string            `json:"address"`
-	Interval      internal.Duration `json:"interval"`
-	Timeout       internal.Duration `json:"timeout"`
-	OPCServerName string            `json:"opc_server_name"`
-	FieldPrefix   string            `json:"field_prefix"`
-	FieldSuffix   string            `json:"field_suffix"`
-	NameOverride  string            `json:"name_override"`
-	originName    string
-	quality       deviceAgent.Quality
-	pointMap      map[string]points.PointDefine
-	pointKeys     []string
-	receiveData   chan []byte
-	ctx           context.Context
-	cancel        context.CancelFunc
+	Address           string            `json:"address"`
+	Interval          internal.Duration `json:"interval"`
+	Timeout           internal.Duration `json:"timeout"`
+	OPCServerName     string            `json:"opc_server_name"`
+	FieldPrefix       string            `json:"field_prefix"`
+	FieldSuffix       string            `json:"field_suffix"`
+	NameOverride      string            `json:"name_override"`
+	originName        string
+	quality           deviceAgent.Quality
+	pointMap          map[string]points.PointDefine
+	pointAddressToKey map[string]string
+	ctx               context.Context
+	cancel            context.CancelFunc
 }
 
 type opcServerResponse struct {
@@ -45,11 +44,18 @@ func (t *OPC) sendInitMsg() error {
 		l.Close()
 	}()
 
+	i := 0
+	keyList := make([]string, len(t.pointMap))
+	for k := range t.pointAddressToKey {
+		keyList[i] = k
+		i++
+	}
+
 	b, _ := json.Marshal(map[string]interface{}{
 		"cmd":             "init",
 		"opc_server_host": "localhost",
 		"opc_server_name": t.OPCServerName,
-		"opc_key_list":    t.pointKeys,
+		"opc_key_list":    keyList,
 	})
 	_, e = l.Write(b)
 	if e != nil {
@@ -127,11 +133,12 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 	if tmpResp.Cmd == "real_time_data" && tmpResp.Success {
 		switch r := tmpResp.Result.(type) {
 		case map[string]interface{}:
-			for k, v := range t.pointMap {
-				if rV, ok := r[k]; ok {
-					fields[v.PointKey] = rV
+			for k, v := range r {
+				if pKey, ok := t.pointAddressToKey[k]; ok {
+					fields[pKey] = v
 				}
 			}
+
 			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
 			return nil
 		}
@@ -161,10 +168,10 @@ func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
 }
 func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
 	t.pointMap = pointMap
-	t.pointKeys = make([]string, len(t.pointMap))
+	t.pointAddressToKey = make(map[string]string, len(t.pointMap))
 	i := 0
 	for _, v := range t.pointMap {
-		t.pointKeys[i] = v.Address
+		t.pointAddressToKey[v.Address] = v.PointKey
 		i++
 	}
 }
@@ -197,7 +204,6 @@ func init() {
 		return &OPC{
 			originName:  "opc",
 			quality:     deviceAgent.QualityGood,
-			receiveData: make(chan []byte),
 			ctx:         ctx,
 			cancel:      cancel,
 			Timeout:     internal.Duration{Duration: time.Second * 5},

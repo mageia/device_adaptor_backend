@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"deviceAdaptor"
 	"deviceAdaptor/internal"
+	"deviceAdaptor/plugins/outputs"
 	"deviceAdaptor/plugins/serializers"
 )
 
@@ -17,13 +18,19 @@ func (r *RabbitMQ) SetSerializer(serializer serializers.Serializer) {
 }
 
 func (r *RabbitMQ) Connect() error {
-	panic("implement me")
+	return nil
 }
 
 func (r *RabbitMQ) Close() error {
-	panic("implement me")
+	return nil
 }
 
 func (r *RabbitMQ) Write(metrics []deviceAgent.Metric) error {
-	panic("implement me")
+	return nil
+}
+
+func init() {
+	outputs.Add("rabbitmq", func() deviceAgent.Output {
+		return &RabbitMQ{}
+	})
 }

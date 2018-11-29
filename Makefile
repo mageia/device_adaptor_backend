@@ -32,6 +32,7 @@ bin:
 
 assets:
 	@echo "building assets"
+	rm -rf assets/dist
 	cp -r frontend/dist assets
 	statik -src=assets
 
