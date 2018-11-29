@@ -79,9 +79,8 @@ func getPointMap(c *gin.Context) {
 		pointMap[p.PointKey] = p
 	}
 
-	b, _ := json.Marshal(pointMap)
 	c.JSON(200, gin.H{
-		"point_map_content": string(b),
+		"point_map_content": pointMap,
 		"point_map_path":    "", //TODO  path
 	})
 }
@@ -119,7 +118,6 @@ func putPointMap(c *gin.Context) {
 		i += 1
 	}
 
-	//points.SqliteDB.Unscoped().Delete(&points.PointDefine{}, "input_name = ? AND address NOT IN ?", inputName, pointMapKeys)
 	points.SqliteDB.Unscoped().Where("input_name = ?", inputName).Not("point_key", pointMapKeys).Delete(points.PointDefine{})
 	for k, v := range pointMap {
 		v.InputName = inputName

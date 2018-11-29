@@ -71,6 +71,8 @@ github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b h1:bsYBP1pSKpCWC84So
 github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b/go.mod h1:/gqBMUg6JbR1JKVqIK4ZKCtWDUq/cfrh+hVH8Ak/35A=
 github.com/rs/zerolog v1.11.0 h1:DRuq/S+4k52uJzBQciUcofXx45GrMC6yrEbb/CoK6+M=
 github.com/rs/zerolog v1.11.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OKkWU=
+github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9 h1:xBuwuVDG/vbGv1b0Dn/06flcq0R6MITax8244EZYaKE=
+github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9/go.mod h1:1WNBiOZtZQLpVAyu0iTduoJL9hEsMloAK5XWrtW0xdY=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=

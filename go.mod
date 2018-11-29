@@ -32,6 +32,7 @@ require (
 	github.com/rakyll/statik v0.1.5
 	github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b
 	github.com/rs/zerolog v1.11.0
+	github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/tidwall/gjson v1.1.3

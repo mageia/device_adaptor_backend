@@ -105,8 +105,10 @@ var OutputSample = map[string]map[string]ConfigSample{
 		"url_address": ConfigSample{"url_address", "地址URL", "redis://localhost:6379/0", "input", 2},
 	},
 	"rabbitmq": {
-		"plugin_name": ConfigSample{"plugin_name", "插件名称", "rabbitmq", "select", 1},
-		"url_address": ConfigSample{"url_address", "地址URL", "amqp://leaniot:leaniot@localhost:5672/gateway", "input", 2},
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "rabbitmq", "select", 1},
+		"url_address":   ConfigSample{"url_address", "地址URL", "amqp://guest:guest@localhost:5672/", "input", 2},
+		"queue_name":    ConfigSample{"queue_name", "队列名称", "channel_gateway", "input", 4},
+		"exchange_name": ConfigSample{"exchange_name", "交换器名称", "", "input", 5},
 	},
 }
 var ControllerSample = map[string]map[string]ConfigSample{

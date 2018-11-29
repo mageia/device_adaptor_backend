@@ -69,7 +69,10 @@ var jsonConfigPath = "device_adaptor.json"
 
 func GetInputConfigById(id string) (map[string]interface{}, bool) {
 	for _, v := range MemoryConfig.Inputs {
-		if v["id"] == id && v["name_override"] != "" {
+		if vN, ok := v["name_override"]; ok && vN == id {
+			return v, true
+		}
+		if vN, ok := v["id"]; ok && vN == id {
 			return v, true
 		}
 	}
