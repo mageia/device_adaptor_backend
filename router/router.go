@@ -17,6 +17,7 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
+	"gopkg.in/olahol/melody.v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -427,6 +428,20 @@ func InitRouter(debug bool) *gin.Engine {
 		log.Fatal().Err(e)
 	}
 
+	m := melody.New()
+	go func() {
+		for range time.Tick(time.Second) {
+			m.Broadcast([]byte(time.Now().Format(time.RFC3339)))
+		}
+	}()
+
+	router.GET("/ws", func(ctx *gin.Context) {
+		m.HandleRequest(ctx.Writer, ctx.Request)
+	})
+	m.HandleMessage(func(s *melody.Session, msg []byte) {
+		m.Broadcast(msg)
+	})
+
 	router.GET("/", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, "index.html")
 		if e != nil {
@@ -488,7 +503,6 @@ func InitRouter(debug bool) *gin.Engine {
 		}
 		ctx.Data(200, "application/javascript", b)
 	})
-
 
 	router.GET("/image/*filename", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, path.Join("/image", ctx.Param("filename")))
