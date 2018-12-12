@@ -23,15 +23,12 @@ type HTTP struct {
 	Address string
 	Server  *http.Server
 	Inputs  map[string]deviceAgent.ControllerInput
+	ASync   bool
 	chanCmd chan *Command
 }
 
 func (h *HTTP) SyncExecute(c *Command) error {
-	if e := c.input.SetValue(c.kv); e != nil {
-		return e
-	}
-
-	return nil
+	return c.input.SetValue(c.kv)
 }
 
 func (h *HTTP) Name() string {
@@ -75,16 +72,18 @@ func (h *HTTP) Start(ctx context.Context) error {
 
 	go h.Stop(ctx)
 
-	go func() {
-		for {
-			select {
-			case c := <-h.chanCmd:
-				h.SyncExecute(c)
-			case <-ctx.Done():
-				return
+	if h.ASync {
+		go func() {
+			for {
+				select {
+				case c := <-h.chanCmd:
+					h.SyncExecute(c)
+				case <-ctx.Done():
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return nil
 }
@@ -149,7 +148,16 @@ func (h *HTTP) setPointValueHandler(ctx *gin.Context) {
 				kv:    setBody,
 				cmdId: uuid.New().String(),
 			}
-			h.chanCmd <- c
+			if h.ASync {
+				h.chanCmd <- c
+				ctx.JSON(200, gin.H{"cmd_id": c.cmdId})
+				return
+			}
+
+			if e := h.SyncExecute(c); e != nil {
+				ctx.JSON(400, gin.H{"cmd_id": c.cmdId, "msg": e.Error()})
+				return
+			}
 			ctx.JSON(200, gin.H{"cmd_id": c.cmdId})
 			return
 		}
