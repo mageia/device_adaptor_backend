@@ -39,7 +39,7 @@ assets:
 frontend:
 	@echo "building frontend"
 	rm -rf frontend/dist
-	cd frontend && npm install --registry=https://registry.npm.taobao.org --verbose && npm run generate
+	cd frontend && npm install --registry=https://registry.npm.taobao.org --verbose && npm run build
 
 package:
 	@echo "building image ${BIN_NAME} $(GIT_COMMIT)"

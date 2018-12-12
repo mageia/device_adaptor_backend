@@ -472,14 +472,24 @@ func InitRouter(debug bool) *gin.Engine {
 		ctx.String(200, string(b))
 	})
 
-	router.GET("/_nuxt/*filename", func(ctx *gin.Context) {
-		b, e := getStatic(sFs, path.Join("/_nuxt", ctx.Param("filename")))
+	router.GET("/css/:filename", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, path.Join("/css", ctx.Param("filename")))
+		if e != nil {
+			ctx.Error(e)
+			return
+		}
+		ctx.Data(200, "text/css", b)
+	})
+	router.GET("/js/:filename", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, path.Join("/js", ctx.Param("filename")))
 		if e != nil {
 			ctx.Error(e)
 			return
 		}
 		ctx.Data(200, "application/javascript", b)
 	})
+
+
 	router.GET("/image/*filename", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, path.Join("/image", ctx.Param("filename")))
 		if e != nil {
