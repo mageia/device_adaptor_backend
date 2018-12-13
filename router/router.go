@@ -486,7 +486,6 @@ func InitRouter(debug bool) *gin.Engine {
 		ctx.Header("Content-type", "text/html; charset=UTF-8")
 		ctx.String(200, string(b))
 	})
-
 	router.GET("/css/:filename", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, path.Join("/css", ctx.Param("filename")))
 		if e != nil {
@@ -503,30 +502,39 @@ func InitRouter(debug bool) *gin.Engine {
 		}
 		ctx.Data(200, "application/javascript", b)
 	})
-
-	router.GET("/image/*filename", func(ctx *gin.Context) {
-		b, e := getStatic(sFs, path.Join("/image", ctx.Param("filename")))
+	router.GET("/img/:filename", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, path.Join("/img", ctx.Param("filename")))
 		if e != nil {
 			ctx.Error(e)
 			return
 		}
 		ctx.Data(200, "image/png; charset=UTF-8", b)
 	})
+	router.GET("/fonts/:filename", func(ctx *gin.Context) {
+		b, e := getStatic(sFs, path.Join("/fonts", ctx.Param("filename")))
+		if e != nil {
+			ctx.Error(e)
+			return
+		}
+		ctx.Data(200, "application/font-woff", b)
+	})
 
-	auth := router.Group("/auth")
+	api := router.Group("/interface")
+	api.GET("/getConfigSample", JWTAuthMiddleware, getConfigSample)
+	api.GET("/getCurrentConfig", JWTAuthMiddleware, getCurrentConfig)
+
+	auth := api.Group("/auth")
 	auth.POST("/login", login)
 	auth.POST("/reset", JWTAuthMiddleware, reset)
 	auth.POST("/refresh", JWTAuthMiddleware, refresh)
 
-	router.GET("/getConfigSample", JWTAuthMiddleware, getConfigSample)
-	router.GET("/getCurrentConfig", JWTAuthMiddleware, getCurrentConfig)
-	pG := router.Group("/plugin/:pluginType", JWTAuthMiddleware)
+	pG := api.Group("/plugin/:pluginType", JWTAuthMiddleware)
 	pG.GET("/*id", getConfig)
 	pG.PUT("/*id", putConfig)
 	pG.DELETE("/*id", deleteConfig)
 	pG.POST("/", postConfig)
 
-	pM := router.Group("/pointMap/", JWTAuthMiddleware)
+	pM := api.Group("/pointMap/", JWTAuthMiddleware)
 	pM.GET("/:id", getPointMap)
 	pM.PUT("/:id", putPointMap)
 

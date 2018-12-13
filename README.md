@@ -62,6 +62,10 @@ db40.dbx102.0:				# <required> 点名称，ASCII编码，便于跨语言使用, 
 
 
 
+# 控制功能
+
+
+
 # Plugins
 
 - Controller
