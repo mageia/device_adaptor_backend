@@ -108,6 +108,6 @@ func init() {
 		//panic("failed to connect database")
 	}
 
-	SqliteDB.LogMode(true)
+	SqliteDB.LogMode(false)
 	SqliteDB.AutoMigrate(&PointDefine{})
 }

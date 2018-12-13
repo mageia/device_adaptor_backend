@@ -7,6 +7,7 @@ import (
 	"deviceAdaptor/internal"
 	"deviceAdaptor/internal/models"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"runtime"
 	"sync"
@@ -33,6 +34,12 @@ func NewAgent() (*Agent, error) {
 	e := c.LoadConfigJson(configs.GetConfigContent())
 	if e != nil {
 		log.Error().Err(e)
+	}
+
+	if !c.Global.Debug {
+		log.Logger = log.Level(zerolog.InfoLevel)
+	} else {
+		log.Logger = log.Level(zerolog.DebugLevel)
 	}
 
 	a := &Agent{

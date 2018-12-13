@@ -64,6 +64,27 @@ db40.dbx102.0:				# <required> 点名称，ASCII编码，便于跨语言使用, 
 
 # 控制功能
 
+>接口：POST
+>
+>Path：/point_value/:deviceName
+>
+>Content-Type：applicant/json
+>
+>参数：{"TestTag1", 2,  "TestTag2": true, "TestTag3":  1.123}
+
+示例：
+
+```http
+POST /point_value/opc HTTP/1.1
+Host: localhost:9999
+Content-Type: application/json
+{
+	"Channel1.Device1.Tag1": 0,
+	"Tag2": 1.1,
+	"Tag3": false
+}
+```
+
 
 
 # Plugins

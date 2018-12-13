@@ -120,14 +120,19 @@ func putPointMap(c *gin.Context) {
 	}
 
 	points.SqliteDB.Unscoped().Where("input_name = ?", inputName).Not("point_key", pointMapKeys).Delete(points.PointDefine{})
+
+	timeS := time.Now()
+	begin := points.SqliteDB.Begin()
 	for k, v := range pointMap {
 		v.InputName = inputName
 		if v.Name == "" {
 			v.Name = k
 		}
 		v.PointKey = k
-		points.SqliteDB.Unscoped().Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", inputName, v.PointKey)
+		begin.Unscoped().Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", inputName, v.PointKey)
 	}
+	begin.Commit()
+	log.Debug().Str("TimeSince", time.Since(timeS).String()).Msg("UpdatePointMap")
 
 	c.JSON(200, body)
 }
@@ -449,33 +454,6 @@ func InitRouter(debug bool) *gin.Engine {
 			return
 		}
 		ctx.Data(200, "text/html; charset=UTF-8", b)
-	})
-	router.GET("/inputs", func(ctx *gin.Context) {
-		b, e := getStatic(sFs, "inputs/index.html")
-		if e != nil {
-			ctx.Error(e)
-			return
-		}
-		ctx.Header("Content-type", "text/html; charset=UTF-8")
-		ctx.String(200, string(b))
-	})
-	router.GET("/outputs", func(ctx *gin.Context) {
-		b, e := getStatic(sFs, "outputs/index.html")
-		if e != nil {
-			ctx.Error(e)
-			return
-		}
-		ctx.Header("Content-type", "text/html; charset=UTF-8")
-		ctx.String(200, string(b))
-	})
-	router.GET("/login", func(ctx *gin.Context) {
-		b, e := getStatic(sFs, "login/index.html")
-		if e != nil {
-			ctx.Error(e)
-			return
-		}
-		ctx.Header("Content-type", "text/html; charset=UTF-8")
-		ctx.String(200, string(b))
 	})
 	router.GET("/favicon.ico", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, "favicon.ico")

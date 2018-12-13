@@ -100,7 +100,6 @@ func (t *OPC) sendInitMsg() error {
 		buf = append(buf, tmpBuf[:n]...)
 	}
 	if len(buf) <= 0 {
-		log.Debug().Msg("################")
 		return nil
 	}
 
