@@ -4,6 +4,8 @@ git.leaniot.cn/publicLib/go-modbus v0.0.0-20180328164922-c15c68297f4f h1:vJgsMGI
 git.leaniot.cn/publicLib/go-modbus v0.0.0-20180328164922-c15c68297f4f/go.mod h1:Zzrhb8hbqu8lhfPrherYUDpNO+wWqKfFVSIiGs/R8hM=
 git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7 h1:pxvppOKrj1Iu+LJP00DFFXX5gWBvIzFnIUh4ou7Ywew=
 git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7/go.mod h1:BOfI/utdNhoNat8EPGee1rRJrJG2R2VFEHtu5GGzHqI=
+github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705 h1:UUppSQnhf4Yc6xGxSkoQpPhb7RVzuv5Nb1mwJ5VId9s=
+github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394 h1:OYA+5W64v3OgClL+IrOD63t4i/RW7RqrAVl9LTZ9UqQ=
 github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394/go.mod h1:Q8n74mJTIgjX4RBBcHnJ05h//6/k6foqmgE45jTQtxg=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -22,6 +24,8 @@ github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 h1:AzN37oI0cOS+cou
 github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7/go.mod h1:VJ0WA2NBN22VlZ2dKZQPAPnyWw5XTlK1KymzLKsr59s=
 github.com/gin-gonic/gin v1.3.0 h1:kCmZyPklC0gVdL728E6Aj20uYBJV93nj/TkwBTKhFbs=
 github.com/gin-gonic/gin v1.3.0/go.mod h1:7cKuhb5qV2ggCFctp2fJQ+ErvciLZrIeoOSOm6mUr7Y=
+github.com/go-ole/go-ole v1.2.1 h1:2lOsA72HgjxAuMlKpFiCbHTvu44PIVkZ5hqm3RSdI/E=
+github.com/go-ole/go-ole v1.2.1/go.mod h1:7FAglXiTm7HKlQRDeOQ6ZNUHidzCWXuZWq/1dTyBNF8=
 github.com/go-redis/redis v6.14.2+incompatible h1:UE9pLhzmWf+xHNmZsoccjXosPicuiNaInPgym8nzfg0=
 github.com/go-redis/redis v6.14.2+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
 github.com/go-sql-driver/mysql v1.4.1 h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=
@@ -73,6 +77,8 @@ github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b h1:bsYBP1pSKpCWC84So
 github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b/go.mod h1:/gqBMUg6JbR1JKVqIK4ZKCtWDUq/cfrh+hVH8Ak/35A=
 github.com/rs/zerolog v1.11.0 h1:DRuq/S+4k52uJzBQciUcofXx45GrMC6yrEbb/CoK6+M=
 github.com/rs/zerolog v1.11.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OKkWU=
+github.com/shirou/gopsutil v2.18.11+incompatible h1:PMFTKnFTr/YTRW5rbLK4vWALV3a+IGXse5nvhSjztmg=
+github.com/shirou/gopsutil v2.18.11+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9 h1:xBuwuVDG/vbGv1b0Dn/06flcq0R6MITax8244EZYaKE=
 github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9/go.mod h1:1WNBiOZtZQLpVAyu0iTduoJL9hEsMloAK5XWrtW0xdY=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"runtime"
@@ -172,6 +173,7 @@ func GenConfigSampleArray(pluginType, pluginName string) (ConfigSampleArray, err
 
 func FlushMemoryConfig() {
 	CurrentConfig, _ = json.Marshal(MemoryConfig)
+	log.Debug().Interface("MemoryConfig", MemoryConfig).Msg("FlushMemoryConfig")
 	ioutil.WriteFile(jsonConfigPath, CurrentConfig, 0644)
 }
 

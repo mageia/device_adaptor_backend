@@ -8,14 +8,17 @@ import (
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
 	_ "deviceAdaptor/statik"
-	"encoding/json"
+	"deviceAdaptor/utils"
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/json-iterator/go"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/zerolog/log"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/tidwall/gjson"
 	"gopkg.in/olahol/melody.v1"
 	"gopkg.in/yaml.v2"
@@ -23,6 +26,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -106,7 +110,7 @@ func putPointMap(c *gin.Context) {
 
 	pointMap := make(map[string]points.PointDefine)
 	if e := yaml.UnmarshalStrict([]byte(body.PointMapContent), &pointMap); e != nil {
-		if e = json.Unmarshal([]byte(body.PointMapContent), &pointMap); e != nil {
+		if e = jsoniter.Unmarshal([]byte(body.PointMapContent), &pointMap); e != nil {
 			c.Error(fmt.Errorf("point_map_content is neither json nor yaml format: %v", e))
 			return
 		}
@@ -194,7 +198,7 @@ func putConfig(c *gin.Context) {
 			c.Error(e)
 			return
 		}
-		if e := json.Unmarshal(b, configs.MemoryConfig.Agent); e != nil {
+		if e := jsoniter.Unmarshal(b, configs.MemoryConfig.Agent); e != nil {
 			c.Error(fmt.Errorf("update agent config failed: %v", e))
 		} else {
 			c.JSON(200, configs.MemoryConfig.Agent)
@@ -420,7 +424,8 @@ func InitRouter(debug bool) *gin.Engine {
 			return
 		}
 
-		if c.Request.Method != "GET" && (strings.HasPrefix(c.Request.URL.Path, "/plugin") || strings.HasPrefix(c.Request.URL.Path, "/pointMap")) {
+		if c.Request.Method != "GET" && (strings.HasPrefix(c.Request.URL.Path, "/interface/plugin") ||
+			strings.HasPrefix(c.Request.URL.Path, "/interface/pointMap")) {
 			go func() {
 				configs.FlushMemoryConfig()
 				agent.ReloadSignal <- struct{}{}
@@ -433,20 +438,56 @@ func InitRouter(debug bool) *gin.Engine {
 		log.Fatal().Err(e)
 	}
 
+	//real time websocket interface for frontend
 	m := melody.New()
+	counter := 0
+	lock := new(sync.Mutex)
+	gophers := make(map[*melody.Session]int)
+
+	memoryInfo, _ := mem.VirtualMemory()
+	cpuUsage, _ := cpu.Percent(3, false)
+
 	go func() {
-		for range time.Tick(time.Second) {
-			m.Broadcast([]byte(time.Now().Format(time.RFC3339)))
+		for range time.Tick(time.Second * 3) {
+			b, _ := jsoniter.Marshal(map[string]interface{}{
+				"cpu":       cpuUsage,
+				"timestamp": time.Now().Format(time.RFC3339),
+				"memory": map[string]interface{}{
+					"used":         fmt.Sprintf("%d MB", memoryInfo.Used/1024/1024),
+					"used_percent": utils.Round(memoryInfo.UsedPercent, 2),
+				},
+			})
+			m.Broadcast(b)
 		}
 	}()
+	m.HandleMessage(func(s *melody.Session, msg []byte) {
+		//TODO: process msg then send result
+		//b, _ := jsoniter.Marshal(map[string]interface{}{
+		//	"msg": string(msg),
+		//	"id":  gophers[s],
+		//})
+		m.BroadcastMultiple(msg, []*melody.Session{s})
+	})
+
+	m.HandleConnect(func(s *melody.Session) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		gophers[s] = counter
+		counter += 1
+	})
+	m.HandleDisconnect(func(s *melody.Session) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		delete(gophers, s)
+	})
 
 	router.GET("/ws", func(ctx *gin.Context) {
 		m.HandleRequest(ctx.Writer, ctx.Request)
 	})
-	m.HandleMessage(func(s *melody.Session, msg []byte) {
-		m.Broadcast(msg)
-	})
 
+	//static resources for configure page
 	router.GET("/", func(ctx *gin.Context) {
 		b, e := getStatic(sFs, "index.html")
 		if e != nil {

@@ -4,6 +4,7 @@ require (
 	cloud.google.com/go v0.33.1 // indirect
 	git.leaniot.cn/publicLib/go-modbus v0.0.0-20180328164922-c15c68297f4f
 	git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7 // indirect
+	github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705 // indirect
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20181014144952-4e0d7dc8888f // indirect
@@ -12,6 +13,7 @@ require (
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v1.3.0
+	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-redis/redis v6.14.2+incompatible
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/google/go-cmp v0.2.0 // indirect
@@ -33,6 +35,7 @@ require (
 	github.com/rakyll/statik v0.1.5
 	github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b
 	github.com/rs/zerolog v1.11.0
+	github.com/shirou/gopsutil v2.18.11+incompatible
 	github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
