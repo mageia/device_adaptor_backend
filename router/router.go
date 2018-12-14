@@ -2,13 +2,13 @@ package router
 
 import (
 	"deviceAdaptor/agent"
+	"deviceAdaptor/alarm"
 	"deviceAdaptor/configs"
 	"deviceAdaptor/internal/points"
 	"deviceAdaptor/plugins/controllers"
 	"deviceAdaptor/plugins/inputs"
 	"deviceAdaptor/plugins/outputs"
 	_ "deviceAdaptor/statik"
-	"deviceAdaptor/utils"
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
@@ -18,7 +18,10 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/zerolog/log"
 	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/host"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/net"
 	"github.com/tidwall/gjson"
 	"gopkg.in/olahol/melody.v1"
 	"gopkg.in/yaml.v2"
@@ -413,6 +416,36 @@ func refresh(c *gin.Context) {
 	c.AbortWithStatusJSON(403, gin.H{"error": "refresh failed, please re-login"})
 }
 
+func getStatInfo() map[string]interface{} {
+	n, _ := host.Info()
+	v, _ := mem.VirtualMemory()
+	d, _ := disk.Usage("/")
+	bootTime, _ := host.BootTime()
+	cc, _ := cpu.Percent(time.Second, false)
+
+	nv, _ := net.IOCounters(true)
+	network := make(map[string]interface{}, 0)
+	for _, nC := range nv {
+		if nC.Name == "en0" {
+			network["send"] = fmt.Sprintf("%d MB", nv[0].BytesSent/1024/1024)
+			network["recv"] = fmt.Sprintf("%d MB", nv[0].BytesRecv/1024/1024)
+		}
+	}
+
+	return map[string]interface{}{
+		"timestamp": time.Now().Format(time.RFC3339),
+		"cpu":       fmt.Sprintf("%.2f%%", cc[0]),
+		"disk":      fmt.Sprintf("%.2f%%", d.UsedPercent),
+		"boot_time": time.Duration(1e9 * (time.Now().Unix() - int64(bootTime))).String(),
+		"os":        fmt.Sprintf("%v(%v) %v", n.Platform, n.PlatformFamily, n.PlatformVersion),
+		"network":   network,
+		"memory": map[string]interface{}{
+			"used":         fmt.Sprintf("%d MB", v.Used/1024/1024),
+			"used_percent": fmt.Sprintf("%.2f%%", v.UsedPercent),
+		},
+	}
+}
+
 func InitRouter(debug bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -442,49 +475,62 @@ func InitRouter(debug bool) *gin.Engine {
 	m := melody.New()
 	counter := 0
 	lock := new(sync.Mutex)
-	gophers := make(map[*melody.Session]int)
+	sessionMap := make(map[string]map[*melody.Session]int)
 
-	memoryInfo, _ := mem.VirtualMemory()
-	cpuUsage, _ := cpu.Percent(3, false)
-
+	//stat info
 	go func() {
 		for range time.Tick(time.Second * 3) {
-			b, _ := jsoniter.Marshal(map[string]interface{}{
-				"cpu":       cpuUsage,
-				"timestamp": time.Now().Format(time.RFC3339),
-				"memory": map[string]interface{}{
-					"used":         fmt.Sprintf("%d MB", memoryInfo.Used/1024/1024),
-					"used_percent": utils.Round(memoryInfo.UsedPercent, 2),
-				},
-			})
-			m.Broadcast(b)
+			b, _ := jsoniter.Marshal(getStatInfo())
+			sL := make([]*melody.Session, 0)
+			for s := range sessionMap["/interface/stat"] {
+				sL = append(sL, s)
+			}
+			m.BroadcastMultiple(b, sL)
 		}
 	}()
+
+	//alarm info
+	go func() {
+		for {
+			select {
+			case a := <-alarm.ChanAlarm:
+				sL := make([]*melody.Session, 0)
+				for s := range sessionMap["/interface/alarm"] {
+					sL = append(sL, s)
+				}
+				b, _ := jsoniter.Marshal(a)
+				m.BroadcastMultiple(b, sL)
+			}
+		}
+	}()
+
 	m.HandleMessage(func(s *melody.Session, msg []byte) {
-		//TODO: process msg then send result
-		//b, _ := jsoniter.Marshal(map[string]interface{}{
-		//	"msg": string(msg),
-		//	"id":  gophers[s],
-		//})
-		m.BroadcastMultiple(msg, []*melody.Session{s})
+		pathSplit := strings.Split(s.Request.URL.Path, "/")
+		switch pathSplit[len(pathSplit)-1] {
+		case "ws":
+			m.BroadcastMultiple(msg, []*melody.Session{s})
+		case "alarm":
+			m.BroadcastMultiple(msg, []*melody.Session{s})
+		}
 	})
 
 	m.HandleConnect(func(s *melody.Session) {
 		lock.Lock()
 		defer lock.Unlock()
 
-		gophers[s] = counter
+		if _, ok := sessionMap[s.Request.URL.Path]; !ok {
+			sessionMap[s.Request.URL.Path] = make(map[*melody.Session]int)
+		}
+		sessionMap[s.Request.URL.Path][s] = counter
 		counter += 1
 	})
 	m.HandleDisconnect(func(s *melody.Session) {
 		lock.Lock()
 		defer lock.Unlock()
 
-		delete(gophers, s)
-	})
-
-	router.GET("/ws", func(ctx *gin.Context) {
-		m.HandleRequest(ctx.Writer, ctx.Request)
+		if _, ok := sessionMap[s.Request.URL.Path]; ok {
+			delete(sessionMap[s.Request.URL.Path], s)
+		}
 	})
 
 	//static resources for configure page
@@ -539,6 +585,11 @@ func InitRouter(debug bool) *gin.Engine {
 	})
 
 	api := router.Group("/interface")
+
+	api.GET("/ws", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
+	api.GET("/stat", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
+	api.GET("/alarm", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
+
 	api.GET("/getConfigSample", JWTAuthMiddleware, getConfigSample)
 	api.GET("/getCurrentConfig", JWTAuthMiddleware, getCurrentConfig)
 
