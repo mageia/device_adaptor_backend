@@ -1,6 +1,8 @@
 package alarm
 
-import "time"
+import (
+	"time"
+)
 
 type Alarm struct {
 	Name      string `json:"name"`
@@ -10,8 +12,16 @@ type Alarm struct {
 
 var ChanAlarm chan Alarm
 
+type RealTime struct {
+	PluginName string                 `json:"plugin_name"`
+	Metric     map[string]interface{} `json:"metric"`
+}
+
+var ChanRealTime chan RealTime
+
 func init() {
 	ChanAlarm = make(chan Alarm, 100)
+	ChanRealTime = make(chan RealTime, 10)
 
 	go func() {
 		for range time.Tick(time.Second * 3) {

@@ -171,7 +171,7 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 		log.Debug().Msg("Resend init message")
 
 		go func() {
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 3)
 			t.sendInitMsg()
 		}()
 	}

@@ -70,7 +70,7 @@ func (a *Agent) Close() error {
 	}
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
-		case deviceAgent.ServiceInput:
+		case deviceAgent.InteractiveInput:
 			p.Stop()
 			log.Info().Msgf("Successfully closed input: %s", p.Name())
 		}
@@ -249,11 +249,12 @@ func (a *Agent) Run() error {
 		}
 		err := o.Output.Connect()
 		if err != nil {
-			log.Error().Err(err).Str("plugin", o.Name).Msg("Output Connect failed, retrying in 15s")
-			time.Sleep(15 * time.Second)
+			log.Error().Err(err).Str("plugin", o.Name).Msg("Output Connect failed, retrying in 3s")
+			time.Sleep(3 * time.Second)
 			err = o.Output.Connect()
 			if err != nil {
-				return err
+				log.Error().Err(err).Str("plugin", o.Name).Msg("Cancel connect after retry")
+				continue
 			}
 		}
 		log.Info().Str("plugin", o.Name).Msg("output start success")
@@ -262,12 +263,12 @@ func (a *Agent) Run() error {
 	wg.Add(len(a.Config.Inputs))
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
-		case deviceAgent.ServiceInput:
+		case deviceAgent.InteractiveInput:
 			if err := p.Start(); err != nil {
-				log.Error().Err(err).Str("plugin", input.Name()).Msg("ServiceInput start failed")
+				log.Error().Err(err).Str("plugin", input.Name()).Msg("InteractiveInput start failed")
 				break
 			}
-			log.Info().Str("plugin", input.Name()).Msg("ServiceInput start success")
+			log.Info().Str("plugin", input.Name()).Msg("InteractiveInput start success")
 
 			switch pC := p.(type) {
 			case deviceAgent.ControllerInput:

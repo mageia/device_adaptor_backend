@@ -477,22 +477,18 @@ func InitRouter(debug bool) *gin.Engine {
 	lock := new(sync.Mutex)
 	sessionMap := make(map[string]map[*melody.Session]int)
 
-	//stat info
+	//stat, alarm and real time info
 	go func() {
-		for range time.Tick(time.Second * 3) {
-			b, _ := jsoniter.Marshal(getStatInfo())
-			sL := make([]*melody.Session, 0)
-			for s := range sessionMap["/interface/stat"] {
-				sL = append(sL, s)
-			}
-			m.BroadcastMultiple(b, sL)
-		}
-	}()
-
-	//alarm info
-	go func() {
+		ticker := time.NewTicker(time.Second * 3)
 		for {
 			select {
+			case <-ticker.C:
+				b, _ := jsoniter.Marshal(getStatInfo())
+				sL := make([]*melody.Session, 0)
+				for s := range sessionMap["/interface/stat"] {
+					sL = append(sL, s)
+				}
+				m.BroadcastMultiple(b, sL)
 			case a := <-alarm.ChanAlarm:
 				sL := make([]*melody.Session, 0)
 				for s := range sessionMap["/interface/alarm"] {
@@ -500,37 +496,47 @@ func InitRouter(debug bool) *gin.Engine {
 				}
 				b, _ := jsoniter.Marshal(a)
 				m.BroadcastMultiple(b, sL)
+			case c := <-alarm.ChanRealTime:
+				sL := make([]*melody.Session, 0)
+				for s := range sessionMap[strings.Join([]string{"/interface/real_time", c.PluginName}, "/")] {
+					sL = append(sL, s)
+				}
+				b, _ := jsoniter.Marshal(c.Metric)
+				m.BroadcastMultiple(b, sL)
 			}
 		}
 	}()
 
 	m.HandleMessage(func(s *melody.Session, msg []byte) {
 		pathSplit := strings.Split(s.Request.URL.Path, "/")
-		switch pathSplit[len(pathSplit)-1] {
+		log.Debug().Interface("path", pathSplit).Msg("HandleMessage")
+		switch pathSplit[2] {
 		case "ws":
-			m.BroadcastMultiple(msg, []*melody.Session{s})
-		case "alarm":
 			m.BroadcastMultiple(msg, []*melody.Session{s})
 		}
 	})
 
 	m.HandleConnect(func(s *melody.Session) {
+		key := s.Request.URL.Path
+
 		lock.Lock()
 		defer lock.Unlock()
-
-		if _, ok := sessionMap[s.Request.URL.Path]; !ok {
-			sessionMap[s.Request.URL.Path] = make(map[*melody.Session]int)
+		if _, ok := sessionMap[key]; !ok {
+			sessionMap[key] = make(map[*melody.Session]int)
 		}
-		sessionMap[s.Request.URL.Path][s] = counter
+		sessionMap[key][s] = counter
 		counter += 1
+		log.Info().Interface("path", s.Request.URL.Path).Msg("WebSocket client connect")
 	})
 	m.HandleDisconnect(func(s *melody.Session) {
+		key := s.Request.URL.Path
+
 		lock.Lock()
 		defer lock.Unlock()
-
-		if _, ok := sessionMap[s.Request.URL.Path]; ok {
-			delete(sessionMap[s.Request.URL.Path], s)
+		if _, ok := sessionMap[key]; ok {
+			delete(sessionMap[key], s)
 		}
+		log.Info().Interface("path", s.Request.URL.Path).Msg("WebSocket client disconnect")
 	})
 
 	//static resources for configure page
@@ -589,6 +595,7 @@ func InitRouter(debug bool) *gin.Engine {
 	api.GET("/ws", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
 	api.GET("/stat", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
 	api.GET("/alarm", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
+	api.GET("/real_time/:input", func(ctx *gin.Context) { m.HandleRequest(ctx.Writer, ctx.Request) })
 
 	api.GET("/getConfigSample", JWTAuthMiddleware, getConfigSample)
 	api.GET("/getCurrentConfig", JWTAuthMiddleware, getCurrentConfig)

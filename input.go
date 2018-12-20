@@ -23,7 +23,7 @@ type Input interface {
 	//FlushPointMap(Accumulator) error
 }
 
-type ServiceInput interface {
+type InteractiveInput interface {
 	Name() string
 	Gather(Accumulator) error
 	SetPointMap(map[string]points.PointDefine)

@@ -32,7 +32,6 @@ type Modbus struct {
 	pointMap  map[string]points.PointDefine
 	addrMap   map[string][]int
 	quality   deviceAgent.Quality
-	acc       deviceAgent.Accumulator
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`

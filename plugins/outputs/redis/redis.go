@@ -2,9 +2,11 @@ package redis
 
 import (
 	"deviceAdaptor"
+	"deviceAdaptor/alarm"
 	"deviceAdaptor/internal"
 	"deviceAdaptor/plugins/outputs"
 	"deviceAdaptor/plugins/serializers"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/json-iterator/go"
@@ -20,6 +22,10 @@ type Redis struct {
 }
 
 func (r *Redis) Write(metrics []deviceAgent.Metric) error {
+	if r.client == nil {
+		return errors.New("disconnected")
+	}
+
 	if len(metrics) == 0 {
 		return nil
 	}
@@ -39,6 +45,7 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 			log.Println(err)
 			return err
 		}
+		alarm.ChanRealTime <- alarm.RealTime{PluginName: metric.Name(), Metric: m}
 	}
 
 	return nil

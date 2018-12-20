@@ -87,36 +87,23 @@ Content-Type: application/json
 
 
 
-# Plugins
+# 报警功能
 
-- Controller
-  - [x] http
-  - [ ] redis
-  - [ ] websocket
-- Input
-  - [x] ftp
-  - [x] modbus
-  - [x] s7
-  - [x] opc
-  - [x] serial
-  - [x] fake
-- Output
-  - [x] file
-  - [x] redis
-- Parser
-  - [x] csv
-- Serializer
-  - [x] json
+> 报警功能走WebSocket接口
+>
+> Path：/interface/alarm 
+>
+> 客户端建立连接后等待接收报警信息
+
+报警信息结构：
+
+```json
+{
+  "name":"TestAlarm",
+  "input_name":"inputs.opc",
+  "timestamp":"2018-12-15T12:08:03+08:00"
+}
+```
 
 
 
-## TODO:
-
-- [x] 配置流程Server化
-- [x] 配置更新后，程序Reload功能
-- [x] 输出数据格式
-- [x] 前端原型
-- [x] 配置管理页面开发
-- [ ] 网关自检逻辑开发
-- [ ] Metric统计逻辑开发
-- [ ] 数据基础分析逻辑开发

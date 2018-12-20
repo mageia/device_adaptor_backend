@@ -19,6 +19,7 @@ require (
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/websocket v1.4.0 // indirect
+	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
 	github.com/jinzhu/gorm v1.9.1
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/jinzhu/now v0.0.0-20181116074157-8ec929ed50c3 // indirect
@@ -36,6 +37,7 @@ require (
 	github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b
 	github.com/rs/zerolog v1.11.0
 	github.com/shirou/gopsutil v2.18.11+incompatible
+	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07

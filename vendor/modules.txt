@@ -36,6 +36,8 @@ github.com/golang/protobuf/proto
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.0
 github.com/gorilla/websocket
+# github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
+github.com/howeyc/crc16
 # github.com/jinzhu/gorm v1.9.1
 github.com/jinzhu/gorm
 github.com/jinzhu/gorm/dialects/sqlite
@@ -64,8 +66,14 @@ github.com/rs/zerolog/internal/cbor
 github.com/rs/zerolog/internal/json
 # github.com/shirou/gopsutil v2.18.11+incompatible
 github.com/shirou/gopsutil/cpu
+github.com/shirou/gopsutil/disk
+github.com/shirou/gopsutil/host
 github.com/shirou/gopsutil/mem
+github.com/shirou/gopsutil/net
 github.com/shirou/gopsutil/internal/common
+github.com/shirou/gopsutil/process
+# github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
+github.com/shirou/w32
 # github.com/streadway/amqp v0.0.0-20181107104731-27835f1a64e9
 github.com/streadway/amqp
 # github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
