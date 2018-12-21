@@ -6,7 +6,7 @@ type ConfigSample struct {
 	Key     string
 	Label   string
 	Default interface{}
-	Choice  map[string]interface{}
+	Choice  interface{}
 	Type    string
 	Order   int
 }
@@ -22,6 +22,11 @@ func (c ConfigSampleArray) Less(i, j int) bool {
 	return c[i].Order < c[j].Order
 }
 
+var ParserSample = map[string]map[string]ConfigSample{
+	"csv": {
+		"header_row_count": ConfigSample{"header_row_count", "文件头行数", 1, nil, "input", 0},
+	},
+}
 var InputSample = map[string]map[string]ConfigSample{
 	"_base": {
 		"created_at":   ConfigSample{"created_at", "创建时间", time.Now().UnixNano() / 1e6, nil, "none", -100},
@@ -60,6 +65,18 @@ var InputSample = map[string]map[string]ConfigSample{
 	"fake": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "fake", nil, "select", 1},
 		"name_override": ConfigSample{"name_override", "数据源名称", "fake", nil, "input", 2},
+		"interval":      ConfigSample{"interval", "采集周期", "3s", nil, "combine", 20},
+	},
+	"ftp": {
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "ftp", nil, "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "ftp", nil, "input", 2},
+		"address":       ConfigSample{"address", "地址", "ftp://leaniot:leaniot@localhost:21/SubFile", nil, "input", 5},
+		"point_path":    ConfigSample{"point_path", "点表文件路径", "", nil, "input", 6},
+		"point_decode":  ConfigSample{"point_decode", "点表文件编码", "utf-8", []string{"gbk", "utf-8"}, "input", 7},
+		"data_path":     ConfigSample{"data_path", "数据文件路径", "", nil, "input", 8},
+		"data_decode":   ConfigSample{"data_decode", "数据文件编码", "utf-8", []string{"gbk", "utf-8"}, "input", 9},
+		"point_parser":  ConfigSample{"point_parser", "点表解析器", nil, nil, "text", 10},
+		"data_parser":   ConfigSample{"data_parser", "数据解析器", nil, nil, "text", 11},
 		"interval":      ConfigSample{"interval", "采集周期", "3s", nil, "combine", 20},
 	},
 	"s7": {

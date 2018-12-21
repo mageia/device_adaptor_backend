@@ -94,6 +94,7 @@ func GenConfigSample(pluginType, pluginName string, exclude ...string) (map[stri
 		for k, v := range InputSample[pluginName] {
 			r[k] = v.Default
 		}
+
 	case "outputs":
 		if _, ok := OutputSample[pluginName]; !ok {
 			return nil, fmt.Errorf("unknown pluginName: %s", pluginName)

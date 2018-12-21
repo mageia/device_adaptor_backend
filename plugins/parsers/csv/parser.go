@@ -12,18 +12,18 @@ import (
 )
 
 type Parser struct {
-	MetricName        string
-	HeaderRowCount    int
-	SkipRows          int
-	SkipColumns       int
-	Delimiter         string
-	Comment           string
-	TrimSpace         bool
-	ColumnNames       []string
-	TagColumns        []string
-	MeasurementColumn string
-	TimestampColumn   string
-	TimestampFormat   string
+	MetricName        string   `json:"metric_name"`
+	HeaderRowCount    int      `json:"header_row_count"`
+	SkipRows          int      `json:"skip_rows"`
+	SkipColumns       int      `json:"skip_columns"`
+	Delimiter         string   `json:"delimiter"`
+	Comment           string   `json:"comment"`
+	TrimSpace         bool     `json:"trim_space"`
+	ColumnNames       []string `json:"column_names"`
+	TagColumns        []string `json:"tag_columns"`
+	MeasurementColumn string   `json:"measurement_column"`
+	TimestampColumn   string   `json:"timestamp_column"`
+	TimestampFormat   string   `json:"timestamp_format"`
 	//DefaultTags       map[string]string
 }
 
@@ -34,7 +34,6 @@ func (p *Parser) ParseCmd(string, []byte) (interface{}, error) {
 func (p *Parser) Parse([]byte) (interface{}, error) {
 	return nil, nil
 }
-
 
 func (p *Parser) initReader(r *bytes.Reader) (*csv.Reader, error) {
 	csvReader := csv.NewReader(r)
@@ -186,4 +185,3 @@ func (p *Parser) ParseLine(line string) (deviceAgent.Metric, error) {
 //func (p *Parser) SetDefaultTags(tags map[string]string) {
 //	p.DefaultTags = tags
 //}
-

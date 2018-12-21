@@ -83,11 +83,7 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 			s7.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
-		if s7.NameOverride != "" {
-			acc.AddFields(s7.NameOverride, fields, tags, s7.SelfCheck())
-		} else {
-			acc.AddFields("s7", fields, tags, s7.SelfCheck())
-		}
+		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
 	}(s)
 
 	paramMap := s.getParamList()
