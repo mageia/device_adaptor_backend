@@ -1,9 +1,9 @@
 package vibration
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/metric"
-	"deviceAdaptor/utils"
+	"device_adaptor"
+	"device_adaptor/metric"
+	"device_adaptor/utils"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"

@@ -2,9 +2,9 @@ package http
 
 import (
 	"context"
-	"deviceAdaptor"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/controllers"
+	"device_adaptor"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/controllers"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"

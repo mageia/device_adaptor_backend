@@ -12,7 +12,7 @@ var (
 	TokenNotValidYet = errors.New("token not active yet")
 	TokenMalformed   = errors.New("that's not even a token")
 	TokenInvalid     = errors.New("couldn't handle this token")
-	SignKey          = "deviceAdaptor.leaniot.cn"
+	SignKey          = "device_adaptor.leaniot.cn"
 )
 
 type JWT struct {

@@ -1,13 +1,13 @@
 package all
 
 import (
-	_ "deviceAdaptor/plugins/inputs/eip"
-	_ "deviceAdaptor/plugins/inputs/fake"
-	_ "deviceAdaptor/plugins/inputs/ftp"
-	_ "deviceAdaptor/plugins/inputs/http_listener"
-	_ "deviceAdaptor/plugins/inputs/kj66"
-	_ "deviceAdaptor/plugins/inputs/modbus"
-	_ "deviceAdaptor/plugins/inputs/opc"
-	_ "deviceAdaptor/plugins/inputs/s7"
-	_ "deviceAdaptor/plugins/inputs/serial"
+	_ "device_adaptor/plugins/inputs/eip"
+	_ "device_adaptor/plugins/inputs/fake"
+	_ "device_adaptor/plugins/inputs/ftp"
+	_ "device_adaptor/plugins/inputs/http_listener"
+	_ "device_adaptor/plugins/inputs/kj66"
+	_ "device_adaptor/plugins/inputs/modbus"
+	_ "device_adaptor/plugins/inputs/opc"
+	_ "device_adaptor/plugins/inputs/s7"
+	_ "device_adaptor/plugins/inputs/serial"
 )

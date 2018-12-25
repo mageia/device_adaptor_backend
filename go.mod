@@ -1,7 +1,8 @@
-module deviceAdaptor
+module device_adaptor
 
 require (
 	cloud.google.com/go v0.33.1 // indirect
+	git.leaniot.cn/publicLib/go-eip v0.0.0-20181225124431-b59064aed464
 	git.leaniot.cn/publicLib/go-modbus v0.0.0-20180328164922-c15c68297f4f
 	git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7 // indirect
 	github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705 // indirect

@@ -1,9 +1,9 @@
 package mqtt
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/plugins/outputs"
-	"deviceAdaptor/plugins/serializers"
+	"device_adaptor"
+	"device_adaptor/plugins/outputs"
+	"device_adaptor/plugins/serializers"
 	"fmt"
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"

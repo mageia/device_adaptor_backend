@@ -1,8 +1,8 @@
 package models
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal/buffer"
+	"device_adaptor"
+	"device_adaptor/internal/buffer"
 	"github.com/rs/zerolog/log"
 	"sync"
 	"time"

@@ -3,7 +3,7 @@
 BIN_NAME=deviceAdaptor
 GIT_COMMIT=$(shell git rev-parse HEAD)
 BUILD_DATE=$(shell date '+%Y-%m-%d-%H:%M:%S')
-IMAGE_NAME := "harbor.leaniot.cn/mos/device_adaptor"
+IMAGE_NAME := "harbor.leaniot.cn/mos/data/device_adaptor"
 
 default: all
 

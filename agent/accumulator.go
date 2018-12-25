@@ -1,8 +1,8 @@
 package agent
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/selfstat"
+	"device_adaptor"
+	"device_adaptor/selfstat"
 	"github.com/rs/zerolog/log"
 	"time"
 )

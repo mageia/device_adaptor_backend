@@ -2,11 +2,11 @@ package s7
 
 import (
 	"bytes"
-	"deviceAdaptor"
-	"deviceAdaptor/internal"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/inputs"
-	"deviceAdaptor/utils"
+	"device_adaptor"
+	"device_adaptor/internal"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/inputs"
+	"device_adaptor/utils"
 	"encoding/binary"
 	"fmt"
 	"github.com/robinson/gos7"

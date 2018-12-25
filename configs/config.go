@@ -1,7 +1,7 @@
 package configs
 
 import (
-	"deviceAdaptor/utils"
+	"device_adaptor/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -197,6 +197,6 @@ func GetConfigContent() []byte {
 
 func init() {
 	if runtime.GOOS == "linux" {
-		jsonConfigPath = "/var/run/deviceAdaptor/device_adaptor.json"
+		jsonConfigPath = "/var/run/device_adaptor/device_adaptor.json"
 	}
 }

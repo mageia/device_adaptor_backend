@@ -1,8 +1,8 @@
 package vibration
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/plugins/processors"
+	"device_adaptor"
+	"device_adaptor/plugins/processors"
 )
 
 type Vibration struct {

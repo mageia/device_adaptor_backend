@@ -1,9 +1,9 @@
 package all
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/parsers"
+	"device_adaptor"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/parsers"
 )
 
 type Interactive struct{}

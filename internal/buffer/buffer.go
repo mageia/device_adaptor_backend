@@ -1,7 +1,7 @@
 package buffer
 
 import (
-	"deviceAdaptor"
+	"device_adaptor"
 	"sync"
 )
 

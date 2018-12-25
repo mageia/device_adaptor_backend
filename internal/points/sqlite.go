@@ -99,7 +99,7 @@ func init() {
 	var err error
 	dbPath := "point_map.db"
 	if runtime.GOOS == "linux" {
-		dbPath = "/var/run/deviceAdaptor/point_map.db"
+		dbPath = "/var/run/device_adaptor/point_map.db"
 	}
 
 	SqliteDB, err = gorm.Open("sqlite3", dbPath)

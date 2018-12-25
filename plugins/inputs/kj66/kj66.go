@@ -1,9 +1,9 @@
 package kj66
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/inputs"
+	"device_adaptor"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/inputs"
 	"github.com/howeyc/crc16"
 	"github.com/rs/zerolog/log"
 )

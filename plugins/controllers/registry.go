@@ -1,6 +1,6 @@
 package controllers
 
-import "deviceAdaptor"
+import "device_adaptor"
 
 type Creator func() deviceAgent.Controller
 

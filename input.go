@@ -1,7 +1,7 @@
 package deviceAgent
 
 import (
-	"deviceAdaptor/internal/points"
+	"device_adaptor/internal/points"
 	"math"
 )
 

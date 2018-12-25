@@ -1,11 +1,11 @@
 package serial
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/inputs"
-	"deviceAdaptor/plugins/parsers"
+	"device_adaptor"
+	"device_adaptor/internal"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/inputs"
+	"device_adaptor/plugins/parsers"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"

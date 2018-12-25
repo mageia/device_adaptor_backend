@@ -1,12 +1,12 @@
 package main
 
 import (
-	"deviceAdaptor/agent"
-	_ "deviceAdaptor/plugins/controllers/all"
-	_ "deviceAdaptor/plugins/inputs/all"
-	_ "deviceAdaptor/plugins/outputs/all"
-	_ "deviceAdaptor/plugins/processors/all"
-	"deviceAdaptor/router"
+	"device_adaptor/agent"
+	_ "device_adaptor/plugins/controllers/all"
+	_ "device_adaptor/plugins/inputs/all"
+	_ "device_adaptor/plugins/outputs/all"
+	_ "device_adaptor/plugins/processors/all"
+	"device_adaptor/router"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

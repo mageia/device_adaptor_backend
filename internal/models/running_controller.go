@@ -1,6 +1,6 @@
 package models
 
-import "deviceAdaptor"
+import "device_adaptor"
 
 type RunningController struct {
 	Name       string

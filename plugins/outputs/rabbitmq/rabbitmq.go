@@ -1,11 +1,11 @@
 package rabbitmq
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal"
-	"deviceAdaptor/plugins/outputs"
-	"deviceAdaptor/plugins/serializers"
-	"deviceAdaptor/utils"
+	"device_adaptor"
+	"device_adaptor/internal"
+	"device_adaptor/plugins/outputs"
+	"device_adaptor/plugins/serializers"
+	"device_adaptor/utils"
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"

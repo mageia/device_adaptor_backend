@@ -1,10 +1,10 @@
 package ftp
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/inputs"
-	"deviceAdaptor/plugins/parsers"
+	"device_adaptor"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/inputs"
+	"device_adaptor/plugins/parsers"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -84,6 +84,7 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc deviceAgent.Accumulator) 
 		log.Error().Err(e).Str("data_path", path.Join(f.basePath, f.DataPath)).Msg("Retrieve")
 		return e
 	}
+	defer rData.Close()
 
 	//TODO: csv parser
 	dataReader := csv.NewReader(_dataDecode.NewReader(rData))
@@ -100,7 +101,6 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc deviceAgent.Accumulator) 
 		}
 		fields[r[0]] = r[1]
 	}
-	rData.Close()
 
 	return nil
 }
@@ -173,6 +173,7 @@ func (f *FTP) connect() error {
 			log.Error().Err(e).Str("pointPath", path.Join(f.basePath, f.PointPath)).Msg("Retrieve")
 			return e
 		}
+		defer rDev.Close()
 
 		//TODO: csv parser
 		devReader := csv.NewReader(_devDecode.NewReader(rDev))
@@ -189,7 +190,6 @@ func (f *FTP) connect() error {
 			}
 			f.pointMap[r[0]] = points.PointDefine{Label: r[0], Name: r[1], Address: r[0]}
 		}
-		rDev.Close()
 
 		go func() {
 			pointMapKeys := make([]string, len(f.pointMap))

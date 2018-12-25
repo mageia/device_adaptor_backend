@@ -2,10 +2,10 @@ package agent
 
 import (
 	"context"
-	"deviceAdaptor"
-	"deviceAdaptor/configs"
-	"deviceAdaptor/internal"
-	"deviceAdaptor/internal/models"
+	"device_adaptor"
+	"device_adaptor/configs"
+	"device_adaptor/internal"
+	"device_adaptor/internal/models"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -43,7 +43,7 @@ func NewAgent() (*Agent, error) {
 	}
 
 	a := &Agent{
-		Name:    "deviceAdaptor",
+		Name:    "device_adaptor",
 		Version: "v1.0.0",
 		Ctx:     ctx,
 		Cancel:  cancel,

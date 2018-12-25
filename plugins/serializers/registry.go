@@ -1,8 +1,8 @@
 package serializers
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/plugins/serializers/json"
+	"device_adaptor"
+	"device_adaptor/plugins/serializers/json"
 	"fmt"
 	"time"
 )

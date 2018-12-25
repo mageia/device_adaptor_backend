@@ -1,7 +1,7 @@
 package models
 
 import (
-	"deviceAdaptor"
+	"device_adaptor"
 	"sync"
 )
 

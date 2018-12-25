@@ -1,5 +1,5 @@
 package all
 
 import (
-	_ "deviceAdaptor/plugins/processors/vibration"
+	_ "device_adaptor/plugins/processors/vibration"
 )

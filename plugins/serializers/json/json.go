@@ -1,7 +1,7 @@
 package json
 
 import (
-	"deviceAdaptor"
+	"device_adaptor"
 	"encoding/json"
 	"time"
 )

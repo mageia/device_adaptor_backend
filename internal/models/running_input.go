@@ -1,10 +1,10 @@
 package models
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/metric"
-	"deviceAdaptor/selfstat"
+	"device_adaptor"
+	"device_adaptor/internal/points"
+	"device_adaptor/metric"
+	"device_adaptor/selfstat"
 	"log"
 	"time"
 )

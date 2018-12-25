@@ -1,7 +1,7 @@
 package metric
 
 import (
-	"deviceAdaptor"
+	"device_adaptor"
 	"fmt"
 	"time"
 )

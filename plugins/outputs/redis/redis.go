@@ -1,11 +1,11 @@
 package redis
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/alarm"
-	"deviceAdaptor/internal"
-	"deviceAdaptor/plugins/outputs"
-	"deviceAdaptor/plugins/serializers"
+	"device_adaptor"
+	"device_adaptor/alarm"
+	"device_adaptor/internal"
+	"device_adaptor/plugins/outputs"
+	"device_adaptor/plugins/serializers"
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis"

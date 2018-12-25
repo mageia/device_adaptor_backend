@@ -1,14 +1,14 @@
 package router
 
 import (
-	"deviceAdaptor/agent"
-	"deviceAdaptor/alarm"
-	"deviceAdaptor/configs"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/controllers"
-	"deviceAdaptor/plugins/inputs"
-	"deviceAdaptor/plugins/outputs"
-	_ "deviceAdaptor/statik"
+	"device_adaptor/agent"
+	"device_adaptor/alarm"
+	"device_adaptor/configs"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/controllers"
+	"device_adaptor/plugins/inputs"
+	"device_adaptor/plugins/outputs"
+	_ "device_adaptor/statik"
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"

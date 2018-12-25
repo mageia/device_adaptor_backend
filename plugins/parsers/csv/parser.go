@@ -2,8 +2,8 @@ package csv
 
 import (
 	"bytes"
-	"deviceAdaptor"
-	"deviceAdaptor/metric"
+	"device_adaptor"
+	"device_adaptor/metric"
 	"encoding/csv"
 	"fmt"
 	"strconv"

@@ -1,3 +1,3 @@
 package all
 
-import _ "deviceAdaptor/plugins/controllers/http"
+import _ "device_adaptor/plugins/controllers/http"

@@ -2,7 +2,7 @@ package redis
 
 import (
 	"context"
-	"deviceAdaptor"
+	"device_adaptor"
 )
 
 type Redis struct {

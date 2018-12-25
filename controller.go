@@ -2,7 +2,7 @@ package deviceAgent
 
 import (
 	"context"
-	"deviceAdaptor/internal/points"
+	"device_adaptor/internal/points"
 )
 
 type Controller interface {

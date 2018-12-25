@@ -1,8 +1,8 @@
 package parsers
 
 import (
-	"deviceAdaptor/plugins/parsers/csv"
-	"deviceAdaptor/plugins/parsers/vibration"
+	"device_adaptor/plugins/parsers/csv"
+	"device_adaptor/plugins/parsers/vibration"
 	"fmt"
 )
 

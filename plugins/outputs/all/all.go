@@ -1,7 +1,7 @@
 package all
 
 import (
-	_ "deviceAdaptor/plugins/outputs/file"
-	_ "deviceAdaptor/plugins/outputs/rabbitmq"
-	_ "deviceAdaptor/plugins/outputs/redis"
+	_ "device_adaptor/plugins/outputs/file"
+	_ "device_adaptor/plugins/outputs/rabbitmq"
+	_ "device_adaptor/plugins/outputs/redis"
 )

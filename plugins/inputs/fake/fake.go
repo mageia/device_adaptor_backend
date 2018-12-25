@@ -1,9 +1,9 @@
 package fake
 
 import (
-	"deviceAdaptor"
-	"deviceAdaptor/internal/points"
-	"deviceAdaptor/plugins/inputs"
+	"device_adaptor"
+	"device_adaptor/internal/points"
+	"device_adaptor/plugins/inputs"
 	"encoding/csv"
 	"fmt"
 	"github.com/rakyll/statik/fs"
