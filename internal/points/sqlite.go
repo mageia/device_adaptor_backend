@@ -8,6 +8,8 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"log"
 	"math"
+	"os"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -98,8 +100,15 @@ func (hs HashMapType) Value() (driver.Value, error) {
 func init() {
 	var err error
 	dbPath := "point_map.db"
+
 	if runtime.GOOS == "linux" {
-		dbPath = "/var/run/device_adaptor/point_map.db"
+		dbPath = "/var/run/device_adaptor/"
+		if _, e := os.Stat(dbPath); e != nil {
+			if os.IsNotExist(err) {
+				os.Mkdir(dbPath, 0777)
+			}
+		}
+		dbPath = path.Join(dbPath, "point_map.db")
 	}
 
 	SqliteDB, err = gorm.Open("sqlite3", dbPath)

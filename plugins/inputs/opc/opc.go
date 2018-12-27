@@ -83,6 +83,7 @@ func (t *OPC) sendInitMsg() error {
 		"opc_server_name": t.OPCServerName,
 		"opc_key_list":    keyList,
 	})
+	b = append(b, 0x0a)
 	_, e = l.Write(b)
 	if e != nil {
 		return e
@@ -97,7 +98,10 @@ func (t *OPC) sendInitMsg() error {
 		if n == 0 || e != nil {
 			break
 		}
-		buf = append(buf, tmpBuf[:n]...)
+		if tmpBuf[n-1] == 0x0a {
+			buf = append(buf, tmpBuf[:n-1]...)
+			break
+		}
 	}
 	if len(buf) <= 0 {
 		return nil
@@ -130,6 +134,7 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 		"opc_server_host": "localhost",
 		"opc_server_name": t.OPCServerName,
 	})
+	b = append(b, 0x0a)
 	_, e = l.Write(b)
 	if e != nil {
 		return e
@@ -144,7 +149,10 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 		if n == 0 || e != nil {
 			break
 		}
-		buf = append(buf, tmpBuf[:n]...)
+		if tmpBuf[n-1] == 0x0a {
+			buf = append(buf, tmpBuf[:n-1]...)
+			break
+		}
 	}
 	if len(buf) <= 0 {
 		return nil
@@ -205,7 +213,7 @@ func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
 		"opc_server_name": t.OPCServerName,
 		"control_pair":    controlPairs,
 	})
-
+	b = append(b, 0x0a)
 	_, e = l.Write(b)
 	if e != nil {
 		return e
@@ -220,7 +228,10 @@ func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
 		if n == 0 || e != nil {
 			break
 		}
-		buf = append(buf, tmpBuf[:n]...)
+		if tmpBuf[n-1] == 0x0a {
+			buf = append(buf, tmpBuf[:n-1]...)
+			break
+		}
 	}
 	if len(buf) <= 0 {
 		return nil
@@ -250,6 +261,7 @@ func (t *OPC) Name() string {
 	return t.originName
 }
 func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
+
 	if e := t.sendGetRealMsg(acc); e != nil {
 		acc.AddError(e)
 		return e
