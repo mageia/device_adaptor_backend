@@ -7,6 +7,7 @@ import (
 	"device_adaptor/plugins/inputs"
 	"device_adaptor/utils"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"git.leaniot.cn/publicLib/go-modbus"
 	"github.com/rs/zerolog/log"
@@ -26,12 +27,14 @@ type Modbus struct {
 	Address string `json:"address"`
 	SlaveId int    `json:"slave_id"`
 
-	client    modbus.Client
-	_handler  *modbus.TCPClientHandler
-	connected bool
-	pointMap  map[string]points.PointDefine
-	addrMap   map[string][]int
-	quality   deviceAgent.Quality
+	client      modbus.Client
+	_handler    *modbus.TCPClientHandler
+	connected   bool
+	pointMap    map[string]points.PointDefine
+	pointKeyMap map[string]string
+	addrMap     map[string]map[int][]int
+	addrMapKeys map[string][]int
+	quality     deviceAgent.Quality
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
@@ -60,29 +63,51 @@ func getParamList(addrList []int, HoleWidth int, WinWidth int) [][2]int {
 	}
 	return R
 }
+func (m *Modbus) parseAddress(address string) (area, base, bit string, err error) {
+	addrSplit := strings.Split(address, "x")
+	if len(addrSplit) != 2 || len(addrSplit[0]) != 1 {
+		err = errors.New("invalid address format")
+		return
+	}
+	area = addrSplit[0]
+
+	secondSplit := strings.Split(addrSplit[1], ".")
+	if len(secondSplit) == 1 {
+		base = fmt.Sprintf("%04s", addrSplit[1])
+		bit = ""
+	} else if len(secondSplit) == 2 {
+		base = fmt.Sprintf("%04s", secondSplit[0])
+		bit = secondSplit[1]
+	} else {
+		err = errors.New("invalid address format")
+	}
+
+	return
+}
+
 func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	tmpDataMap := make(map[string][]interface{})
 	m.quality = deviceAgent.QualityGood
 
-	defer func(modbus *Modbus) {
+	defer func(md *Modbus) {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
-			m.quality = deviceAgent.QualityDisconnect
+			md.quality = deviceAgent.QualityDisconnect
 			trace := make([]byte, 2048)
 			runtime.Stack(trace, true)
 			log.Error().Msgf("Input [modbus] panicked: %s, Stack:\n%s\n", e, trace)
 		}
-		acc.AddFields(modbus.Name(), fields, tags, modbus.SelfCheck())
+		acc.AddFields(md.Name(), fields, tags, md.SelfCheck())
 	}(m)
 
 	var wg sync.WaitGroup
 
-	for k := range m.addrMap {
+	for k := range m.addrMapKeys {
 		switch k {
 		case "0", "1":
-			pList := getParamList(m.addrMap[k], HoleWidth, 1500)
+			pList := getParamList(m.addrMapKeys[k], HoleWidth, 1500)
 			wg.Add(len(pList))
 			for _, param := range pList {
 				go func(k string, param [2]int) {
@@ -94,8 +119,6 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 						return
 					}
 
-					//pointAddr := m.FieldPrefix + fmt.Sprintf("%sx%04d", k, a) + m.FieldSuffix
-
 					for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
 						tmpDataMap[k] = append(tmpDataMap[k], utils.GetBit(r, uint(i)))
 					}
@@ -103,7 +126,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 			}
 
 		case "4":
-			pList := getParamList(m.addrMap[k], HoleWidth, 100)
+			pList := getParamList(m.addrMapKeys[k], HoleWidth, 100)
 			wg.Add(len(pList))
 			for _, param := range pList {
 				go func(k string, param [2]int) {
@@ -123,8 +146,8 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 	}
 	wg.Wait()
 
-	for k, l := range m.addrMap {
-		if len(m.addrMap[k]) > len(tmpDataMap[k]) {
+	for k, l := range m.addrMapKeys {
+		if len(m.addrMapKeys[k]) > len(tmpDataMap[k]) {
 			continue
 		}
 
@@ -141,7 +164,22 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 				if i > 0 && a-l[i-1] < HoleWidth {
 					x4 = a - l[i-1] - 1 //计算并剔除被忽略的小空洞
 				}
-				fields[pointAddr] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
+
+				if p, ok := m.addrMap[k][a]; ok {
+					pA := fmt.Sprintf("%sx%04d", k, a)
+
+					for _, bit := range p {
+						if bit == -1 {
+							if key, ok := m.pointKeyMap[pA]; ok {
+								fields[key] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
+							}
+						} else {
+							if key, ok := m.pointKeyMap[fmt.Sprintf("%s.%d", pA, bit)]; ok {
+								fields[key] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1 == 1
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -150,7 +188,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 }
 func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 	if !m.connected {
-		if e := m.connect(); e != nil {
+		if e := m.Start(); e != nil {
 			return e
 		}
 	}
@@ -169,20 +207,6 @@ func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
 
 	wg.Wait()
 
-	return nil
-}
-func (m *Modbus) connect() error {
-	_handler := modbus.NewTCPClientHandler(m.Address)
-	_handler.SlaveId = uint8(m.SlaveId)
-	_handler.IdleTimeout = defaultTimeout.Duration * 100
-	_handler.Timeout = defaultTimeout.Duration
-	m._handler = _handler
-
-	if e := _handler.Connect(); e != nil {
-		return e
-	}
-	m.client = modbus.NewClient(_handler)
-	m.connected = true
 	return nil
 }
 func (m *Modbus) TranslateOption(pointAddr string, source byte) interface{} {
@@ -215,7 +239,18 @@ func (m *Modbus) OriginName() string {
 }
 func (m *Modbus) Start() error {
 	m.connected = false
-	return m.connect()
+	_handler := modbus.NewTCPClientHandler(m.Address)
+	_handler.SlaveId = uint8(m.SlaveId)
+	_handler.IdleTimeout = defaultTimeout.Duration * 100
+	_handler.Timeout = defaultTimeout.Duration
+	m._handler = _handler
+
+	if e := _handler.Connect(); e != nil {
+		return e
+	}
+	m.client = modbus.NewClient(_handler)
+	m.connected = true
+	return nil
 }
 func (m *Modbus) Stop() {
 	if m.connected {
@@ -223,20 +258,46 @@ func (m *Modbus) Stop() {
 		m.connected = false
 	}
 }
+
 func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 	m.pointMap = pointMap
-	m.addrMap = make(map[string][]int, 0)
+	m.pointKeyMap = make(map[string]string)
+	m.addrMap = make(map[string]map[int][]int)
+	m.addrMapKeys = make(map[string][]int)
 
-	for _, p := range m.pointMap {
-		addrSplit := strings.Split(p.Address, "x")
-		if len(addrSplit) != 2 {
-			return
+	for k, p := range m.pointMap {
+		area, base, bit, err := m.parseAddress(p.Address)
+		if err != nil {
+			continue
 		}
-		readAddr, _ := strconv.Atoi(addrSplit[1])
-		m.addrMap[addrSplit[0]] = append(m.addrMap[addrSplit[0]], readAddr)
+		if m.addrMap[area] == nil {
+			m.addrMap[area] = make(map[int][]int)
+		}
+
+		readAddr, e := strconv.Atoi(base)
+		if e != nil {
+			continue
+		}
+		bitInt := -1
+		if bit != "" {
+			bitInt, e = strconv.Atoi(bit)
+			if e != nil {
+				continue
+			}
+		}
+		m.addrMap[area][readAddr] = append(m.addrMap[area][readAddr], bitInt)
+
+		pointKey := fmt.Sprintf("%sx%s.%s", area, base, bit)
+		if bit == "" {
+			pointKey = fmt.Sprintf("%sx%s", area, base)
+		}
+		m.pointKeyMap[pointKey] = k
 	}
-	for k := range m.addrMap {
-		sort.Ints(m.addrMap[k])
+	for k, v := range m.addrMap {
+		for kk := range v {
+			m.addrMapKeys[k] = append(m.addrMapKeys[k], kk)
+		}
+		sort.Ints(m.addrMapKeys[k])
 	}
 }
 func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
@@ -248,13 +309,13 @@ func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
 	return nil
 }
 func (m *Modbus) SetValue(kv map[string]interface{}) error {
-	var errors []error
+	var errorList []error
 
 NEXT:
 	for key, value := range kv {
 		addrSplit := strings.Split(strings.TrimSpace(key), "x")
 		if len(addrSplit) != 2 {
-			errors = append(errors, fmt.Errorf("invalid point key: %s", key))
+			errorList = append(errorList, fmt.Errorf("invalid point key: %s", key))
 			continue NEXT
 		}
 
@@ -264,7 +325,7 @@ NEXT:
 			if v, ok := value.(float64); ok {
 				_, e := m.client.WriteSingleRegister(uint16(readAddr), uint16(v))
 				if e != nil {
-					errors = append(errors, e)
+					errorList = append(errorList, e)
 					continue NEXT
 				}
 				//TODO: write result check
@@ -273,17 +334,17 @@ NEXT:
 				//}
 				//return nil
 			} else {
-				errors = append(errors, fmt.Errorf("invalid value format: %s", value))
+				errorList = append(errorList, fmt.Errorf("invalid value format: %s", value))
 				continue NEXT
 			}
 		default:
-			errors = append(errors, fmt.Errorf("unsupported modbus address type: %s", addrSplit[0]))
+			errorList = append(errorList, fmt.Errorf("unsupported modbus address type: %s", addrSplit[0]))
 			continue NEXT
 		}
 	}
-	if len(errors) != 0 {
+	if len(errorList) != 0 {
 		var ss string
-		for _, s := range errors {
+		for _, s := range errorList {
 			ss += s.Error() + "\n"
 		}
 		return fmt.Errorf(ss)
@@ -294,13 +355,13 @@ func (m *Modbus) SelfCheck() deviceAgent.Quality {
 	return m.quality
 }
 func (m *Modbus) UpdatePointMap(kv map[string]interface{}) error {
-	var errors []error
+	var errorList []error
 
 NEXT:
 	for key, value := range kv {
 		pD, ok := m.pointMap[key]
 		if !ok {
-			errors = append(errors, fmt.Errorf("no such point: %s\n", key))
+			errorList = append(errorList, fmt.Errorf("no such point: %s\n", key))
 			continue NEXT
 		}
 
@@ -310,7 +371,7 @@ NEXT:
 			for _, k := range itemList {
 				if v, ok := value.(map[string]interface{})[k]; ok {
 					if e := utils.SetField(&pD, strings.Title(k), v); e != nil {
-						errors = append(errors, e)
+						errorList = append(errorList, e)
 						continue NEXT
 					}
 				}
@@ -319,13 +380,14 @@ NEXT:
 		m.pointMap[key] = pD
 	}
 
-	if len(errors) != 0 {
+	if len(errorList) != 0 {
 		var ss string
-		for _, s := range errors {
+		for _, s := range errorList {
 			ss += s.Error() + "\n"
 		}
 		return fmt.Errorf(ss)
 	}
+	m.SetPointMap(m.pointMap)
 	return nil
 }
 func (m *Modbus) RetrievePointMap(keys []string) map[string]points.PointDefine {
