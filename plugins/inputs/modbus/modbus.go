@@ -268,6 +268,7 @@ func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 	for k, p := range m.pointMap {
 		area, base, bit, err := m.parseAddress(p.Address)
 		if err != nil {
+			log.Error().Err(err).Msg("parseAddress")
 			continue
 		}
 		if m.addrMap[area] == nil {
@@ -276,12 +277,14 @@ func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 
 		readAddr, e := strconv.Atoi(base)
 		if e != nil {
+			log.Error().Err(e).Msg("Atoi base")
 			continue
 		}
 		bitInt := -1
 		if bit != "" {
 			bitInt, e = strconv.Atoi(bit)
 			if e != nil {
+				log.Error().Err(e).Msg("Atoi bit")
 				continue
 			}
 		}
