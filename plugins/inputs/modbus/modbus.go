@@ -171,11 +171,11 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 					for _, bit := range p {
 						if bit == -1 {
 							if key, ok := m.pointKeyMap[pA]; ok {
-								fields[key] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
+								fields[m.FieldPrefix + key + m.FieldSuffix] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
 							}
 						} else {
 							if key, ok := m.pointKeyMap[fmt.Sprintf("%s.%d", pA, bit)]; ok {
-								fields[key] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1 == 1
+								fields[m.FieldPrefix + key + m.FieldSuffix] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1 == 1
 							}
 						}
 					}

@@ -197,6 +197,6 @@ func GetConfigContent() []byte {
 
 func init() {
 	if runtime.GOOS == "linux" {
-		jsonConfigPath = "/var/run/device_adaptor/device_adaptor.json"
+		jsonConfigPath = "/var/device_adaptor/device_adaptor.json"
 	}
 }

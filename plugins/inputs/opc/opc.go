@@ -6,8 +6,8 @@ import (
 	"device_adaptor/internal"
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
-	"encoding/json"
 	"fmt"
+	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
 	"net"
 	"time"
@@ -67,9 +67,6 @@ func (t *OPC) sendInitMsg() error {
 		return e
 	}
 	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
-	defer func() {
-		l.Close()
-	}()
 
 	i := 0
 	keyList := make([]string, len(t.pointMap))
@@ -77,7 +74,7 @@ func (t *OPC) sendInitMsg() error {
 		keyList[i] = k
 		i++
 	}
-	b, _ := json.Marshal(map[string]interface{}{
+	b, _ := jsoniter.Marshal(map[string]interface{}{
 		"cmd":             "init",
 		"opc_server_host": "localhost",
 		"opc_server_name": t.OPCServerName,
@@ -102,12 +99,16 @@ func (t *OPC) sendInitMsg() error {
 			buf = append(buf, tmpBuf[:n-1]...)
 			break
 		}
+		fmt.Println("###############")
+		buf = append(buf, tmpBuf[:n]...)
 	}
+	l.Close()
+
 	if len(buf) <= 0 {
 		return nil
 	}
 
-	e = json.Unmarshal(buf, &tmpResp)
+	e = jsoniter.Unmarshal(buf, &tmpResp)
 	if e != nil {
 		return e
 	}
@@ -116,7 +117,6 @@ func (t *OPC) sendInitMsg() error {
 		return fmt.Errorf("init failed")
 	}
 	log.Debug().Interface("tmpResp", tmpResp).Msg("sendInitMsg")
-	l.Close()
 
 	return nil
 }
@@ -127,9 +127,7 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 	}
 	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
 
-	defer func() { l.Close() }()
-
-	b, _ := json.Marshal(map[string]interface{}{
+	b, _ := jsoniter.Marshal(map[string]interface{}{
 		"cmd":             "real_time_data",
 		"opc_server_host": "localhost",
 		"opc_server_name": t.OPCServerName,
@@ -141,25 +139,28 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 	}
 
 	buf := make([]byte, 0)
-	tmpBuf := make([]byte, 40960)
+	tmpBuf := make([]byte, 4096)
 	tmpResp := opcServerResponse{}
 
 	for {
 		n, e := l.Read(tmpBuf)
 		if n == 0 || e != nil {
 			break
-		}
-		if tmpBuf[n-1] == 0x0a {
+		} else if tmpBuf[n-1] == 0x0a {
 			buf = append(buf, tmpBuf[:n-1]...)
 			break
 		}
+		buf = append(buf, tmpBuf[:n]...)
 	}
+	l.Close()
+
 	if len(buf) <= 0 {
 		return nil
 	}
 
-	e = json.Unmarshal(buf, &tmpResp)
+	e = jsoniter.Unmarshal(buf, &tmpResp)
 	if e != nil {
+		log.Error().Err(e).Msg("Unmarshal")
 		return e
 	}
 	fields := make(map[string]interface{})
@@ -193,8 +194,6 @@ func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
 	}
 	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
 
-	defer func() { l.Close() }()
-
 	controlPairs := make([]map[string]interface{}, 0)
 
 	for k, v := range pairs {
@@ -207,7 +206,7 @@ func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
 		}
 	}
 
-	b, _ := json.Marshal(map[string]interface{}{
+	b, _ := jsoniter.Marshal(map[string]interface{}{
 		"cmd":             "control",
 		"opc_server_host": "localhost",
 		"opc_server_name": t.OPCServerName,
@@ -233,11 +232,12 @@ func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
 			break
 		}
 	}
+	l.Close()
 	if len(buf) <= 0 {
 		return nil
 	}
 
-	e = json.Unmarshal(buf, &tmpResp)
+	e = jsoniter.Unmarshal(buf, &tmpResp)
 	if e != nil {
 		return e
 	}
@@ -261,7 +261,6 @@ func (t *OPC) Name() string {
 	return t.originName
 }
 func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
-
 	if e := t.sendGetRealMsg(acc); e != nil {
 		acc.AddError(e)
 		return e

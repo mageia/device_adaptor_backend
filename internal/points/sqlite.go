@@ -102,7 +102,7 @@ func init() {
 	dbPath := "point_map.db"
 
 	if runtime.GOOS == "linux" {
-		dbPath = "/var/run/device_adaptor/"
+		dbPath = "/var/device_adaptor/"
 		if _, e := os.Stat(dbPath); e != nil {
 			if os.IsNotExist(err) {
 				os.Mkdir(dbPath, 0777)
