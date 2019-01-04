@@ -3,6 +3,7 @@ package json
 import (
 	"device_adaptor"
 	"encoding/json"
+	"github.com/json-iterator/go"
 	"time"
 )
 
@@ -40,6 +41,28 @@ func (s *serializer) SerializeBatch(metrics []deviceAgent.Metric) ([]byte, error
 
 func (s *serializer) SerializeMap(metric deviceAgent.Metric) (map[string]interface{}, error) {
 	m := s.createObject(metric)
+	return m, nil
+}
+
+func (s *serializer) SerializePoints(pointMap deviceAgent.PointMap) (map[string]interface{}, error) {
+	points := make(map[string]interface{}, len(pointMap.Points))
+	for key, point := range pointMap.Points {
+		obj := make(map[string]interface{})
+		bytes, err := jsoniter.Marshal(point)
+		if err != nil {
+			return nil, err
+		}
+		err = jsoniter.Unmarshal(bytes, &obj)
+		if err != nil {
+			return nil, err
+		}
+		points[key] = obj
+	}
+
+	m := make(map[string]interface{})
+	m["points"] = points
+	m["timestamp"] = pointMap.Time.UnixNano() / 1e6
+	m["name"] = pointMap.InputName
 	return m, nil
 }
 

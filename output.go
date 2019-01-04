@@ -1,7 +1,5 @@
 package deviceAgent
 
-import "device_adaptor/internal/points"
-
 type Output interface {
 	Connect() error
 	Close() error
@@ -12,7 +10,7 @@ type Output interface {
 type RichOutput interface {
 	Output
 	// output 启动时被调用一次，而后点表变更时被调用
-	WritePointMap(pointMap map[string]points.PointDefine) error
+	WritePointMap(pointMap PointMap) error
 }
 
 type ServiceOutput interface {

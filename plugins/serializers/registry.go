@@ -15,6 +15,7 @@ type Serializer interface {
 	Serialize(metric deviceAgent.Metric) ([]byte, error)
 	SerializeBatch(metrics []deviceAgent.Metric) ([]byte, error)
 	SerializeMap(metric deviceAgent.Metric) (map[string]interface{}, error)
+	SerializePoints(pointMap deviceAgent.PointMap) (map[string]interface{}, error)
 }
 
 type Config struct {

@@ -95,8 +95,10 @@ func (a *Agent) OnPointDefineUpdate(input deviceAgent.Input) {
 			pointMap[p.PointKey] = p
 		}
 
+		m := deviceAgent.PointMap{Time: time.Now(), InputName: input.Name(), Points: pointMap}
+
 		for _, ro := range a.Config.Outputs {
-			ro.WritePointDefine(pointMap)
+			ro.WritePointDefine(m)
 		}
 	}
 }

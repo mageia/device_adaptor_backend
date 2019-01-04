@@ -51,6 +51,38 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 	return nil
 }
 
+func (r *Redis) WritePointMap(pointMap deviceAgent.PointMap) error {
+	if r.client == nil {
+		return errors.New("disconnected")
+	}
+
+	obj, err := r.serializer.SerializePoints(pointMap)
+	if err != nil {
+		return err
+	}
+
+	str, err := jsoniter.MarshalToString(obj)
+	if err != nil {
+		return err
+	}
+
+	redisName := fmt.Sprintf("%s.points", pointMap.InputName)
+
+	// 覆盖到 redis 键（用于同步查询）
+	if err := r.client.Set(redisName, str, 0).Err(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	// 发布到 redis 通道（用于异步通知）
+	if err := r.client.Publish(redisName, str).Err(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
+}
+
 func (r *Redis) Connect() error {
 	if r.UrlAddress == "" {
 		r.UrlAddress = "redis://localhost:6379/0"
