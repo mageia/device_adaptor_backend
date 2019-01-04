@@ -59,11 +59,7 @@ func (s *serializer) SerializePoints(pointMap deviceAgent.PointMap) (map[string]
 		points[key] = obj
 	}
 
-	m := make(map[string]interface{})
-	m["points"] = points
-	m["timestamp"] = pointMap.Time.UnixNano() / 1e6
-	m["name"] = pointMap.InputName
-	return m, nil
+	return points, nil
 }
 
 func (s *serializer) createObject(metric deviceAgent.Metric) map[string]interface{} {
