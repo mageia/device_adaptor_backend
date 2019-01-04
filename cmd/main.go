@@ -64,9 +64,15 @@ func main() {
 
 	for {
 		select {
-		case <-agent.ReloadSignal:
-			agent.A.Reload()
-			//agent.A.Cancel()
+		case signal := <-agent.Signal:
+			switch s := signal.(type) {
+			case agent.ReloadSignal:
+				agent.A.Reload()
+				//agent.A.Cancel()
+
+			case agent.PointDefineUpdateSignal:
+				agent.A.OnPointDefineUpdate(s.Input)
+			}
 		}
 	}
 }

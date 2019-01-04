@@ -2,6 +2,7 @@ package ftp
 
 import (
 	"device_adaptor"
+	"device_adaptor/agent"
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
 	"device_adaptor/plugins/parsers"
@@ -211,6 +212,7 @@ func (f *FTP) connect() error {
 			}
 			begin.Commit()
 			log.Debug().Str("TimeSince", time.Since(timeS).String()).Msg("ftp.UpdatePointMap")
+			agent.Signal <- agent.PointDefineUpdateSignal{Input: f}
 		}()
 	}
 

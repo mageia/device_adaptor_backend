@@ -16,7 +16,16 @@ import (
 
 var A *Agent
 
-var ReloadSignal = make(chan struct{}, 1)
+var Signal = make(chan interface{}, 1)
+
+// 整体重载信号
+type ReloadSignal struct {
+}
+
+// 点表热更新信号
+type PointDefineUpdateSignal struct {
+	Input deviceAgent.Input
+}
 
 type Agent struct {
 	Ctx     context.Context
@@ -60,6 +69,13 @@ func (a *Agent) Reload() {
 		A, _ = NewAgent()
 		A.Run()
 	}()
+}
+
+// 点表更新回调。有两种触发机会：
+//   1. 程序启动或整体 reload 时，必须假设点表更新过了
+//   2. 当 agent 明确收到 PointDefineUpdateSignal 信号时
+func (a *Agent) OnPointDefineUpdate(input deviceAgent.Input) {
+	// TODO: implement me
 }
 
 func (a *Agent) Close() error {
@@ -277,6 +293,9 @@ func (a *Agent) Run() error {
 				}
 			}
 		}
+
+		// 启动时点表有可能已变更，需通知点表更新
+		a.OnPointDefineUpdate(input.Input)
 
 		inter := a.Config.Global.Interval.Duration
 		if input.Config.Interval != 0 {

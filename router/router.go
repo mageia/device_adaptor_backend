@@ -461,7 +461,7 @@ func InitRouter(debug bool) *gin.Engine {
 			strings.HasPrefix(c.Request.URL.Path, "/interface/pointMap")) {
 			go func() {
 				configs.FlushMemoryConfig()
-				agent.ReloadSignal <- struct{}{}
+				agent.Signal <- agent.ReloadSignal{}
 			}()
 		}
 	})
