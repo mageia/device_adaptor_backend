@@ -1,15 +1,22 @@
 package deviceAgent
 
+import "device_adaptor/internal/points"
+
 type Output interface {
 	Connect() error
 	Close() error
 	Write(metrics []Metric) error
 }
 
+// 支持输出点表的 output
+type RichOutput interface {
+	Output
+	// output 启动时被调用一次，而后点表变更时被调用
+	WritePointMap(pointMap map[string]points.PointDefine) error
+}
+
 type ServiceOutput interface {
-	Connect() error
-	Close() error
-	Write(metrics []Metric) error
+	Output
 	Start() error
 	Stop()
 }

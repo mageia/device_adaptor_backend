@@ -6,6 +6,7 @@ import (
 	"device_adaptor/configs"
 	"device_adaptor/internal"
 	"device_adaptor/internal/models"
+	"device_adaptor/internal/points"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -75,7 +76,29 @@ func (a *Agent) Reload() {
 //   1. 程序启动或整体 reload 时，必须假设点表更新过了
 //   2. 当 agent 明确收到 PointDefineUpdateSignal 信号时
 func (a *Agent) OnPointDefineUpdate(input deviceAgent.Input) {
-	// TODO: implement me
+	log.Info().Str("input", input.Name()).Msg("Point definition is updated")
+
+	needOutput := false
+	for _, ro := range a.Config.Outputs {
+		if ro.SupportsWritePointDefine() {
+			needOutput = true
+			break
+		}
+	}
+
+	if needOutput {
+		// 取当前点表
+		pointArray := make([]points.PointDefine, 0)
+		pointMap := make(map[string]points.PointDefine)
+		points.SqliteDB.Where("input_name = ?", input.Name()).Find(&pointArray)
+		for _, p := range pointArray {
+			pointMap[p.PointKey] = p
+		}
+
+		for _, ro := range a.Config.Outputs {
+			ro.WritePointDefine(pointMap)
+		}
+	}
 }
 
 func (a *Agent) Close() error {

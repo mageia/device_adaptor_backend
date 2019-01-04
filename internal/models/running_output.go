@@ -3,6 +3,7 @@ package models
 import (
 	"device_adaptor"
 	"device_adaptor/internal/buffer"
+	"device_adaptor/internal/points"
 	"github.com/rs/zerolog/log"
 	"sync"
 	"time"
@@ -71,4 +72,24 @@ func (ro *RunningOutput) Write(metrics []deviceAgent.Metric) error {
 		log.Debug().Str("output", ro.Name).Int("wrote_count", len(metrics)).Dur("time_since", elapsed).Msg("RunningOutput.Write")
 	}
 	return nil
+}
+
+// 判断当前 output 是否支持点表输出
+func (ro *RunningOutput) SupportsWritePointDefine() bool {
+	_, ok := ro.Output.(deviceAgent.RichOutput)
+	return ok
+}
+
+// 输出指定 input 的点表
+func (ro *RunningOutput) WritePointDefine(pointMap map[string]points.PointDefine) {
+	if o, ok := ro.Output.(deviceAgent.RichOutput); ok {
+		ro.writeMutex.Lock()
+		defer ro.writeMutex.Unlock()
+		start := time.Now()
+		err := o.WritePointMap(pointMap)
+		elapsed := time.Since(start)
+		if err == nil {
+			log.Debug().Str("output", ro.Name).Int("wrote_count", len(pointMap)).Dur("time_since", elapsed).Msg("RunningOutput.WritePoints")
+		}
+	}
 }
