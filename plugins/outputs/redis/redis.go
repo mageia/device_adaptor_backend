@@ -117,6 +117,10 @@ func (r *Redis) Connect() error {
 		return fmt.Errorf("failed to connect redis: %s", err)
 	}
 	r.client = c
+
+	r.client.Del(r.PointsKey)
+	r.client.Del(r.PointsVersionKey)
+
 	return nil
 }
 
