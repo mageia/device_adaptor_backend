@@ -27,14 +27,14 @@ type Modbus struct {
 	Address string `json:"address"`
 	SlaveId int    `json:"slave_id"`
 
-	client      modbus.Client
-	_handler    *modbus.TCPClientHandler
-	connected   bool
-	pointMap    map[string]points.PointDefine
-	pointKeyMap map[string]string
-	addrMap     map[string]map[int][]int
-	addrMapKeys map[string][]int
-	quality     deviceAgent.Quality
+	client             modbus.Client
+	_handler           *modbus.TCPClientHandler
+	connected          bool
+	pointMap           map[string]points.PointDefine
+	_pointAddressToKey map[string]string
+	addrMap            map[string]map[int][]int
+	addrMapKeys        map[string][]int
+	quality            deviceAgent.Quality
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
@@ -170,12 +170,12 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 
 					for _, bit := range p {
 						if bit == -1 {
-							if key, ok := m.pointKeyMap[pA]; ok {
-								fields[m.FieldPrefix + key + m.FieldSuffix] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
+							if key, ok := m._pointAddressToKey[pA]; ok {
+								fields[m.FieldPrefix+key+m.FieldSuffix] = m.TranslateParameter(pointAddr, tmpDataMap[k][i+x4].(int16))
 							}
 						} else {
-							if key, ok := m.pointKeyMap[fmt.Sprintf("%s.%d", pA, bit)]; ok {
-								fields[m.FieldPrefix + key + m.FieldSuffix] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1 == 1
+							if key, ok := m._pointAddressToKey[fmt.Sprintf("%s.%d", pA, bit)]; ok {
+								fields[m.FieldPrefix+key+m.FieldSuffix] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1 == 1
 							}
 						}
 					}
@@ -261,7 +261,7 @@ func (m *Modbus) Stop() {
 
 func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 	m.pointMap = pointMap
-	m.pointKeyMap = make(map[string]string)
+	m._pointAddressToKey = make(map[string]string)
 	m.addrMap = make(map[string]map[int][]int)
 	m.addrMapKeys = make(map[string][]int)
 
@@ -294,7 +294,7 @@ func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 		if bit == "" {
 			pointKey = fmt.Sprintf("%sx%s", area, base)
 		}
-		m.pointKeyMap[pointKey] = k
+		m._pointAddressToKey[pointKey] = k
 	}
 	for k, v := range m.addrMap {
 		for kk := range v {

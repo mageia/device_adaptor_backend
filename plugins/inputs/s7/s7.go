@@ -10,7 +10,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/robinson/gos7"
-	"log"
+	"github.com/rs/zerolog/log"
+	"regexp"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -23,14 +24,15 @@ type S7 struct {
 	Rack    int    `json:"rack"`
 	Slot    int    `json:"slot"`
 
-	client    gos7.Client
-	_handler  *gos7.TCPClientHandler
-	buf       map[string][]byte
-	connected bool
-	pointMap  map[string]points.PointDefine
-	addrMap   map[string]map[string][][2]int
-	quality   deviceAgent.Quality
-	acc       deviceAgent.Accumulator
+	client             gos7.Client
+	_handler           *gos7.TCPClientHandler
+	buf                map[string][]byte
+	connected          bool
+	pointMap           map[string]points.PointDefine
+	_pointAddressToKey map[string]string
+	addrMap            map[string]map[string][][2]int
+	quality            deviceAgent.Quality
+	acc                deviceAgent.Accumulator
 
 	originName string
 
@@ -47,26 +49,30 @@ func (s *S7) getParamList() map[string][3]int {
 	var endOffset = 4
 
 	for areaType, o := range s.addrMap {
-		areaNumber, _ = strconv.Atoi(areaType[2:])
-		for k, v := range o {
-			for _, i := range v {
-				if i[0] > endAddr {
-					endAddr = i[0]
-					switch k[2:] {
-					case "d":
-						endOffset = 4
-					case "w":
-						endOffset = 2
-					case "x":
-						endOffset = 1
+		if strings.HasPrefix(strings.ToLower(areaType), "db") {
+			areaNumber, _ = strconv.Atoi(areaType[2:])
+			for k, v := range o {
+				for _, i := range v {
+					if i[0] > endAddr {
+						endAddr = i[0]
+						switch k[2:] {
+						case "d":
+							endOffset = 4
+						case "w":
+							endOffset = 2
+						case "x":
+							endOffset = 1
+						}
+					}
+					if i[0] < startAddr {
+						startAddr = i[0]
 					}
 				}
-				if i[0] < startAddr {
-					startAddr = i[0]
-				}
 			}
+			result[areaType] = [3]int{areaNumber, startAddr, endAddr + endOffset - startAddr}
+		} else if strings.HasPrefix(strings.ToLower(areaType), "m") {
+
 		}
-		result[areaType] = [3]int{areaNumber, startAddr, endAddr + endOffset - startAddr}
 	}
 
 	return result
@@ -87,6 +93,7 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 	}(s)
 
 	paramMap := s.getParamList()
+	log.Debug().Interface("paramMap", paramMap).Msg("getParamList")
 	for k, v := range paramMap {
 		switch k[:2] {
 		case "db":
@@ -100,24 +107,29 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 	}
 
 	for area, o := range s.addrMap {
-		for dataType, addrList := range o {
-			for _, addr := range addrList {
-				key := area + "." + dataType + fmt.Sprintf("%d", addr[0])
-				switch dataType[2:] {
-				case "w":
-					valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+2]
-					fields[key] = binary.BigEndian.Uint16(valueByteArr)
-				case "d":
-					valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+4]
-					var v float32
-					binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
-					fields[key] = v
-				case "x":
-					key = area + "." + dataType + fmt.Sprintf("%d.%d", addr[0], addr[1])
-					valueByteArr := s.buf[area][addr[0]-paramMap[area][1]]
-					fields[key] = utils.GetBit([]byte{valueByteArr}, uint(addr[1]))
+		if strings.HasPrefix(strings.ToLower(area), "db") {
+			for dataType, addrList := range o {
+				for _, addr := range addrList {
+					key := area + "." + dataType + fmt.Sprintf("%d", addr[0])
+					switch dataType[2:] {
+					case "b":
+					case "w":
+						valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+2]
+						fields[key] = binary.BigEndian.Uint16(valueByteArr)
+					case "d":
+						valueByteArr := s.buf[area][addr[0]-paramMap[area][1] : addr[0]-paramMap[area][1]+4]
+						var v float32
+						binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
+						fields[key] = v
+					case "x":
+						key = area + "." + dataType + fmt.Sprintf("%d.%d", addr[0], addr[1])
+						valueByteArr := s.buf[area][addr[0]-paramMap[area][1]]
+						fields[key] = utils.GetBit([]byte{valueByteArr}, uint(addr[1]))
+					}
 				}
 			}
+		} else if strings.HasPrefix(strings.ToLower(area), "m") {
+
 		}
 	}
 
@@ -157,7 +169,6 @@ func (s *S7) Start() error {
 	handler := gos7.NewTCPClientHandler(s.Address, s.Rack, s.Slot)
 	handler.IdleTimeout = defaultTimeout.Duration * 100
 	handler.Timeout = defaultTimeout.Duration
-	//handler.Logger = log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
 	s._handler = handler
 
 	if e := handler.Connect(); e != nil {
@@ -175,24 +186,55 @@ func (s *S7) Stop() {
 }
 func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
-	for a := range s.pointMap {
-		addrSplit := strings.SplitN(strings.TrimSpace(a), ".", 2)
-		if len(addrSplit) < 2 {
-			log.Println("Invalid address format, continue")
+	s._pointAddressToKey = make(map[string]string, len(s.pointMap))
+
+	pattern := `^(md|MD)\d+$|^[mM]\d+\.\d{1,2}$|^(db|DB)\d+\.(db|DB)[dwxDWX]\d+(.\d{1,2}?)$`
+
+	for _, a := range pointMap {
+		if ok, err := regexp.Match(pattern, []byte(a.Address)); !ok || err != nil {
+			log.Error().Err(err).Bool("matched", ok).Str("addr", a.Address).Msg("reg match address")
 			continue
 		}
 
-		if _, ok := s.addrMap[addrSplit[0]]; !ok {
-			s.addrMap[addrSplit[0]] = make(map[string][][2]int)
-		}
+		if strings.HasPrefix(strings.ToLower(a.Address), "db") { //DB area
+			addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
+			areaStr := strings.ToLower(addrSplit[0])
 
-		offsetSplit := strings.Split(addrSplit[1], ".")
-		bit := -1
-		if len(offsetSplit) == 2 {
-			bit, _ = strconv.Atoi(offsetSplit[1])
+			if _, ok := s.addrMap[areaStr]; !ok {
+				s.addrMap[areaStr] = make(map[string][][2]int)
+			}
+
+			offsetSplit := strings.Split(addrSplit[1], ".")
+			bit := -1
+			if len(offsetSplit) == 2 {
+				bit, _ = strconv.Atoi(offsetSplit[1])
+			}
+			offset, _ := strconv.Atoi(offsetSplit[0][3:])
+			s.addrMap[areaStr][addrSplit[1][:3]] = append(s.addrMap[areaStr][addrSplit[1][:3]], [2]int{offset, bit})
+		} else if strings.HasPrefix(strings.ToLower(a.Address), "m") { //M area
+			addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
+			areaStr := "m"
+			if _, ok := s.addrMap[areaStr]; !ok {
+				s.addrMap[areaStr] = make(map[string][][2]int)
+			}
+
+			if strings.HasPrefix(strings.ToLower(a.Address), "md") {
+				offset, _ := strconv.Atoi(addrSplit[0][2:])
+				s.addrMap[areaStr]["md"] = append(s.addrMap[areaStr]["md"], [2]int{offset, -1})
+			} else {
+				offset, _ := strconv.Atoi(addrSplit[0][1:])
+				bit, _ := strconv.Atoi(addrSplit[1])
+				s.addrMap[areaStr]["m"] = append(s.addrMap[areaStr]["m"], [2]int{offset, bit})
+			}
 		}
-		offset, _ := strconv.Atoi(offsetSplit[0][3:])
-		s.addrMap[addrSplit[0]][addrSplit[1][:3]] = append(s.addrMap[addrSplit[0]][addrSplit[1][:3]], [2]int{offset, bit})
+	}
+
+	//log.Debug().Interface("addrMap", s.addrMap).Msg("SetPointMap")
+
+	i := 0
+	for _, v := range s.pointMap {
+		s._pointAddressToKey[v.Address] = v.PointKey
+		i++
 	}
 }
 func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {

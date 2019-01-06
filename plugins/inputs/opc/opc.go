@@ -14,19 +14,19 @@ import (
 )
 
 type OPC struct {
-	Address           string            `json:"address"`
-	Interval          internal.Duration `json:"interval"`
-	Timeout           internal.Duration `json:"timeout"`
-	OPCServerName     string            `json:"opc_server_name"`
-	FieldPrefix       string            `json:"field_prefix"`
-	FieldSuffix       string            `json:"field_suffix"`
-	NameOverride      string            `json:"name_override"`
-	originName        string
-	quality           deviceAgent.Quality
-	pointMap          map[string]points.PointDefine
-	pointAddressToKey map[string]string
-	ctx               context.Context
-	cancel            context.CancelFunc
+	Address            string            `json:"address"`
+	Interval           internal.Duration `json:"interval"`
+	Timeout            internal.Duration `json:"timeout"`
+	OPCServerName      string            `json:"opc_server_name"`
+	FieldPrefix        string            `json:"field_prefix"`
+	FieldSuffix        string            `json:"field_suffix"`
+	NameOverride       string            `json:"name_override"`
+	originName         string
+	quality            deviceAgent.Quality
+	pointMap           map[string]points.PointDefine
+	_pointAddressToKey map[string]string
+	ctx                context.Context
+	cancel             context.CancelFunc
 }
 
 func (t *OPC) OriginName() string {
@@ -70,7 +70,7 @@ func (t *OPC) sendInitMsg() error {
 
 	i := 0
 	keyList := make([]string, len(t.pointMap))
-	for k := range t.pointAddressToKey {
+	for k := range t._pointAddressToKey {
 		keyList[i] = k
 		i++
 	}
@@ -99,7 +99,6 @@ func (t *OPC) sendInitMsg() error {
 			buf = append(buf, tmpBuf[:n-1]...)
 			break
 		}
-		fmt.Println("###############")
 		buf = append(buf, tmpBuf[:n]...)
 	}
 	l.Close()
@@ -168,7 +167,7 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 		switch r := tmpResp.Result.(type) {
 		case map[string]interface{}:
 			for k, v := range r {
-				if pKey, ok := t.pointAddressToKey[k]; ok {
+				if pKey, ok := t._pointAddressToKey[k]; ok {
 					fields[pKey] = v
 				}
 			}
@@ -197,7 +196,7 @@ func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
 	controlPairs := make([]map[string]interface{}, 0)
 
 	for k, v := range pairs {
-		if _, ok := t.pointAddressToKey[k]; ok {
+		if _, ok := t._pointAddressToKey[k]; ok {
 			controlPairs = append(controlPairs, map[string]interface{}{"key": k, "value": v})
 		} else {
 			if pM, ok := t.pointMap[k]; ok {
@@ -270,10 +269,10 @@ func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
 }
 func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
 	t.pointMap = pointMap
-	t.pointAddressToKey = make(map[string]string, len(t.pointMap))
+	t._pointAddressToKey = make(map[string]string, len(t.pointMap))
 	i := 0
 	for _, v := range t.pointMap {
-		t.pointAddressToKey[v.Address] = v.PointKey
+		t._pointAddressToKey[v.Address] = v.PointKey
 		i++
 	}
 }
