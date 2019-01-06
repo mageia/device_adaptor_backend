@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"regexp"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,6 +32,7 @@ type S7 struct {
 	pointMap           map[string]points.PointDefine
 	_pointAddressToKey map[string]string
 	addrMap            map[string]map[string][][2]int
+	addrMap1           map[string]map[int]map[string]OffsetBitPair
 	quality            deviceAgent.Quality
 	acc                deviceAgent.Accumulator
 
@@ -42,6 +44,18 @@ type S7 struct {
 }
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
+
+type OffsetBitPair [][2]int
+
+func (c OffsetBitPair) Len() int {
+	return len(c)
+}
+func (c OffsetBitPair) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+func (c OffsetBitPair) Less(i, j int) bool {
+	return c[i][0] < c[j][0]
+}
 
 func (s *S7) getParamList() map[string][3]int {
 	var areaNumber, startAddr, endAddr int
@@ -135,7 +149,112 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
+func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
+	fields := make(map[string]interface{})
+	tags := make(map[string]string)
+	s.quality = deviceAgent.QualityGood
 
+	defer func(s7 *S7) {
+		if e := recover(); e != nil {
+			debug.PrintStack()
+			s7.quality = deviceAgent.QualityDisconnect
+			s7.connected = false
+			acc.AddError(fmt.Errorf("%v", e))
+		}
+		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
+	}(s)
+
+	for areaType, v := range s.addrMap1 {
+		switch strings.ToLower(areaType) {
+		case "m":
+			for areaIndex, vv := range v {
+				for valueType, vvv := range vv {
+					sort.Sort(vvv)
+					log.Debug().Str("valueType", valueType).Int("areaIndex", areaIndex).Interface("vvv", vvv).Int("len(vvv)", len(vvv)).Msg("addrMap1")
+					readOffset := 4
+					startAddr := vvv[0][0]
+					endAddr := vvv[len(vvv)-1][0]
+					switch strings.ToLower(valueType) {
+					case "":
+						readOffset = 1
+					case "d":
+						readOffset = 4
+					case "w":
+					case "b":
+					case "x":
+					}
+
+					bufKey := fmt.Sprintf("%s_%d_%s", areaType, areaIndex, valueType)
+					if s.buf[bufKey] == nil || len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
+						s.buf[bufKey] = make([]byte, endAddr+readOffset-startAddr)
+					}
+					s.client.AGReadMB(startAddr, endAddr-startAddr+readOffset, s.buf[bufKey])
+
+					for _, offsetBitPair := range vvv {
+						log.Debug().Interface("offsetBitPair", offsetBitPair).Msg("offsetBitPair")
+						switch strings.ToLower(valueType) {
+						case "":
+							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr]
+							log.Debug().Bool("#######", utils.GetBit([]byte{valueByteArr}, uint(offsetBitPair[1])) == 1).Msg("x")
+						case "d":
+							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr : offsetBitPair[0]-startAddr+readOffset]
+							var v float32
+							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
+							log.Debug().Int("lenBuf", len(valueByteArr)).Float32("########## d", v).Msg("d")
+						case "w":
+						case "b":
+						case "x":
+						}
+					}
+				}
+
+			}
+
+		case "db":
+			for areaIndex, vv := range v {
+				for valueType, vvv := range vv {
+					sort.Sort(vvv)
+					//log.Debug().Str("valueType", valueType).Int("areaIndex", areaIndex).Interface("vvv", vvv).Int("len(vvv)", len(vvv)).Msg("addrMap1")
+					readOffset := 4
+					startAddr := vvv[0][0]
+					endAddr := vvv[len(vvv)-1][0]
+					switch strings.ToLower(valueType) {
+					case "dbd":
+						readOffset = 4
+					case "dbw":
+						readOffset = 2
+					case "dbb":
+					case "dbx":
+						readOffset = 1
+					}
+					bufKey := fmt.Sprintf("%s_%d_%s", areaType, areaIndex, valueType)
+					if s.buf[bufKey] == nil || len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
+						s.buf[bufKey] = make([]byte, endAddr+readOffset-startAddr)
+					}
+					s.client.AGReadDB(areaIndex, startAddr, endAddr+readOffset-startAddr, s.buf[bufKey])
+					for _, offsetBitPair := range vvv {
+						switch strings.ToLower(valueType) {
+						case "dbd":
+							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr : offsetBitPair[0]-startAddr+readOffset]
+							var v float32
+							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
+							log.Debug().Float32("dbd", v).Msg("dbd")
+						case "dbw":
+							log.Debug().Uint16("dbw", binary.BigEndian.Uint16(s.buf[bufKey][offsetBitPair[0]-startAddr:offsetBitPair[0]-startAddr+readOffset])).Msg("dbw")
+						case "dbb":
+						case "dbx":
+							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr]
+							log.Debug().Bool("dbx", utils.GetBit([]byte{valueByteArr}, uint(offsetBitPair[1])) == 1).Msg("dbx")
+						}
+					}
+
+				}
+			}
+		}
+	}
+
+	return nil
+}
 func (s *S7) Name() string {
 	if s.NameOverride != "" {
 		return s.NameOverride
@@ -156,7 +275,7 @@ func (s *S7) Gather(acc deviceAgent.Accumulator) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if e := s.gatherServer(acc); e != nil {
+		if e := s.gatherServer1(acc); e != nil {
 			acc.AddError(e)
 			s.Stop()
 			s.Start()
@@ -184,15 +303,63 @@ func (s *S7) Stop() {
 		s.connected = false
 	}
 }
+
+func (s *S7) parseAddress(addr string) bool {
+	patternDB := `(?P<areaType>db|DB)(?P<areaIndex>\d+)\.(?P<valueType>[dDwWbBxX]+)(?P<offset>\d+)\.?(?P<bit>\d*)`
+	patternM := `(?P<areaType>m|M)(?P<areaIndex>)(?P<valueType>[dDwWbBxX]*)(?P<offset>\d*)\.?(?P<bit>\d*)`
+
+	rDB := regexp.MustCompile(patternDB)
+	rM := regexp.MustCompile(patternM)
+
+	result := rDB.FindStringSubmatch(addr)
+	if len(result) <= 1 {
+		result = rM.FindStringSubmatch(addr)
+		if len(result) <= 1 {
+			return false
+		}
+	}
+	areaType := result[1]
+	areaIndex, e := strconv.Atoi(result[2])
+	if e != nil {
+		areaIndex = -1
+	}
+	valueType := result[3]
+	//if valueType == "" {
+	//	valueType = areaType
+	//}
+	offset, e := strconv.Atoi(result[4])
+	if e != nil {
+		offset = -1
+	}
+	bit, e := strconv.Atoi(result[5])
+	if e != nil {
+		bit = -1
+	}
+
+	if _, ok := s.addrMap1[areaType]; !ok {
+		s.addrMap1[areaType] = make(map[int]map[string]OffsetBitPair)
+	}
+	if _, ok := s.addrMap1[areaType][areaIndex]; !ok {
+		s.addrMap1[areaType][areaIndex] = make(map[string]OffsetBitPair)
+	}
+
+	s.addrMap1[areaType][areaIndex][valueType] = append(s.addrMap1[areaType][areaIndex][valueType], [2]int{offset, bit})
+
+	return true
+}
 func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
 	s._pointAddressToKey = make(map[string]string, len(s.pointMap))
 
-	pattern := `^(md|MD)\d+$|^[mM]\d+\.\d{1,2}$|^(db|DB)\d+\.(db|DB)[dwxDWX]\d+(.\d{1,2}?)$`
+	//pattern := `^(md|MD)\d+$|^[mM]\d+\.\d{1,2}$|^(db|DB)\d+\.(db|DB)[dwxDWX]\d+(.\d{1,2}?)$`
+	pattern := `(?P<areaType>^db|DB|m|M)(?P<areaIndex>\d*)\.?(?P<valueType>[dDwWbBxX]*)(?P<offset>\d*)\.?(?P<bit>\d*)`
+	//r := regexp.MustCompile(pattern)
 
 	for _, a := range pointMap {
+		s.parseAddress(a.Address)
+
 		if ok, err := regexp.Match(pattern, []byte(a.Address)); !ok || err != nil {
-			log.Error().Err(err).Bool("matched", ok).Str("addr", a.Address).Msg("reg match address")
+			log.Error().Err(err).Bool("matched", ok).Str("addr", a.Address).Str("plugin", s.Name()).Msg("reg match address")
 			continue
 		}
 
@@ -228,8 +395,6 @@ func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 			}
 		}
 	}
-
-	//log.Debug().Interface("addrMap", s.addrMap).Msg("SetPointMap")
 
 	i := 0
 	for _, v := range s.pointMap {
@@ -306,6 +471,7 @@ func init() {
 			originName: "s7",
 			buf:        make(map[string][]byte),
 			addrMap:    make(map[string]map[string][][2]int),
+			addrMap1:   make(map[string]map[int]map[string]OffsetBitPair),
 			quality:    deviceAgent.QualityGood,
 		}
 	})

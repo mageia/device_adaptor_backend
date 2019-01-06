@@ -14,5 +14,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
   && apk --no-cache --update add tzdata
 COPY --from=build-stage /go/src/device_adaptor/server .
 CMD ["./server"]
+
 EXPOSE 80
+VOLUME /var/device_adaptor/
 
