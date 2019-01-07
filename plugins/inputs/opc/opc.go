@@ -136,7 +136,6 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 
 	var totalLen uint32
 	binary.Read(l, binary.LittleEndian, &totalLen)
-	//log.Debug().Uint32("totalLen", totalLen).Msg("totalLen")
 	if totalLen <= 4 {
 		return errors.New("can't get response")
 	}
