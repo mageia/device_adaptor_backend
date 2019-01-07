@@ -156,9 +156,11 @@ func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
 		for areaIndex, vv := range v {
 			for valueType, vvv := range vv {
 				sort.Sort(vvv)
+
 				readOffset := 4
 				startAddr := vvv[0][0].(int)
 				endAddr := vvv[len(vvv)-1][0].(int)
+
 				switch strings.ToLower(valueType) {
 				case "":
 				case "dbb", "b":
@@ -183,14 +185,14 @@ func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
 				}
 
 				for _, offsetBitPair := range vvv {
+					valueByteArr := s.buf[bufKey][offsetBitPair[0].(int)-startAddr : offsetBitPair[0].(int)-startAddr+readOffset]
+
 					switch strings.ToLower(valueType) {
 					case "":
 					case "dbb", "b":
 					case "dbx", "x":
-						valueByteArr := s.buf[bufKey][offsetBitPair[0].(int)-startAddr]
-						fields[offsetBitPair[2].(string)] = utils.GetBit([]byte{valueByteArr}, uint(offsetBitPair[1].(int))) == 1
+						fields[offsetBitPair[2].(string)] = utils.GetBit(valueByteArr, uint(offsetBitPair[1].(int))) == 1
 					case "dbd", "d":
-						valueByteArr := s.buf[bufKey][offsetBitPair[0].(int)-startAddr : offsetBitPair[0].(int)-startAddr+readOffset]
 						switch s.pointMap[offsetBitPair[2].(string)].PointType {
 						case points.PointInteger:
 							var v uint32
@@ -202,6 +204,7 @@ func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
 							fields[offsetBitPair[2].(string)] = v
 						}
 					case "dbw", "w":
+						fields[offsetBitPair[2].(string)] = binary.BigEndian.Uint16(valueByteArr)
 					}
 				}
 			}
@@ -273,7 +276,6 @@ func (s *S7) parseAddress(pointKey, addr string) bool {
 			return false
 		}
 	}
-	//log.Debug().Interface("result", result).Msg("RegResult")
 	areaType := result[1]
 	areaIndex, e := strconv.Atoi(result[2])
 	if e != nil {
@@ -302,60 +304,13 @@ func (s *S7) parseAddress(pointKey, addr string) bool {
 }
 func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
-	//s._pointAddressToKey = make(map[string]string, len(s.pointMap))
-
-	//pattern := `^(md|MD)\d+$|^[mM]\d+\.\d{1,2}$|^(db|DB)\d+\.(db|DB)[dwxDWX]\d+(.\d{1,2}?)$`
-	//pattern := `(?P<areaType>^db|DB|m|M)(?P<areaIndex>\d*)\.?(?P<valueType>[dDwWbBxX]*)(?P<offset>\d*)\.?(?P<bit>\d*)`
-	//r := regexp.MustCompile(pattern)
 
 	for pointKey, a := range pointMap {
 		if !s.parseAddress(pointKey, a.Address) {
+			log.Error().Str("address", a.Address).Str("plugin", s.Name()).Msg("parseAddress Error")
 			continue
 		}
-
-		//if ok, err := regexp.Match(pattern, []byte(a.Address)); !ok || err != nil {
-		//	log.Error().Err(err).Bool("matched", ok).Str("addr", a.Address).Str("plugin", s.Name()).Msg("reg match address")
-		//	continue
-		//}
-
-		//if strings.HasPrefix(strings.ToLower(a.Address), "db") { //DB area
-		//	addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
-		//	areaStr := strings.ToLower(addrSplit[0])
-		//
-		//	if _, ok := s.addrMap[areaStr]; !ok {
-		//		s.addrMap[areaStr] = make(map[string][][2]int)
-		//	}
-		//
-		//	offsetSplit := strings.Split(addrSplit[1], ".")
-		//	bit := -1
-		//	if len(offsetSplit) == 2 {
-		//		bit, _ = strconv.Atoi(offsetSplit[1])
-		//	}
-		//	offset, _ := strconv.Atoi(offsetSplit[0][3:])
-		//	s.addrMap[areaStr][addrSplit[1][:3]] = append(s.addrMap[areaStr][addrSplit[1][:3]], [2]int{offset, bit})
-		//} else if strings.HasPrefix(strings.ToLower(a.Address), "m") { //M area
-		//	addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
-		//	areaStr := "m"
-		//	if _, ok := s.addrMap[areaStr]; !ok {
-		//		s.addrMap[areaStr] = make(map[string][][2]int)
-		//	}
-		//
-		//	if strings.HasPrefix(strings.ToLower(a.Address), "md") {
-		//		offset, _ := strconv.Atoi(addrSplit[0][2:])
-		//		s.addrMap[areaStr]["md"] = append(s.addrMap[areaStr]["md"], [2]int{offset, -1})
-		//	} else {
-		//		offset, _ := strconv.Atoi(addrSplit[0][1:])
-		//		bit, _ := strconv.Atoi(addrSplit[1])
-		//		s.addrMap[areaStr]["m"] = append(s.addrMap[areaStr]["m"], [2]int{offset, bit})
-		//	}
-		//}
 	}
-
-	//i := 0
-	//for _, v := range s.pointMap {
-	//	s._pointAddressToKey[v.Address] = v.PointKey
-	//	i++
-	//}
 }
 func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
