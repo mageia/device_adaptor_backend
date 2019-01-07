@@ -1,0 +1,22 @@
+version: '3'
+services:
+  redis:
+    image: harbor.leaniot.cn/lib/redis:bitnami-4.0.11
+    container_name: redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD=leaniot
+    ports:
+    - 6379:6379
+    volumes:
+    - redis-data:/bitnami/redis
+
+  red-gateway:
+    image: harbor.leaniot.cn/mos/data/device_adaptor
+    container_name: red-gateway
+    restart: always
+    ports:
+    - 8899:80
+    - 9999:9999
+    volumes:
+    - "/var/red-gateway/:/var/device_adaptor/"

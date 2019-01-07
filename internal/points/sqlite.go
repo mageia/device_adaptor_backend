@@ -45,6 +45,7 @@ const (
 	PointAnalog
 	PointDigital
 	PointString
+	PointInteger
 	PointUnknown = math.MaxUint8
 )
 

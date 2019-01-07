@@ -12,6 +12,17 @@ import (
 	"unicode/utf8"
 )
 
+type OffsetBitPair [][3]interface{}	//[offset, bit, "key"]
+
+func (c OffsetBitPair) Len() int {
+	return len(c)
+}
+func (c OffsetBitPair) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+func (c OffsetBitPair) Less(i, j int) bool {
+	return c[i][0].(int) < c[j][0].(int)
+}
 func Round(f float64, n int) float64 {
 	pow10 := math.Pow10(n)
 	return math.Trunc((f+0.5/pow10)*pow10) / pow10

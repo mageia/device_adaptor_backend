@@ -25,16 +25,15 @@ type S7 struct {
 	Rack    int    `json:"rack"`
 	Slot    int    `json:"slot"`
 
-	client             gos7.Client
-	_handler           *gos7.TCPClientHandler
-	buf                map[string][]byte
-	connected          bool
-	pointMap           map[string]points.PointDefine
-	_pointAddressToKey map[string]string
-	addrMap            map[string]map[string][][2]int
-	addrMap1           map[string]map[int]map[string]OffsetBitPair
-	quality            deviceAgent.Quality
-	acc                deviceAgent.Accumulator
+	client    gos7.Client
+	_handler  *gos7.TCPClientHandler
+	buf       map[string][]byte
+	connected bool
+	pointMap  map[string]points.PointDefine
+	addrMap   map[string]map[string][][2]int
+	addrMap1  map[string]map[int]map[string]utils.OffsetBitPair
+	quality   deviceAgent.Quality
+	acc       deviceAgent.Accumulator
 
 	originName string
 
@@ -44,18 +43,6 @@ type S7 struct {
 }
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
-
-type OffsetBitPair [][2]int
-
-func (c OffsetBitPair) Len() int {
-	return len(c)
-}
-func (c OffsetBitPair) Swap(i, j int) {
-	c[i], c[j] = c[j], c[i]
-}
-func (c OffsetBitPair) Less(i, j int) bool {
-	return c[i][0] < c[j][0]
-}
 
 func (s *S7) getParamList() map[string][3]int {
 	var areaNumber, startAddr, endAddr int
@@ -162,92 +149,60 @@ func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
 			acc.AddError(fmt.Errorf("%v", e))
 		}
 		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
+		log.Debug().Interface("fields", fields).Msg("fields")
 	}(s)
 
 	for areaType, v := range s.addrMap1 {
-		switch strings.ToLower(areaType) {
-		case "m":
-			for areaIndex, vv := range v {
-				for valueType, vvv := range vv {
-					sort.Sort(vvv)
-					log.Debug().Str("valueType", valueType).Int("areaIndex", areaIndex).Interface("vvv", vvv).Int("len(vvv)", len(vvv)).Msg("addrMap1")
-					readOffset := 4
-					startAddr := vvv[0][0]
-					endAddr := vvv[len(vvv)-1][0]
-					switch strings.ToLower(valueType) {
-					case "":
-						readOffset = 1
-					case "d":
-						readOffset = 4
-					case "w":
-					case "b":
-					case "x":
-					}
-
-					bufKey := fmt.Sprintf("%s_%d_%s", areaType, areaIndex, valueType)
-					if s.buf[bufKey] == nil || len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
-						s.buf[bufKey] = make([]byte, endAddr+readOffset-startAddr)
-					}
-					s.client.AGReadMB(startAddr, endAddr-startAddr+readOffset, s.buf[bufKey])
-
-					for _, offsetBitPair := range vvv {
-						log.Debug().Interface("offsetBitPair", offsetBitPair).Msg("offsetBitPair")
-						switch strings.ToLower(valueType) {
-						case "":
-							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr]
-							log.Debug().Bool("#######", utils.GetBit([]byte{valueByteArr}, uint(offsetBitPair[1])) == 1).Msg("x")
-						case "d":
-							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr : offsetBitPair[0]-startAddr+readOffset]
-							var v float32
-							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
-							log.Debug().Int("lenBuf", len(valueByteArr)).Float32("########## d", v).Msg("d")
-						case "w":
-						case "b":
-						case "x":
-						}
-					}
+		for areaIndex, vv := range v {
+			for valueType, vvv := range vv {
+				sort.Sort(vvv)
+				readOffset := 4
+				startAddr := vvv[0][0].(int)
+				endAddr := vvv[len(vvv)-1][0].(int)
+				switch strings.ToLower(valueType) {
+				case "":
+				case "dbb", "b":
+				case "dbx", "x":
+					readOffset = 1
+				case "dbd", "d":
+					readOffset = 4
+				case "dbw", "w":
+					readOffset = 2
 				}
 
-			}
+				bufKey := fmt.Sprintf("%s_%d_%s", areaType, areaIndex, valueType)
+				if s.buf[bufKey] == nil || len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
+					s.buf[bufKey] = make([]byte, endAddr+readOffset-startAddr)
+				}
 
-		case "db":
-			for areaIndex, vv := range v {
-				for valueType, vvv := range vv {
-					sort.Sort(vvv)
-					//log.Debug().Str("valueType", valueType).Int("areaIndex", areaIndex).Interface("vvv", vvv).Int("len(vvv)", len(vvv)).Msg("addrMap1")
-					readOffset := 4
-					startAddr := vvv[0][0]
-					endAddr := vvv[len(vvv)-1][0]
-					switch strings.ToLower(valueType) {
-					case "dbd":
-						readOffset = 4
-					case "dbw":
-						readOffset = 2
-					case "dbb":
-					case "dbx":
-						readOffset = 1
-					}
-					bufKey := fmt.Sprintf("%s_%d_%s", areaType, areaIndex, valueType)
-					if s.buf[bufKey] == nil || len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
-						s.buf[bufKey] = make([]byte, endAddr+readOffset-startAddr)
-					}
+				switch strings.ToLower(areaType) {
+				case "m":
+					s.client.AGReadMB(startAddr, endAddr-startAddr+readOffset, s.buf[bufKey])
+				case "db":
 					s.client.AGReadDB(areaIndex, startAddr, endAddr+readOffset-startAddr, s.buf[bufKey])
-					for _, offsetBitPair := range vvv {
-						switch strings.ToLower(valueType) {
-						case "dbd":
-							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr : offsetBitPair[0]-startAddr+readOffset]
+				}
+
+				for _, offsetBitPair := range vvv {
+					switch strings.ToLower(valueType) {
+					case "":
+					case "dbb", "b":
+					case "dbx", "x":
+						valueByteArr := s.buf[bufKey][offsetBitPair[0].(int)-startAddr]
+						fields[offsetBitPair[2].(string)] = utils.GetBit([]byte{valueByteArr}, uint(offsetBitPair[1].(int))) == 1
+					case "dbd", "d":
+						valueByteArr := s.buf[bufKey][offsetBitPair[0].(int)-startAddr : offsetBitPair[0].(int)-startAddr+readOffset]
+						switch s.pointMap[offsetBitPair[2].(string)].PointType {
+						case points.PointInteger:
+							var v uint32
+							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
+							fields[offsetBitPair[2].(string)] = v
+						default:
 							var v float32
 							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
-							log.Debug().Float32("dbd", v).Msg("dbd")
-						case "dbw":
-							log.Debug().Uint16("dbw", binary.BigEndian.Uint16(s.buf[bufKey][offsetBitPair[0]-startAddr:offsetBitPair[0]-startAddr+readOffset])).Msg("dbw")
-						case "dbb":
-						case "dbx":
-							valueByteArr := s.buf[bufKey][offsetBitPair[0]-startAddr]
-							log.Debug().Bool("dbx", utils.GetBit([]byte{valueByteArr}, uint(offsetBitPair[1])) == 1).Msg("dbx")
+							fields[offsetBitPair[2].(string)] = v
 						}
+					case "dbw", "w":
 					}
-
 				}
 			}
 		}
@@ -304,7 +259,7 @@ func (s *S7) Stop() {
 	}
 }
 
-func (s *S7) parseAddress(addr string) bool {
+func (s *S7) parseAddress(pointKey, addr string) bool {
 	patternDB := `(?P<areaType>db|DB)(?P<areaIndex>\d+)\.(?P<valueType>[dDwWbBxX]+)(?P<offset>\d+)\.?(?P<bit>\d*)`
 	patternM := `(?P<areaType>m|M)(?P<areaIndex>)(?P<valueType>[dDwWbBxX]*)(?P<offset>\d*)\.?(?P<bit>\d*)`
 
@@ -318,15 +273,13 @@ func (s *S7) parseAddress(addr string) bool {
 			return false
 		}
 	}
+	//log.Debug().Interface("result", result).Msg("RegResult")
 	areaType := result[1]
 	areaIndex, e := strconv.Atoi(result[2])
 	if e != nil {
 		areaIndex = -1
 	}
 	valueType := result[3]
-	//if valueType == "" {
-	//	valueType = areaType
-	//}
 	offset, e := strconv.Atoi(result[4])
 	if e != nil {
 		offset = -1
@@ -337,70 +290,72 @@ func (s *S7) parseAddress(addr string) bool {
 	}
 
 	if _, ok := s.addrMap1[areaType]; !ok {
-		s.addrMap1[areaType] = make(map[int]map[string]OffsetBitPair)
+		s.addrMap1[areaType] = make(map[int]map[string]utils.OffsetBitPair)
 	}
 	if _, ok := s.addrMap1[areaType][areaIndex]; !ok {
-		s.addrMap1[areaType][areaIndex] = make(map[string]OffsetBitPair)
+		s.addrMap1[areaType][areaIndex] = make(map[string]utils.OffsetBitPair)
 	}
 
-	s.addrMap1[areaType][areaIndex][valueType] = append(s.addrMap1[areaType][areaIndex][valueType], [2]int{offset, bit})
+	s.addrMap1[areaType][areaIndex][valueType] = append(s.addrMap1[areaType][areaIndex][valueType], [3]interface{}{offset, bit, pointKey})
 
 	return true
 }
 func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
-	s._pointAddressToKey = make(map[string]string, len(s.pointMap))
+	//s._pointAddressToKey = make(map[string]string, len(s.pointMap))
 
 	//pattern := `^(md|MD)\d+$|^[mM]\d+\.\d{1,2}$|^(db|DB)\d+\.(db|DB)[dwxDWX]\d+(.\d{1,2}?)$`
-	pattern := `(?P<areaType>^db|DB|m|M)(?P<areaIndex>\d*)\.?(?P<valueType>[dDwWbBxX]*)(?P<offset>\d*)\.?(?P<bit>\d*)`
+	//pattern := `(?P<areaType>^db|DB|m|M)(?P<areaIndex>\d*)\.?(?P<valueType>[dDwWbBxX]*)(?P<offset>\d*)\.?(?P<bit>\d*)`
 	//r := regexp.MustCompile(pattern)
 
-	for _, a := range pointMap {
-		s.parseAddress(a.Address)
-
-		if ok, err := regexp.Match(pattern, []byte(a.Address)); !ok || err != nil {
-			log.Error().Err(err).Bool("matched", ok).Str("addr", a.Address).Str("plugin", s.Name()).Msg("reg match address")
+	for pointKey, a := range pointMap {
+		if !s.parseAddress(pointKey, a.Address) {
 			continue
 		}
 
-		if strings.HasPrefix(strings.ToLower(a.Address), "db") { //DB area
-			addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
-			areaStr := strings.ToLower(addrSplit[0])
+		//if ok, err := regexp.Match(pattern, []byte(a.Address)); !ok || err != nil {
+		//	log.Error().Err(err).Bool("matched", ok).Str("addr", a.Address).Str("plugin", s.Name()).Msg("reg match address")
+		//	continue
+		//}
 
-			if _, ok := s.addrMap[areaStr]; !ok {
-				s.addrMap[areaStr] = make(map[string][][2]int)
-			}
-
-			offsetSplit := strings.Split(addrSplit[1], ".")
-			bit := -1
-			if len(offsetSplit) == 2 {
-				bit, _ = strconv.Atoi(offsetSplit[1])
-			}
-			offset, _ := strconv.Atoi(offsetSplit[0][3:])
-			s.addrMap[areaStr][addrSplit[1][:3]] = append(s.addrMap[areaStr][addrSplit[1][:3]], [2]int{offset, bit})
-		} else if strings.HasPrefix(strings.ToLower(a.Address), "m") { //M area
-			addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
-			areaStr := "m"
-			if _, ok := s.addrMap[areaStr]; !ok {
-				s.addrMap[areaStr] = make(map[string][][2]int)
-			}
-
-			if strings.HasPrefix(strings.ToLower(a.Address), "md") {
-				offset, _ := strconv.Atoi(addrSplit[0][2:])
-				s.addrMap[areaStr]["md"] = append(s.addrMap[areaStr]["md"], [2]int{offset, -1})
-			} else {
-				offset, _ := strconv.Atoi(addrSplit[0][1:])
-				bit, _ := strconv.Atoi(addrSplit[1])
-				s.addrMap[areaStr]["m"] = append(s.addrMap[areaStr]["m"], [2]int{offset, bit})
-			}
-		}
+		//if strings.HasPrefix(strings.ToLower(a.Address), "db") { //DB area
+		//	addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
+		//	areaStr := strings.ToLower(addrSplit[0])
+		//
+		//	if _, ok := s.addrMap[areaStr]; !ok {
+		//		s.addrMap[areaStr] = make(map[string][][2]int)
+		//	}
+		//
+		//	offsetSplit := strings.Split(addrSplit[1], ".")
+		//	bit := -1
+		//	if len(offsetSplit) == 2 {
+		//		bit, _ = strconv.Atoi(offsetSplit[1])
+		//	}
+		//	offset, _ := strconv.Atoi(offsetSplit[0][3:])
+		//	s.addrMap[areaStr][addrSplit[1][:3]] = append(s.addrMap[areaStr][addrSplit[1][:3]], [2]int{offset, bit})
+		//} else if strings.HasPrefix(strings.ToLower(a.Address), "m") { //M area
+		//	addrSplit := strings.SplitN(strings.TrimSpace(a.Address), ".", 2)
+		//	areaStr := "m"
+		//	if _, ok := s.addrMap[areaStr]; !ok {
+		//		s.addrMap[areaStr] = make(map[string][][2]int)
+		//	}
+		//
+		//	if strings.HasPrefix(strings.ToLower(a.Address), "md") {
+		//		offset, _ := strconv.Atoi(addrSplit[0][2:])
+		//		s.addrMap[areaStr]["md"] = append(s.addrMap[areaStr]["md"], [2]int{offset, -1})
+		//	} else {
+		//		offset, _ := strconv.Atoi(addrSplit[0][1:])
+		//		bit, _ := strconv.Atoi(addrSplit[1])
+		//		s.addrMap[areaStr]["m"] = append(s.addrMap[areaStr]["m"], [2]int{offset, bit})
+		//	}
+		//}
 	}
 
-	i := 0
-	for _, v := range s.pointMap {
-		s._pointAddressToKey[v.Address] = v.PointKey
-		i++
-	}
+	//i := 0
+	//for _, v := range s.pointMap {
+	//	s._pointAddressToKey[v.Address] = v.PointKey
+	//	i++
+	//}
 }
 func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
@@ -471,7 +426,7 @@ func init() {
 			originName: "s7",
 			buf:        make(map[string][]byte),
 			addrMap:    make(map[string]map[string][][2]int),
-			addrMap1:   make(map[string]map[int]map[string]OffsetBitPair),
+			addrMap1:   make(map[string]map[int]map[string]utils.OffsetBitPair),
 			quality:    deviceAgent.QualityGood,
 		}
 	})
