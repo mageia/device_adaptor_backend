@@ -1,14 +1,18 @@
 package opc
 
 import (
+	"bytes"
 	"context"
 	"device_adaptor"
 	"device_adaptor/internal"
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
+	"io"
 	"net"
 	"time"
 )
@@ -34,7 +38,7 @@ func (t *OPC) OriginName() string {
 }
 
 func (t *OPC) SetValue(kv map[string]interface{}) error {
-	return t.sendControlMsg(kv)
+	return t.sendCommand("control", kv)
 }
 
 func (t *OPC) UpdatePointMap(map[string]interface{}) error {
@@ -60,7 +64,159 @@ type opcServerResponse struct {
 	Result  interface{} `json:"result"`
 }
 
-func (t *OPC) sendInitMsg() error {
+func (t *OPC) sendCommand(cmdId string, param interface{}) error {
+	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
+	if e != nil {
+		log.Error().Err(e).Msg("sendInitMsg.DialTimeout")
+		return e
+	}
+	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
+	defer l.Close()
+
+	body := make(map[string]interface{})
+
+	switch cmdId {
+	case "init":
+		i := 0
+		keyList := make([]string, len(t.pointMap))
+		for k := range t._pointAddressToKey {
+			keyList[i] = k
+			i++
+		}
+		body = map[string]interface{}{
+			"cmd":             cmdId,
+			"opc_server_host": "localhost",
+			"opc_server_name": t.OPCServerName,
+			"opc_key_list":    keyList,
+		}
+	case "real_time_data":
+		body = map[string]interface{}{
+			"cmd":             cmdId,
+			"opc_server_host": "localhost",
+			"opc_server_name": t.OPCServerName,
+		}
+	case "control":
+		controlPairs := make([]map[string]interface{}, 0)
+		pairs, ok := param.(map[string]interface{})
+		if !ok {
+			return errors.New("invalid control paris format")
+		}
+
+		for k, v := range pairs {
+			if _, ok := t._pointAddressToKey[k]; ok {
+				controlPairs = append(controlPairs, map[string]interface{}{"key": k, "value": v})
+			} else {
+				if pM, ok := t.pointMap[k]; ok {
+					controlPairs = append(controlPairs, map[string]interface{}{"key": pM.Address, "value": v})
+				}
+			}
+		}
+
+		body = map[string]interface{}{
+			"cmd":             "control",
+			"opc_server_host": "localhost",
+			"opc_server_name": t.OPCServerName,
+			"control_pair":    controlPairs,
+		}
+	default:
+		return errors.New("unsupported cmd: " + cmdId)
+	}
+
+	b, e := jsoniter.Marshal(body)
+	if e != nil {
+		return e
+	}
+	writeBuf := new(bytes.Buffer)
+	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)))
+	writeBuf.Write(b)
+	if n, e := l.Write(writeBuf.Bytes()); e != nil || n != len(b)+4 {
+		log.Error().Int("len(n)", n).Int("len(b)", len(b)).Msg("write error")
+		return errors.New("write command " + cmdId + " failed")
+	}
+
+	buf := make([]byte, 0)
+	tmpBuf := make([]byte, 1024)
+	var packetLen int32 = -1
+
+	for {
+		n, e := io.ReadFull(l, tmpBuf)
+		buf = append(buf, tmpBuf[:n]...)
+
+		log.Debug().Int("n", n).Bytes("tmpBuf", tmpBuf[:n]).Msg("tmpBuf")
+		if n == 0 || e != nil {
+			break
+		}
+		if n > 4 && packetLen <= 0 {
+			binary.Read(bytes.NewBuffer(tmpBuf[:4]), binary.LittleEndian, &packetLen)
+		}
+		if int32(len(buf)) >= packetLen+4 {
+			break
+		}
+	}
+
+	if len(buf) <= 4 {
+		return errors.New("can't get response")
+	}
+
+	tmpResp := opcServerResponse{}
+	e = jsoniter.Unmarshal(buf[4:], &tmpResp)
+	if e != nil {
+		return e
+	}
+
+	if !tmpResp.Success {
+		if tmpResp.Cmd == "real_time_data" {
+			go func() {
+				time.Sleep(time.Second * 3)
+				t.sendCommand("init", nil)
+			}()
+		}
+		return fmt.Errorf("parse response failed")
+	}
+
+	//switch r := tmpResp.Result.(type) {
+	//case map[string]interface{}:
+	//	for k, v := range r {
+	//		if pKey, ok := t._pointAddressToKey[k]; ok {
+	//			fields[pKey] = v
+	//		}
+	//	}
+	//
+	//	acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
+	//	return nil
+	//}
+
+	log.Debug().Interface("tmpResp", tmpResp).Msg("sendInitMsg")
+
+	switch tmpResp.Cmd {
+	case "init":
+	case "control":
+	case "real_time_data":
+		fields := make(map[string]interface{})
+		acc, ok := param.(deviceAgent.Accumulator)
+		if !ok {
+			return errors.New("invalid real_time_data acc format")
+		}
+
+		switch r := tmpResp.Result.(type) {
+		case map[string]interface{}:
+			for k, v := range r {
+				if pKey, ok := t._pointAddressToKey[k]; ok {
+					fields[pKey] = v
+				}
+			}
+
+			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
+			return nil
+		}
+	default:
+		return fmt.Errorf("parse response failed")
+	}
+
+	return nil
+}
+
+func (t *OPC) sendInitMsg1() error {
 	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
 	if e != nil {
 		log.Error().Err(e).Msg("sendInitMsg.DialTimeout")
@@ -119,7 +275,7 @@ func (t *OPC) sendInitMsg() error {
 
 	return nil
 }
-func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
+func (t *OPC) sendGetRealMsg1(acc deviceAgent.Accumulator) error {
 	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
 	if e != nil {
 		return e
@@ -180,13 +336,13 @@ func (t *OPC) sendGetRealMsg(acc deviceAgent.Accumulator) error {
 
 		go func() {
 			time.Sleep(time.Second * 3)
-			t.sendInitMsg()
+			t.sendInitMsg1()
 		}()
 	}
 
 	return nil
 }
-func (t *OPC) sendControlMsg(pairs map[string]interface{}) error {
+func (t *OPC) sendControlMsg1(pairs map[string]interface{}) error {
 	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
 	if e != nil {
 		return e
@@ -260,7 +416,7 @@ func (t *OPC) Name() string {
 	return t.originName
 }
 func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
-	if e := t.sendGetRealMsg(acc); e != nil {
+	if e := t.sendCommand("real_time_data", acc); e != nil {
 		acc.AddError(e)
 		return e
 	}
@@ -277,7 +433,7 @@ func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
 	}
 }
 func (t *OPC) Start() error {
-	if e := t.sendInitMsg(); e != nil {
+	if e := t.sendCommand("init", nil); e != nil {
 		return e
 	}
 
@@ -286,7 +442,7 @@ func (t *OPC) Start() error {
 		for {
 			select {
 			case <-ticker.C:
-				t.sendInitMsg()
+				t.sendCommand("init", nil)
 			case <-t.ctx.Done():
 				return
 			}
