@@ -127,40 +127,26 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 		return e
 	}
 	writeBuf := new(bytes.Buffer)
-	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)))
-	writeBuf.Write(b)
+	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)+4))
+	binary.Write(writeBuf, binary.LittleEndian, b)
 	if n, e := l.Write(writeBuf.Bytes()); e != nil || n != len(b)+4 {
 		log.Error().Int("len(n)", n).Int("len(b)", len(b)).Msg("write error")
 		return errors.New("write command " + cmdId + " failed")
 	}
 
-	buf := make([]byte, 0)
-	tmpBuf := make([]byte, 1024)
-	var packetLen int32 = -1
-
-	for {
-		n, e := io.ReadFull(l, tmpBuf)
-		buf = append(buf, tmpBuf[:n]...)
-
-		log.Debug().Int("n", n).Bytes("tmpBuf", tmpBuf[:n]).Msg("tmpBuf")
-		if n == 0 || e != nil {
-			break
-		}
-		if n > 4 && packetLen <= 0 {
-			binary.Read(bytes.NewBuffer(tmpBuf[:4]), binary.LittleEndian, &packetLen)
-		}
-		if int32(len(buf)) >= packetLen+4 {
-			break
-		}
-	}
-
-	if len(buf) <= 4 {
+	var totalLen uint32
+	binary.Read(l, binary.LittleEndian, &totalLen)
+	//log.Debug().Uint32("totalLen", totalLen).Msg("totalLen")
+	if totalLen <= 4 {
 		return errors.New("can't get response")
+	}
+	buf := make([]byte, totalLen-4)
+	if _, err := io.ReadFull(l, buf); err != nil {
+		return err
 	}
 
 	tmpResp := opcServerResponse{}
-	e = jsoniter.Unmarshal(buf[4:], &tmpResp)
-	if e != nil {
+	if e := jsoniter.Unmarshal(buf, &tmpResp); e != nil {
 		return e
 	}
 
@@ -173,18 +159,6 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 		}
 		return fmt.Errorf("parse response failed")
 	}
-
-	//switch r := tmpResp.Result.(type) {
-	//case map[string]interface{}:
-	//	for k, v := range r {
-	//		if pKey, ok := t._pointAddressToKey[k]; ok {
-	//			fields[pKey] = v
-	//		}
-	//	}
-	//
-	//	acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
-	//	return nil
-	//}
 
 	log.Debug().Interface("tmpResp", tmpResp).Msg("sendInitMsg")
 
@@ -216,195 +190,195 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 	return nil
 }
 
-func (t *OPC) sendInitMsg1() error {
-	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
-	if e != nil {
-		log.Error().Err(e).Msg("sendInitMsg.DialTimeout")
-		return e
-	}
-	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
-
-	i := 0
-	keyList := make([]string, len(t.pointMap))
-	for k := range t._pointAddressToKey {
-		keyList[i] = k
-		i++
-	}
-	b, _ := jsoniter.Marshal(map[string]interface{}{
-		"cmd":             "init",
-		"opc_server_host": "localhost",
-		"opc_server_name": t.OPCServerName,
-		"opc_key_list":    keyList,
-	})
-	b = append(b, 0x0a)
-	_, e = l.Write(b)
-	if e != nil {
-		return e
-	}
-
-	buf := make([]byte, 0)
-	tmpBuf := make([]byte, 1024)
-	tmpResp := opcServerResponse{}
-
-	for {
-		n, e := l.Read(tmpBuf)
-		if n == 0 || e != nil {
-			break
-		}
-		if tmpBuf[n-1] == 0x0a {
-			buf = append(buf, tmpBuf[:n-1]...)
-			break
-		}
-		buf = append(buf, tmpBuf[:n]...)
-	}
-	l.Close()
-
-	if len(buf) <= 0 {
-		return nil
-	}
-
-	e = jsoniter.Unmarshal(buf, &tmpResp)
-	if e != nil {
-		return e
-	}
-
-	if tmpResp.Cmd == "init" && !tmpResp.Success {
-		return fmt.Errorf("init failed")
-	}
-	log.Debug().Interface("tmpResp", tmpResp).Msg("sendInitMsg")
-
-	return nil
-}
-func (t *OPC) sendGetRealMsg1(acc deviceAgent.Accumulator) error {
-	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
-	if e != nil {
-		return e
-	}
-	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
-
-	b, _ := jsoniter.Marshal(map[string]interface{}{
-		"cmd":             "real_time_data",
-		"opc_server_host": "localhost",
-		"opc_server_name": t.OPCServerName,
-	})
-	b = append(b, 0x0a)
-	_, e = l.Write(b)
-	if e != nil {
-		return e
-	}
-
-	buf := make([]byte, 0)
-	tmpBuf := make([]byte, 4096)
-	tmpResp := opcServerResponse{}
-
-	for {
-		n, e := l.Read(tmpBuf)
-		if n == 0 || e != nil {
-			break
-		} else if tmpBuf[n-1] == 0x0a {
-			buf = append(buf, tmpBuf[:n-1]...)
-			break
-		}
-		buf = append(buf, tmpBuf[:n]...)
-	}
-	l.Close()
-
-	if len(buf) <= 0 {
-		return nil
-	}
-
-	e = jsoniter.Unmarshal(buf, &tmpResp)
-	if e != nil {
-		log.Error().Err(e).Msg("Unmarshal")
-		return e
-	}
-	fields := make(map[string]interface{})
-	if tmpResp.Cmd == "real_time_data" && tmpResp.Success {
-		switch r := tmpResp.Result.(type) {
-		case map[string]interface{}:
-			for k, v := range r {
-				if pKey, ok := t._pointAddressToKey[k]; ok {
-					fields[pKey] = v
-				}
-			}
-
-			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
-			return nil
-		}
-	} else {
-		log.Debug().Msg("Resend init message")
-
-		go func() {
-			time.Sleep(time.Second * 3)
-			t.sendInitMsg1()
-		}()
-	}
-
-	return nil
-}
-func (t *OPC) sendControlMsg1(pairs map[string]interface{}) error {
-	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
-	if e != nil {
-		return e
-	}
-	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
-
-	controlPairs := make([]map[string]interface{}, 0)
-
-	for k, v := range pairs {
-		if _, ok := t._pointAddressToKey[k]; ok {
-			controlPairs = append(controlPairs, map[string]interface{}{"key": k, "value": v})
-		} else {
-			if pM, ok := t.pointMap[k]; ok {
-				controlPairs = append(controlPairs, map[string]interface{}{"key": pM.Address, "value": v})
-			}
-		}
-	}
-
-	b, _ := jsoniter.Marshal(map[string]interface{}{
-		"cmd":             "control",
-		"opc_server_host": "localhost",
-		"opc_server_name": t.OPCServerName,
-		"control_pair":    controlPairs,
-	})
-	b = append(b, 0x0a)
-	_, e = l.Write(b)
-	if e != nil {
-		return e
-	}
-
-	buf := make([]byte, 0)
-	tmpBuf := make([]byte, 40960)
-	tmpResp := opcServerResponse{}
-
-	for {
-		n, e := l.Read(tmpBuf)
-		if n == 0 || e != nil {
-			break
-		}
-		if tmpBuf[n-1] == 0x0a {
-			buf = append(buf, tmpBuf[:n-1]...)
-			break
-		}
-	}
-	l.Close()
-	if len(buf) <= 0 {
-		return nil
-	}
-
-	e = jsoniter.Unmarshal(buf, &tmpResp)
-	if e != nil {
-		return e
-	}
-
-	log.Debug().Interface("rmpResp", tmpResp).Msg("Control")
-
-	if tmpResp.Cmd != "control" || !tmpResp.Success {
-		return fmt.Errorf("%v", tmpResp.Result)
-	}
-
-	return nil
-}
+//func (t *OPC) sendInitMsg1() error {
+//	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
+//	if e != nil {
+//		log.Error().Err(e).Msg("sendInitMsg.DialTimeout")
+//		return e
+//	}
+//	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
+//
+//	i := 0
+//	keyList := make([]string, len(t.pointMap))
+//	for k := range t._pointAddressToKey {
+//		keyList[i] = k
+//		i++
+//	}
+//	b, _ := jsoniter.Marshal(map[string]interface{}{
+//		"cmd":             "init",
+//		"opc_server_host": "localhost",
+//		"opc_server_name": t.OPCServerName,
+//		"opc_key_list":    keyList,
+//	})
+//	b = append(b, 0x0a)
+//	_, e = l.Write(b)
+//	if e != nil {
+//		return e
+//	}
+//
+//	buf := make([]byte, 0)
+//	tmpBuf := make([]byte, 1024)
+//	tmpResp := opcServerResponse{}
+//
+//	for {
+//		n, e := l.Read(tmpBuf)
+//		if n == 0 || e != nil {
+//			break
+//		}
+//		if tmpBuf[n-1] == 0x0a {
+//			buf = append(buf, tmpBuf[:n-1]...)
+//			break
+//		}
+//		buf = append(buf, tmpBuf[:n]...)
+//	}
+//	l.Close()
+//
+//	if len(buf) <= 0 {
+//		return nil
+//	}
+//
+//	e = jsoniter.Unmarshal(buf, &tmpResp)
+//	if e != nil {
+//		return e
+//	}
+//
+//	if tmpResp.Cmd == "init" && !tmpResp.Success {
+//		return fmt.Errorf("init failed")
+//	}
+//	log.Debug().Interface("tmpResp", tmpResp).Msg("sendInitMsg")
+//
+//	return nil
+//}
+//func (t *OPC) sendGetRealMsg1(acc deviceAgent.Accumulator) error {
+//	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
+//	if e != nil {
+//		return e
+//	}
+//	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
+//
+//	b, _ := jsoniter.Marshal(map[string]interface{}{
+//		"cmd":             "real_time_data",
+//		"opc_server_host": "localhost",
+//		"opc_server_name": t.OPCServerName,
+//	})
+//	b = append(b, 0x0a)
+//	_, e = l.Write(b)
+//	if e != nil {
+//		return e
+//	}
+//
+//	buf := make([]byte, 0)
+//	tmpBuf := make([]byte, 4096)
+//	tmpResp := opcServerResponse{}
+//
+//	for {
+//		n, e := l.Read(tmpBuf)
+//		if n == 0 || e != nil {
+//			break
+//		} else if tmpBuf[n-1] == 0x0a {
+//			buf = append(buf, tmpBuf[:n-1]...)
+//			break
+//		}
+//		buf = append(buf, tmpBuf[:n]...)
+//	}
+//	l.Close()
+//
+//	if len(buf) <= 0 {
+//		return nil
+//	}
+//
+//	e = jsoniter.Unmarshal(buf, &tmpResp)
+//	if e != nil {
+//		log.Error().Err(e).Msg("Unmarshal")
+//		return e
+//	}
+//	fields := make(map[string]interface{})
+//	if tmpResp.Cmd == "real_time_data" && tmpResp.Success {
+//		switch r := tmpResp.Result.(type) {
+//		case map[string]interface{}:
+//			for k, v := range r {
+//				if pKey, ok := t._pointAddressToKey[k]; ok {
+//					fields[pKey] = v
+//				}
+//			}
+//
+//			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
+//			return nil
+//		}
+//	} else {
+//		log.Debug().Msg("Resend init message")
+//
+//		go func() {
+//			time.Sleep(time.Second * 3)
+//			t.sendInitMsg1()
+//		}()
+//	}
+//
+//	return nil
+//}
+//func (t *OPC) sendControlMsg1(pairs map[string]interface{}) error {
+//	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
+//	if e != nil {
+//		return e
+//	}
+//	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
+//
+//	controlPairs := make([]map[string]interface{}, 0)
+//
+//	for k, v := range pairs {
+//		if _, ok := t._pointAddressToKey[k]; ok {
+//			controlPairs = append(controlPairs, map[string]interface{}{"key": k, "value": v})
+//		} else {
+//			if pM, ok := t.pointMap[k]; ok {
+//				controlPairs = append(controlPairs, map[string]interface{}{"key": pM.Address, "value": v})
+//			}
+//		}
+//	}
+//
+//	b, _ := jsoniter.Marshal(map[string]interface{}{
+//		"cmd":             "control",
+//		"opc_server_host": "localhost",
+//		"opc_server_name": t.OPCServerName,
+//		"control_pair":    controlPairs,
+//	})
+//	b = append(b, 0x0a)
+//	_, e = l.Write(b)
+//	if e != nil {
+//		return e
+//	}
+//
+//	buf := make([]byte, 0)
+//	tmpBuf := make([]byte, 40960)
+//	tmpResp := opcServerResponse{}
+//
+//	for {
+//		n, e := l.Read(tmpBuf)
+//		if n == 0 || e != nil {
+//			break
+//		}
+//		if tmpBuf[n-1] == 0x0a {
+//			buf = append(buf, tmpBuf[:n-1]...)
+//			break
+//		}
+//	}
+//	l.Close()
+//	if len(buf) <= 0 {
+//		return nil
+//	}
+//
+//	e = jsoniter.Unmarshal(buf, &tmpResp)
+//	if e != nil {
+//		return e
+//	}
+//
+//	log.Debug().Interface("rmpResp", tmpResp).Msg("Control")
+//
+//	if tmpResp.Cmd != "control" || !tmpResp.Success {
+//		return fmt.Errorf("%v", tmpResp.Result)
+//	}
+//
+//	return nil
+//}
 
 func (t *OPC) SelfCheck() deviceAgent.Quality {
 	return t.quality
@@ -417,7 +391,6 @@ func (t *OPC) Name() string {
 }
 func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
 	if e := t.sendCommand("real_time_data", acc); e != nil {
-		acc.AddError(e)
 		return e
 	}
 
