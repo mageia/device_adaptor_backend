@@ -24,7 +24,7 @@ func main() {
 		TimeFormat: time.RFC3339,
 		FormatCaller: func(i interface{}) string {
 			l := strings.Split(i.(string), "/")
-			return "[" + fmt.Sprintf("%-30s", l[len(l)-1]) + "]"
+			return "[" + fmt.Sprintf("%-20s", l[len(l)-1]) + "]"
 		},
 	}).With().Caller().Timestamp().Logger()
 

@@ -49,7 +49,7 @@ db40.dbx102.0:				# <required> 点名称，ASCII编码，便于跨语言使用, 
   label: start				# <optional> 短名称
   name: 启动		   		   # <optional> 长名称
   unit: 单位				   # <optional> 单位字符串
-  point_type: 				# <optional> 点类型 1：模拟量，2：状态量, 默认为模拟量
+  point_type: 				# <optional> 点类型 1：模拟量，2：状态量, 3:整形量，默认为模拟量
   tags: ["test"]			# <optional> tag标记
   option:					# <optional> 状态量映射关系
     1: 启动
