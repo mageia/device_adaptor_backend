@@ -127,6 +127,7 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 	if e != nil {
 		return e
 	}
+	log.Debug().Str("body", string(b)).Msg("body")
 	writeBuf := new(bytes.Buffer)
 	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)+4))
 	binary.Write(writeBuf, binary.LittleEndian, b)
@@ -150,15 +151,14 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 		return e
 	}
 
+	log.Debug().Bool("success", tmpResp.Success).Str("cmd", tmpResp.Cmd).Interface("result", tmpResp.Result).Msg("tmpResp")
+
 	if !tmpResp.Success {
 		if tmpResp.Cmd == "real_time_data" {
 			go t.sendCommand("init", nil)
 		}
-		//log.Debug().Interface("tmpResp", tmpResp).Msg("tmpResp #####")
 		return fmt.Errorf("parse response failed, success == false")
 	}
-
-	//log.Debug().Bool("success", tmpResp.Success).Str("cmd", tmpResp.Cmd).Interface("result", tmpResp.Result).Msg("tmpResp")
 
 	switch tmpResp.Cmd {
 	case "init":
@@ -208,8 +208,8 @@ func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
 func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
 	t.pointMap = pointMap
 	t._pointAddressToKey = make(map[string]string, len(t.pointMap))
-	for _, v := range t.pointMap {
-		t._pointAddressToKey[v.Address] = v.PointKey
+	for k, v := range t.pointMap {
+		t._pointAddressToKey[v.Address] = k
 	}
 }
 func (t *OPC) Start() error {
