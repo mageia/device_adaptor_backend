@@ -152,15 +152,13 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 
 	if !tmpResp.Success {
 		if tmpResp.Cmd == "real_time_data" {
-			go func() {
-				time.Sleep(time.Second * 3)
-				t.sendCommand("init", nil)
-			}()
+			go t.sendCommand("init", nil)
 		}
-		return fmt.Errorf("parse response failed")
+		//log.Debug().Interface("tmpResp", tmpResp).Msg("tmpResp #####")
+		return fmt.Errorf("parse response failed, success == false")
 	}
 
-	log.Debug().Bool("success", tmpResp.Success).Str("cmd", tmpResp.Cmd).Msg("tmpResp")
+	//log.Debug().Bool("success", tmpResp.Success).Str("cmd", tmpResp.Cmd).Interface("result", tmpResp.Result).Msg("tmpResp")
 
 	switch tmpResp.Cmd {
 	case "init":
