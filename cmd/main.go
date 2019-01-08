@@ -7,6 +7,7 @@ import (
 	_ "device_adaptor/plugins/outputs/all"
 	_ "device_adaptor/plugins/processors/all"
 	"device_adaptor/router"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -23,7 +24,7 @@ func main() {
 		TimeFormat: time.RFC3339,
 		FormatCaller: func(i interface{}) string {
 			l := strings.Split(i.(string), "/")
-			return "[" + l[len(l)-1] + "]"
+			return "[" + fmt.Sprintf("%-30s", l[len(l)-1]) + "]"
 		},
 	}).With().Caller().Timestamp().Logger()
 
