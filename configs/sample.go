@@ -116,16 +116,20 @@ var OutputSample = map[string]map[string]ConfigSample{
 		"files":       ConfigSample{"files", "输出地址", []string{"stdout"}, nil, "multi-input", 2},
 	},
 	"redis": {
-		"plugin_name": ConfigSample{"plugin_name", "插件名称", "redis", nil, "select", 1},
-		"url_address": ConfigSample{"url_address", "地址URL", "redis://localhost:6379/0", nil, "input", 2},
-		"points_key": ConfigSample{"points_key", "点表内容 Key", "points", nil, "input", 3},
+		"plugin_name":        ConfigSample{"plugin_name", "插件名称", "redis", nil, "select", 1},
+		"url_address":        ConfigSample{"url_address", "地址URL", "redis://localhost:6379/0", nil, "input", 2},
+		"points_key":         ConfigSample{"points_key", "点表内容 Key", "points", nil, "input", 3},
 		"points_version_key": ConfigSample{"points_version_key", "点表版本 Key", "points.version", nil, "input", 4},
 	},
 	"rabbitmq": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "rabbitmq", nil, "select", 1},
 		"url_address":   ConfigSample{"url_address", "地址URL", "amqp://guest:guest@localhost:5672/", nil, "input", 2},
-		"queue_name":    ConfigSample{"queue_name", "队列名称", "channel_gateway", nil, "input", 4},
-		"exchange_name": ConfigSample{"exchange_name", "交换器名称", "", nil, "input", 5},
+		"queue_name":    ConfigSample{"queue_name", "队列名称", "red_gateway", nil, "input", 4},
+		"exchange_name": ConfigSample{"exchange_name", "交换器名称", "red_gateway", nil, "input", 5},
+	},
+	"mqtt": {
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "mqtt", nil, "select", 1},
+		"url_address":   ConfigSample{"url_address", "地址URL", "mqtt://guest:guest@localhost:1883/", nil, "input", 2},
 	},
 }
 var ControllerSample = map[string]map[string]ConfigSample{

@@ -8,18 +8,23 @@ import (
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/json-iterator/go"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net/url"
 	"strings"
 )
 
 type Mqtt struct {
-	UrlAddress  string
-	client      mqtt.Client
-	serializer  serializers.Serializer
+	UrlAddress string `json:"url_address"`
+	client     mqtt.Client
+	connected  bool
+	serializer serializers.Serializer
 }
 
 func (mt *Mqtt) Connect() error {
+	if mt.connected {
+		return nil
+	}
+
 	opt, err := url.Parse(mt.UrlAddress)
 	if err != nil {
 		return fmt.Errorf("failed to parse mqtt url: %s", err)
@@ -33,19 +38,27 @@ func (mt *Mqtt) Connect() error {
 	opts.SetPassword(p)
 	// TODO: check this
 	opts.SetClientID(uuid.New().String())
-	mt.client = mqtt.NewClient(opts)
+	_client := mqtt.NewClient(opts)
+	if _client.IsConnected() {
+		mt.client = _client
+		mt.connected = true
+	}
 	return nil
 }
 
 func (mt *Mqtt) Close() error {
-	mt.client.Disconnect(3000)
+	if mt.connected {
+		mt.client.Disconnect(3000)
+		mt.connected = false
+	}
 	return nil
 }
 
 func (mt *Mqtt) Write(metrics []deviceAgent.Metric) error {
-	if len(metrics) == 0 {
-		return nil
+	if len(metrics) == 0 || !mt.connected {
+		return mt.Connect()
 	}
+
 	for _, metric := range metrics {
 		m, err := mt.serializer.SerializeMap(metric)
 		if err != nil {
@@ -59,12 +72,18 @@ func (mt *Mqtt) Write(metrics []deviceAgent.Metric) error {
 
 		token := mt.client.Publish(metric.Name(), 2, true, sV)
 		if token.Error() != nil {
-			log.Println(err)
+			log.Error().Err(token.Error()).Msg("mqtt.Publish")
+			mt.Close()
+			mt.Connect()
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (mt *Mqtt) SetSerializer(s serializers.Serializer) {
+	mt.serializer = s
 }
 
 func init() {

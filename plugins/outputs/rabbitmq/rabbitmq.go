@@ -37,6 +37,9 @@ func (r *RabbitMQ) SetSerializer(serializer serializers.Serializer) {
 }
 
 func (r *RabbitMQ) Connect() error {
+	if r.connected {
+		return nil
+	}
 	conn, err := amqp.Dial(r.URLAddress)
 	if err != nil {
 		return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
@@ -83,6 +86,10 @@ func (r *RabbitMQ) Write(metrics []deviceAgent.Metric) error {
 	if len(metrics) == 0 {
 		return nil
 	}
+	if !r.connected {
+		return r.Connect()
+	}
+
 	for _, metric := range metrics {
 		m, err := r.serializer.SerializeMap(metric)
 		if err != nil {
@@ -99,6 +106,8 @@ func (r *RabbitMQ) Write(metrics []deviceAgent.Metric) error {
 			Body:        pV,
 		})
 		if err != nil {
+			r.Close()
+			r.Connect()
 			return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
 		}
 	}
