@@ -159,7 +159,7 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 		return fmt.Errorf("parse response failed")
 	}
 
-	//log.Debug().Interface("tmpResp", tmpResp).Msg("sendInitMsg")
+	log.Debug().Bool("success", tmpResp.Success).Str("cmd", tmpResp.Cmd).Msg("tmpResp")
 
 	switch tmpResp.Cmd {
 	case "init":
