@@ -7,6 +7,7 @@ import (
 	"device_adaptor/internal"
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
+	"device_adaptor/utils"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -170,17 +171,18 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 		if !ok {
 			return errors.New("invalid real_time_data acc format")
 		}
-
-		switch r := tmpResp.Result.(type) {
-		case map[string]interface{}:
+		if r, ok := tmpResp.Result.(map[string]interface{}); ok {
 			for k, v := range r {
 				if pKey, ok := t._pointAddressToKey[k]; ok {
-					fields[pKey] = v
+					switch vf := v.(type) {
+					case float64:
+						fields[pKey] = utils.Round(vf, 6)
+					default:
+						fields[pKey] = v
+					}
 				}
 			}
-
 			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
-			return nil
 		}
 	default:
 		return fmt.Errorf("parse response failed")

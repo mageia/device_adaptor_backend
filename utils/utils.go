@@ -12,7 +12,7 @@ import (
 	"unicode/utf8"
 )
 
-type OffsetBitPair [][3]interface{}	//[offset, bit, "key"]
+type OffsetBitPair [][3]interface{} //[offset, bit, "key"]
 
 func (c OffsetBitPair) Len() int {
 	return len(c)
@@ -25,7 +25,7 @@ func (c OffsetBitPair) Less(i, j int) bool {
 }
 func Round(f float64, n int) float64 {
 	pow10 := math.Pow10(n)
-	return math.Trunc((f+0.5/pow10)*pow10) / pow10
+	return math.Trunc(f*pow10+0.5) / pow10
 }
 
 func GetBit(word []byte, bit uint) byte {

@@ -149,7 +149,7 @@ func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
 			acc.AddError(fmt.Errorf("%v", e))
 		}
 		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
-		log.Debug().Interface("fields", fields).Msg("fields")
+		//log.Debug().Interface("fields", fields).Msg("fields")
 	}(s)
 
 	for areaType, v := range s.addrMap1 {
