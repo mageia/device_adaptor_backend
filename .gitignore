@@ -2,6 +2,6 @@
 .DS_Store
 *.db
 node_modules
-deviceAdaptor
+device_adaptor
 point_map.db
-deviceAdaptorLinux
+device_adaptor.json
