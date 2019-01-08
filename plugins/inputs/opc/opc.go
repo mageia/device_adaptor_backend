@@ -127,7 +127,6 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 	if e != nil {
 		return e
 	}
-	log.Debug().Str("body", string(b)).Msg("body")
 	writeBuf := new(bytes.Buffer)
 	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)+4))
 	binary.Write(writeBuf, binary.LittleEndian, b)
@@ -150,8 +149,6 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 	if e := jsoniter.Unmarshal(buf, &tmpResp); e != nil {
 		return e
 	}
-
-	log.Debug().Bool("success", tmpResp.Success).Str("cmd", tmpResp.Cmd).Interface("result", tmpResp.Result).Msg("tmpResp")
 
 	if !tmpResp.Success {
 		if tmpResp.Cmd == "real_time_data" {
