@@ -35,38 +35,48 @@ func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
 }
 
 func (f *Fake) Start() error {
-	sFs, e := fs.New()
-	if e != nil {
-		return e
-	}
-
-	_csvFile, e := sFs.Open("/configs/mock_data_opc.csv")
-	if e != nil {
-		return e
-	}
-	_mockCsvReader := csv.NewReader(_csvFile)
-	_mockKeyList, e := _mockCsvReader.Read()
-	if e != nil {
-		return e
-	}
-
-	f.connected = true
-	f.mockCsvReader = _mockCsvReader
-	f.mockKeyList = _mockKeyList
+	//fmt.Print(f,"\n")
+	//sFs, e := fs.New()
+	//if e != nil {
+	//	return e
+	//}
+	//
+	//_csvFile, e := sFs.Open("/configs/mock_data_opc.csv")
+	//if e != nil {
+	//	return e
+	//}
+	//_mockCsvReader := csv.NewReader(_csvFile)
+	//_mockKeyList, e := _mockCsvReader.Read()
+	//if e != nil {
+	//	return e
+	//}
+	//
+	//f.connected = true
+	//f.mockCsvReader = _mockCsvReader
+	//f.mockKeyList = _mockKeyList
 	return nil
 }
 func (f *Fake) Stop() {
 	f.connected = false
 }
 func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
-	if !f.connected {
-		f.Start()
-	}
+	//if !f.connected {
+	//	f.Start()
+	//}
+	rand.Seed(time.Now().Unix())
 
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	f.quality = deviceAgent.QualityGood
 
+	f.mockKeyList = make(map[string]interface{})
+	for _, v := range f.pointMap {
+		if v.PointType == 0 {	//模拟量，模拟范围[0,200)整数
+			f.mockKeyList[v.Address] = rand.Intn(200)
+		} else {				//开关量，模拟范围[0,1]
+			f.mockKeyList[v.Address] = rand.Intn(2)
+		}
+	}
 	defer func(fake *Fake) {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
@@ -74,16 +84,16 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 		acc.AddFields(fake.Name(), fields, tags, f.SelfCheck())
 	}(f)
 
-	row, e := f.mockCsvReader.Read()
-	if e != nil {
-		if e == io.EOF {
-			f.connected = false
-		}
-		panic(e)
-	}
-
+	//row, e := f.mockCsvReader.Read()
+	//if e != nil {
+	//	if e == io.EOF {
+	//		f.connected = false
+	//	}
+	//	panic(e)
+	//}
+	//
 	for i, k := range f.mockKeyList {
-		fields[k], _ = strconv.ParseFloat(row[i], 64)
+		fields[i] = k
 	}
 
 	return nil
