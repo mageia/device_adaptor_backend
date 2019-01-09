@@ -62,6 +62,21 @@ db40.dbx102.0:				# <required> 点名称，ASCII编码，便于跨语言使用, 
 
 
 
+# 获取点表接口
+
+>接口：GET
+>
+>Path: /interface/pointMap/:plugin_name
+
+```http
+GET /interface/pointMap/fake HTTP/1.1
+Host: localhost:8080
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNTQ3MDU1MTU3fQ.Z57HU6zuo0zGOc0-y36wLOePBqnXFLg4PoBCt5M_kRI
+Content-Type: application/json
+```
+
+
+
 # 控制功能
 
 >接口：POST
