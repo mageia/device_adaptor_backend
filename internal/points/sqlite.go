@@ -41,8 +41,7 @@ type PointDefine struct {
 }
 
 const (
-	_ PointType = iota
-	PointAnalog
+	PointAnalog PointType = iota
 	PointDigital
 	PointInteger
 	PointString
