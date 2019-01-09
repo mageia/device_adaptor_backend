@@ -13,8 +13,6 @@ type Fake struct {
 	connected bool
 	pointMap  map[string]points.PointDefine
 	quality   device_agent.Quality
-	//mockKeyList map[string]interface{}
-	//mockCsvReader *csv.Reader
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
@@ -32,34 +30,12 @@ func (f *Fake) FlushPointMap(acc device_agent.Accumulator) error {
 }
 
 func (f *Fake) Start() error {
-	//fmt.Print(f,"\n")
-	//sFs, e := fs.New()
-	//if e != nil {
-	//	return e
-	//}
-	//
-	//_csvFile, e := sFs.Open("/configs/mock_data_opc.csv")
-	//if e != nil {
-	//	return e
-	//}
-	//_mockCsvReader := csv.NewReader(_csvFile)
-	//_mockKeyList, e := _mockCsvReader.Read()
-	//if e != nil {
-	//	return e
-	//}
-	//
-	//f.connected = true
-	//f.mockCsvReader = _mockCsvReader
-	//f.mockKeyList = _mockKeyList
 	return nil
 }
 func (f *Fake) Stop() {
 	f.connected = false
 }
 func (f *Fake) Gather(acc device_agent.Accumulator) error {
-	//if !f.connected {
-	//	f.Start()
-	//}
 	rand.Seed(time.Now().Unix())
 
 	fields := make(map[string]interface{})
@@ -73,7 +49,6 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 		acc.AddFields(fake.Name(), fields, tags, f.SelfCheck())
 	}(f)
 
-	//f.mockKeyList = make(map[string]interface{})
 	for k, v := range f.pointMap {
 		switch v.PointType {
 		case points.PointAnalog:
@@ -88,18 +63,6 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 			fields[k] = "unsupported random value type"
 		}
 	}
-
-	//row, e := f.mockCsvReader.Read()
-	//if e != nil {
-	//	if e == io.EOF {
-	//		f.connected = false
-	//	}
-	//	panic(e)
-	//}
-	//
-	//for i, k := range f.mockKeyList {
-	//	fields[i] = k
-	//}
 
 	return nil
 }

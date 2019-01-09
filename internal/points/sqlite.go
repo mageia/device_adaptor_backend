@@ -37,7 +37,7 @@ type PointDefine struct {
 	Option    HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text"`
 	Control   HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text"`
 	Tags      ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text"`
-	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`
+	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`	//网关在存储extra时可能会序列化，使用时请注意
 }
 
 const (
