@@ -54,7 +54,7 @@ func (mt *Mqtt) Close() error {
 	return nil
 }
 
-func (mt *Mqtt) Write(metrics []deviceAgent.Metric) error {
+func (mt *Mqtt) Write(metrics []device_agent.Metric) error {
 	if len(metrics) == 0 || !mt.connected {
 		return mt.Connect()
 	}
@@ -87,7 +87,7 @@ func (mt *Mqtt) SetSerializer(s serializers.Serializer) {
 }
 
 func init() {
-	outputs.Add("mqtt", func() deviceAgent.Output {
+	outputs.Add("mqtt", func() device_agent.Output {
 		return &Mqtt{}
 	})
 }

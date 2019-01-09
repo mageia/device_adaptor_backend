@@ -49,7 +49,7 @@ func (v *Vibration) calcAcc1(o []byte) float64 {
 func (*Vibration) Name() string {
 	return "Sensor Vibration"
 }
-func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
+func (v *Vibration) Gather(acc device_agent.Accumulator) error {
 	vData := VibrationData{}
 	if deviceIdArr, ok := v.mockData["deviceId"]; ok {
 		vData.DeviceId = strings.Join(deviceIdArr[5:15], "")
@@ -109,12 +109,12 @@ func (v *Vibration) Gather(acc deviceAgent.Accumulator) error {
 		"acceleration": acceleration,
 		"frequency":    frequency,
 		"timestamp":    time.Now().UnixNano() / 1e6,
-	}, nil, deviceAgent.QualityGood)
+	}, nil, device_agent.QualityGood)
 	return nil
 }
 func (*Vibration) SetPointMap(map[string]points.PointDefine) {
 }
-func (*Vibration) FlushPointMap(deviceAgent.Accumulator) error {
+func (*Vibration) FlushPointMap(device_agent.Accumulator) error {
 	return nil
 }
 func (v *Vibration) Start() error {
@@ -141,12 +141,12 @@ func (v *Vibration) Start() error {
 }
 func (*Vibration) Stop() {
 }
-func (*Vibration) SelfCheck() deviceAgent.Quality {
-	return deviceAgent.QualityGood
+func (*Vibration) SelfCheck() device_agent.Quality {
+	return device_agent.QualityGood
 }
 
 func init() {
-	inputs.Add("sensor_vibration", func() deviceAgent.Input {
+	inputs.Add("sensor_vibration", func() device_agent.Input {
 		return &Vibration{}
 	})
 }

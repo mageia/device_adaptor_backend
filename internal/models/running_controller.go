@@ -4,10 +4,10 @@ import "device_adaptor"
 
 type RunningController struct {
 	Name       string
-	Controller deviceAgent.Controller
+	Controller device_agent.Controller
 }
 
-func NewRunningController(name string, controller deviceAgent.Controller) *RunningController {
+func NewRunningController(name string, controller device_agent.Controller) *RunningController {
 	return &RunningController{
 		Name:       name,
 		Controller: controller,

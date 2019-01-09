@@ -46,7 +46,7 @@ type HTTPListener struct {
 	listener net.Listener
 	mu       sync.Mutex
 	wg       sync.WaitGroup
-	acc      deviceAgent.Accumulator
+	acc      device_agent.Accumulator
 
 	parsers    map[string]parsers.Parser
 	contentMap map[string][]byte
@@ -59,8 +59,8 @@ func (h *HTTPListener) SetParser(parsers map[string]parsers.Parser) {
 	}
 }
 
-func (h *HTTPListener) SelfCheck() deviceAgent.Quality {
-	return deviceAgent.QualityGood
+func (h *HTTPListener) SelfCheck() device_agent.Quality {
+	return device_agent.QualityGood
 }
 
 func (h *HTTPListener) Name() string {
@@ -73,7 +73,7 @@ func (h *HTTPListener) OriginName() string {
 	return h.originName
 }
 
-func (h *HTTPListener) Gather(acc deviceAgent.Accumulator) (err error) {
+func (h *HTTPListener) Gather(acc device_agent.Accumulator) (err error) {
 	if len(h.parsers) == 0 {
 		return errors.New("parsers is not set")
 	}
@@ -93,7 +93,7 @@ func (h *HTTPListener) Gather(acc deviceAgent.Accumulator) (err error) {
 		//}
 	}
 	if len(h.resultMap) > 0 {
-		acc.AddFields(h.Name(), h.resultMap, nil, deviceAgent.QualityGood, time.Now())
+		acc.AddFields(h.Name(), h.resultMap, nil, device_agent.QualityGood, time.Now())
 	}
 
 	return nil
@@ -244,7 +244,7 @@ func (h *HTTPListener) Stop() {
 }
 
 func init() {
-	inputs.Add("http_listener", func() deviceAgent.Input {
+	inputs.Add("http_listener", func() device_agent.Input {
 		return &HTTPListener{
 			originName: "http_listener",
 			parsers:    make(map[string]parsers.Parser),

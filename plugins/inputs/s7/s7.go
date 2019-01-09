@@ -32,8 +32,8 @@ type S7 struct {
 	pointMap  map[string]points.PointDefine
 	addrMap   map[string]map[string][][2]int
 	addrMap1  map[string]map[int]map[string]utils.OffsetBitPair
-	quality   deviceAgent.Quality
-	acc       deviceAgent.Accumulator
+	quality   device_agent.Quality
+	acc       device_agent.Accumulator
 
 	originName string
 
@@ -78,15 +78,15 @@ func (s *S7) getParamList() map[string][3]int {
 
 	return result
 }
-func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
+func (s *S7) gatherServer(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
-	s.quality = deviceAgent.QualityGood
+	s.quality = device_agent.QualityGood
 
 	defer func(s7 *S7) {
 		if e := recover(); e != nil {
 			debug.PrintStack()
-			s7.quality = deviceAgent.QualityDisconnect
+			s7.quality = device_agent.QualityDisconnect
 			s7.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
@@ -136,15 +136,15 @@ func (s *S7) gatherServer(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
-func (s *S7) gatherServer1(acc deviceAgent.Accumulator) error {
+func (s *S7) gatherServer1(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
-	s.quality = deviceAgent.QualityGood
+	s.quality = device_agent.QualityGood
 
 	defer func(s7 *S7) {
 		if e := recover(); e != nil {
 			debug.PrintStack()
-			s7.quality = deviceAgent.QualityDisconnect
+			s7.quality = device_agent.QualityDisconnect
 			s7.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
@@ -222,7 +222,7 @@ func (s *S7) Name() string {
 func (s *S7) OriginName() string {
 	return s.originName
 }
-func (s *S7) Gather(acc deviceAgent.Accumulator) error {
+func (s *S7) Gather(acc device_agent.Accumulator) error {
 	if !s.connected {
 		if e := s.Start(); e != nil {
 			return e
@@ -312,7 +312,7 @@ func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 		}
 	}
 }
-func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
+func (s *S7) FlushPointMap(acc device_agent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range s.pointMap {
 		pointMapFields[k] = v
@@ -320,7 +320,7 @@ func (s *S7) FlushPointMap(acc deviceAgent.Accumulator) error {
 	acc.AddFields("s7_point_map", pointMapFields, nil, s.SelfCheck())
 	return nil
 }
-func (s *S7) SelfCheck() deviceAgent.Quality {
+func (s *S7) SelfCheck() device_agent.Quality {
 	return s.quality
 }
 func (s *S7) SetValue(map[string]interface{}) error {
@@ -376,13 +376,13 @@ func (s *S7) RetrievePointMap(keys []string) map[string]points.PointDefine {
 }
 
 func init() {
-	inputs.Add("s7", func() deviceAgent.Input {
+	inputs.Add("s7", func() device_agent.Input {
 		return &S7{
 			originName: "s7",
 			buf:        make(map[string][]byte),
 			addrMap:    make(map[string]map[string][][2]int),
 			addrMap1:   make(map[string]map[int]map[string]utils.OffsetBitPair),
-			quality:    deviceAgent.QualityGood,
+			quality:    device_agent.QualityGood,
 		}
 	})
 }

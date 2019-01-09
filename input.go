@@ -1,4 +1,4 @@
-package deviceAgent
+package device_agent
 
 import (
 	"device_adaptor/internal/points"

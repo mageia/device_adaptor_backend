@@ -82,7 +82,7 @@ func (r *RabbitMQ) Close() error {
 	return nil
 }
 
-func (r *RabbitMQ) Write(metrics []deviceAgent.Metric) error {
+func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
 	if len(metrics) == 0 {
 		return nil
 	}
@@ -115,7 +115,7 @@ func (r *RabbitMQ) Write(metrics []deviceAgent.Metric) error {
 }
 
 func init() {
-	outputs.Add("rabbitmq", func() deviceAgent.Output {
+	outputs.Add("rabbitmq", func() device_agent.Output {
 		return &RabbitMQ{}
 	})
 }

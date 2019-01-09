@@ -25,7 +25,7 @@ type ReloadSignal struct {
 
 // 点表热更新信号
 type PointDefineUpdateSignal struct {
-	Input deviceAgent.Input
+	Input device_agent.Input
 }
 
 type Agent struct {
@@ -75,7 +75,7 @@ func (a *Agent) Reload() {
 // 点表更新回调。有两种触发机会：
 //   1. 程序启动或整体 reload 时，必须假设点表更新过了
 //   2. 当 agent 明确收到 PointDefineUpdateSignal 信号时
-func (a *Agent) OnPointDefineUpdate(input deviceAgent.Input) {
+func (a *Agent) OnPointDefineUpdate(input device_agent.Input) {
 	log.Info().Str("input", input.Name()).Msg("Point definition is updated")
 
 	needOutput := false
@@ -95,7 +95,7 @@ func (a *Agent) OnPointDefineUpdate(input deviceAgent.Input) {
 			pointMap[p.PointKey] = p
 		}
 
-		m := deviceAgent.PointMap{Time: time.Now(), InputName: input.Name(), Points: pointMap}
+		m := device_agent.PointMap{Time: time.Now(), InputName: input.Name(), Points: pointMap}
 
 		for _, ro := range a.Config.Outputs {
 			ro.WritePointDefine(m)
@@ -111,7 +111,7 @@ func (a *Agent) Close() error {
 	}
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
-		case deviceAgent.InteractiveInput:
+		case device_agent.InteractiveInput:
 			p.Stop()
 			log.Info().Msgf("Successfully closed input: %s", p.Name())
 		}
@@ -128,7 +128,7 @@ func panicRecover(input *models.RunningInput) {
 	}
 }
 
-func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc deviceAgent.Accumulator, timeout time.Duration) {
+func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc device_agent.Accumulator, timeout time.Duration) {
 	ticker := time.NewTicker(timeout)
 	defer ticker.Stop()
 
@@ -155,7 +155,7 @@ func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc devi
 	}
 }
 
-func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, metricC chan deviceAgent.Metric) {
+func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, metricC chan device_agent.Metric) {
 	defer panicRecover(input)
 
 	acc := NewAccumulator(input, metricC)
@@ -187,7 +187,7 @@ func (a *Agent) flush() {
 	}
 }
 
-func (a *Agent) flusher(inMetricC chan deviceAgent.Metric, outMetricC chan deviceAgent.Metric) error {
+func (a *Agent) flusher(inMetricC chan device_agent.Metric, outMetricC chan device_agent.Metric) error {
 	var wg sync.WaitGroup
 
 	// 从input channel 读数据并传给 output channel
@@ -199,7 +199,7 @@ func (a *Agent) flusher(inMetricC chan deviceAgent.Metric, outMetricC chan devic
 			case <-a.Ctx.Done():
 				return
 			case metric := <-inMetricC:
-				metrics := []deviceAgent.Metric{metric}
+				metrics := []device_agent.Metric{metric}
 				for _, metric := range metrics {
 					log.Debug().Str("input", metric.Name()).Int("fields_count", len(metric.Fields())).Msg("Agent.flusher")
 					outMetricC <- metric
@@ -256,9 +256,9 @@ func (a *Agent) flusher(inMetricC chan deviceAgent.Metric, outMetricC chan devic
 func (a *Agent) Run() error {
 	var wg sync.WaitGroup
 	// input channel
-	metricC := make(chan deviceAgent.Metric, 100)
+	metricC := make(chan device_agent.Metric, 100)
 	// output channel
-	outMetricC := make(chan deviceAgent.Metric, 100)
+	outMetricC := make(chan device_agent.Metric, 100)
 
 	//flusher
 	wg.Add(1)
@@ -272,7 +272,7 @@ func (a *Agent) Run() error {
 	//controller
 	for _, controller := range a.Config.Controllers {
 		switch p := controller.Controller.(type) {
-		case deviceAgent.Controller:
+		case device_agent.Controller:
 			if err := p.Start(a.Ctx); err != nil {
 				log.Error().Msgf("Starting controller: %s failed, exiting\n%s", controller.Name, err.Error())
 				return err
@@ -282,7 +282,7 @@ func (a *Agent) Run() error {
 
 	for _, o := range a.Config.Outputs {
 		switch ot := o.Output.(type) {
-		case deviceAgent.ServiceOutput:
+		case device_agent.ServiceOutput:
 			if err := ot.Start(); err != nil {
 				log.Error().Err(err).Str("plugin", o.Name).Msg("ServiceOutput Start failed")
 				return err
@@ -304,7 +304,7 @@ func (a *Agent) Run() error {
 	wg.Add(len(a.Config.Inputs))
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
-		case deviceAgent.InteractiveInput:
+		case device_agent.InteractiveInput:
 			if err := p.Start(); err != nil {
 				log.Error().Err(err).Str("plugin", input.Name()).Msg("InteractiveInput start failed")
 				break
@@ -312,7 +312,7 @@ func (a *Agent) Run() error {
 			log.Info().Str("plugin", input.Name()).Msg("InteractiveInput start success")
 
 			switch pC := p.(type) {
-			case deviceAgent.ControllerInput:
+			case device_agent.ControllerInput:
 				for _, c := range a.Config.Controllers {
 					c.Controller.RegisterInput(pC.Name(), pC)
 				}

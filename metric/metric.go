@@ -8,20 +8,20 @@ import (
 
 type metric struct {
 	name    string
-	tags    []*deviceAgent.Tag
-	fields  []*deviceAgent.Field
+	tags    []*device_agent.Tag
+	fields  []*device_agent.Field
 	tm      time.Time
-	quality deviceAgent.Quality
-	tp      deviceAgent.MetricType
+	quality device_agent.Quality
+	tp      device_agent.MetricType
 }
 
 func New(name string,
 	tags map[string]string,
 	fields map[string]interface{},
-	quality deviceAgent.Quality,
+	quality device_agent.Quality,
 	tm time.Time,
-	tp deviceAgent.MetricType,
-) (deviceAgent.Metric, error) {
+	tp device_agent.MetricType,
+) (device_agent.Metric, error) {
 	m := &metric{
 		name:    name,
 		tags:    nil,
@@ -31,12 +31,12 @@ func New(name string,
 		tp:      tp,
 	}
 	if len(tags) > 0 {
-		m.tags = make([]*deviceAgent.Tag, 0, len(tags))
+		m.tags = make([]*device_agent.Tag, 0, len(tags))
 		for k, v := range tags {
-			m.tags = append(m.tags, &deviceAgent.Tag{Key: k, Value: v})
+			m.tags = append(m.tags, &device_agent.Tag{Key: k, Value: v})
 		}
 	}
-	m.fields = make([]*deviceAgent.Field, 0, len(fields))
+	m.fields = make([]*device_agent.Field, 0, len(fields))
 
 	for k, v := range fields {
 		m.AddField(k, v)
@@ -57,7 +57,7 @@ func (m *metric) Tags() map[string]string {
 	}
 	return tags
 }
-func (m *metric) TagList() []*deviceAgent.Tag {
+func (m *metric) TagList() []*device_agent.Tag {
 	return m.tags
 }
 func (m *metric) Fields() map[string]interface{} {
@@ -67,13 +67,13 @@ func (m *metric) Fields() map[string]interface{} {
 	}
 	return fields
 }
-func (m *metric) FieldList() []*deviceAgent.Field {
+func (m *metric) FieldList() []*device_agent.Field {
 	return m.fields
 }
 func (m *metric) Time() time.Time {
 	return m.tm
 }
-func (m *metric) Quality() deviceAgent.Quality {
+func (m *metric) Quality() device_agent.Quality {
 	return m.quality
 }
 func (m *metric) SetName(name string) {
@@ -112,7 +112,7 @@ func (m *metric) AddTag(key, value string) {
 		}
 		m.tags = append(m.tags, nil)
 		copy(m.tags[i+1:], m.tags[i:])
-		m.tags[i] = &deviceAgent.Tag{Key: key, Value: value}
+		m.tags[i] = &device_agent.Tag{Key: key, Value: value}
 		return
 	}
 }
@@ -145,11 +145,11 @@ func (m *metric) HasField(key string) bool {
 func (m *metric) AddField(key string, value interface{}) {
 	for i, field := range m.fields {
 		if key == field.Key {
-			m.fields[i] = &deviceAgent.Field{Key: key, Value: value}
+			m.fields[i] = &device_agent.Field{Key: key, Value: value}
 			return
 		}
 	}
-	m.fields = append(m.fields, &deviceAgent.Field{Key: key, Value: value})
+	m.fields = append(m.fields, &device_agent.Field{Key: key, Value: value})
 }
 func (m *metric) RemoveField(key string) {
 	for i, field := range m.fields {
@@ -164,11 +164,11 @@ func (m *metric) RemoveField(key string) {
 func (m *metric) SetTime(t time.Time) {
 	m.tm = t
 }
-func (m *metric) Copy() deviceAgent.Metric {
+func (m *metric) Copy() device_agent.Metric {
 	m2 := &metric{
 		name:    m.name,
-		tags:    make([]*deviceAgent.Tag, len(m.tags)),
-		fields:  make([]*deviceAgent.Field, len(m.fields)),
+		tags:    make([]*device_agent.Tag, len(m.tags)),
+		fields:  make([]*device_agent.Field, len(m.fields)),
 		tm:      m.tm,
 		quality: m.quality,
 	}

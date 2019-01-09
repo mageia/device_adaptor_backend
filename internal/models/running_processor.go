@@ -8,7 +8,7 @@ import (
 type RunningProcessor struct {
 	Name string
 	sync.Mutex
-	Processor deviceAgent.Processor
+	Processor device_agent.Processor
 }
 
 type RunningProcessors []*RunningProcessor

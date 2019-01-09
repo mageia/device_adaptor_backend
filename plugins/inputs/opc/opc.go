@@ -27,7 +27,7 @@ type OPC struct {
 	FieldSuffix        string            `json:"field_suffix"`
 	NameOverride       string            `json:"name_override"`
 	originName         string
-	quality            deviceAgent.Quality
+	quality            device_agent.Quality
 	pointMap           map[string]points.PointDefine
 	_pointAddressToKey map[string]string
 	ctx                context.Context
@@ -162,7 +162,7 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 	case "control":
 	case "real_time_data":
 		fields := make(map[string]interface{})
-		acc, ok := param.(deviceAgent.Accumulator)
+		acc, ok := param.(device_agent.Accumulator)
 		if !ok {
 			return errors.New("invalid real_time_data acc format")
 		}
@@ -186,7 +186,7 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 	return nil
 }
 
-func (t *OPC) SelfCheck() deviceAgent.Quality {
+func (t *OPC) SelfCheck() device_agent.Quality {
 	return t.quality
 }
 func (t *OPC) Name() string {
@@ -195,7 +195,7 @@ func (t *OPC) Name() string {
 	}
 	return t.originName
 }
-func (t *OPC) Gather(acc deviceAgent.Accumulator) error {
+func (t *OPC) Gather(acc device_agent.Accumulator) error {
 	if e := t.sendCommand("real_time_data", acc); e != nil {
 		return e
 	}
@@ -234,10 +234,10 @@ func (t *OPC) Stop() {
 
 func init() {
 	ctx, cancel := context.WithCancel(context.Background())
-	inputs.Add("opc", func() deviceAgent.Input {
+	inputs.Add("opc", func() device_agent.Input {
 		return &OPC{
 			originName: "opc",
-			quality:    deviceAgent.QualityGood,
+			quality:    device_agent.QualityGood,
 			ctx:        ctx,
 			cancel:     cancel,
 			Timeout:    internal.Duration{Duration: time.Second * 5},

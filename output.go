@@ -1,4 +1,4 @@
-package deviceAgent
+package device_agent
 
 type Output interface {
 	Connect() error

@@ -11,9 +11,6 @@ type ParserInput interface {
 }
 
 type Parser interface {
-	//Parse2(line []byte) ([]deviceAgent.Metric, error)
-	//ParseLine(line string) (deviceAgent.Metric, error)
-
 	Parse([]byte) (interface{}, error)
 	ParseCmd(string, []byte) (interface{}, error)
 }

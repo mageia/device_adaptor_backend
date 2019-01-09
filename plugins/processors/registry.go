@@ -2,7 +2,7 @@ package processors
 
 import "device_adaptor"
 
-type Creator func() deviceAgent.Processor
+type Creator func() device_agent.Processor
 
 var Processors = map[string]Creator{}
 

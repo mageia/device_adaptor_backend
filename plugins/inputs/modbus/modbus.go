@@ -34,7 +34,7 @@ type Modbus struct {
 	_pointAddressToKey map[string]string
 	addrMap            map[string]map[int][]int
 	addrMapKeys        map[string][]int
-	quality            deviceAgent.Quality
+	quality            device_agent.Quality
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
@@ -85,16 +85,16 @@ func (m *Modbus) parseAddress(address string) (area, base, bit string, err error
 	return
 }
 
-func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
+func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	tmpDataMap := make(map[string][]interface{})
-	m.quality = deviceAgent.QualityGood
+	m.quality = device_agent.QualityGood
 
 	defer func(md *Modbus) {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
-			md.quality = deviceAgent.QualityDisconnect
+			md.quality = device_agent.QualityDisconnect
 			trace := make([]byte, 2048)
 			runtime.Stack(trace, true)
 			log.Error().Msgf("Input [modbus] panicked: %s, Stack:\n%s\n", e, trace)
@@ -115,7 +115,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 
 					r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 					if e != nil {
-						m.quality = deviceAgent.QualityDisconnect
+						m.quality = device_agent.QualityDisconnect
 						return
 					}
 
@@ -134,7 +134,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 
 					r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 					if e != nil {
-						m.quality = deviceAgent.QualityDisconnect
+						m.quality = device_agent.QualityDisconnect
 						return
 					}
 					for i := 0; i < len(r); i += 2 {
@@ -186,7 +186,7 @@ func (m *Modbus) gatherServer(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
-func (m *Modbus) Gather(acc deviceAgent.Accumulator) error {
+func (m *Modbus) Gather(acc device_agent.Accumulator) error {
 	if !m.connected {
 		if e := m.Start(); e != nil {
 			return e
@@ -303,7 +303,7 @@ func (m *Modbus) SetPointMap(pointMap map[string]points.PointDefine) {
 		sort.Ints(m.addrMapKeys[k])
 	}
 }
-func (m *Modbus) FlushPointMap(acc deviceAgent.Accumulator) error {
+func (m *Modbus) FlushPointMap(acc device_agent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range m.pointMap {
 		pointMapFields[k] = v
@@ -354,7 +354,7 @@ NEXT:
 	}
 	return nil
 }
-func (m *Modbus) SelfCheck() deviceAgent.Quality {
+func (m *Modbus) SelfCheck() device_agent.Quality {
 	return m.quality
 }
 func (m *Modbus) UpdatePointMap(kv map[string]interface{}) error {
@@ -407,10 +407,10 @@ func (m *Modbus) RetrievePointMap(keys []string) map[string]points.PointDefine {
 }
 
 func init() {
-	inputs.Add("modbus", func() deviceAgent.Input {
+	inputs.Add("modbus", func() device_agent.Input {
 		return &Modbus{
 			originName: "modbus",
-			quality:    deviceAgent.QualityGood,
+			quality:    device_agent.QualityGood,
 		}
 	})
 }

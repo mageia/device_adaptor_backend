@@ -13,15 +13,15 @@ type KJ66 struct {
 	Version string `json:"version"`
 
 	connected    bool
-	quality      deviceAgent.Quality
+	quality      device_agent.Quality
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
 	FieldSuffix  string `json:"field_suffix"`
 	NameOverride string `json:"name_override"`
 }
 
-func (k *KJ66) SelfCheck() deviceAgent.Quality {
-	return deviceAgent.QualityGood
+func (k *KJ66) SelfCheck() device_agent.Quality {
+	return device_agent.QualityGood
 }
 
 func (k *KJ66) Name() string {
@@ -31,7 +31,7 @@ func (k *KJ66) Name() string {
 	return k.originName
 }
 
-func (k *KJ66) Gather(deviceAgent.Accumulator) error {
+func (k *KJ66) Gather(device_agent.Accumulator) error {
 	//24 FF 00 00 00 07 08 06 06 06 06 06 06 80 80 80 80 80 80 80 80 00 00 0F 00 01 0A 63 63 63 63 63 63 00 14
 	//'0x24, 0xFF, 0x00, 0x00, 0x00, 0x07, 0x08, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x0F, 0x00, 0x01, 0x0A, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x00, 0x14'
 	log.Debug().Uint16("crc", crc16.Checksum([]byte{0x24, 0xFF, 0x00, 0x00, 0x00, 0x07, 0x08, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
@@ -52,7 +52,7 @@ func (k *KJ66) Stop() {
 }
 
 func init() {
-	inputs.Add("kj66", func() deviceAgent.Input {
+	inputs.Add("kj66", func() device_agent.Input {
 		return &KJ66{}
 	})
 }

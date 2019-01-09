@@ -147,7 +147,7 @@ func (p *Parser) ParserString(line []byte) (interface{}, error) {
 	}
 	return dataMap, nil
 }
-func (p *Parser) Parse2(line []byte) ([]deviceAgent.Metric, error) {
+func (p *Parser) Parse2(line []byte) ([]device_agent.Metric, error) {
 	fields := make(map[string]interface{})
 	dataMap := make(map[string][]interface{}, 0)
 
@@ -198,10 +198,10 @@ func (p *Parser) Parse2(line []byte) ([]deviceAgent.Metric, error) {
 		fields[k] = v
 	}
 
-	m, _ := metric.New("", nil, fields, deviceAgent.QualityGood, time.Now(), deviceAgent.Untyped)
-	return []deviceAgent.Metric{m}, nil
+	m, _ := metric.New("", nil, fields, device_agent.QualityGood, time.Now(), device_agent.Untyped)
+	return []device_agent.Metric{m}, nil
 }
-func (p *Parser) ParseLine(line string) (deviceAgent.Metric, error) {
+func (p *Parser) ParseLine(line string) (device_agent.Metric, error) {
 	return nil, nil
 }
 

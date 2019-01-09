@@ -33,7 +33,7 @@ type FTP struct {
 	connected    bool
 	done         chan struct{}
 	client       *ftp.ServerConn
-	quality      deviceAgent.Quality
+	quality      device_agent.Quality
 	basePath     string
 	pointMap     map[string]points.PointDefine
 	FieldPrefix  string `json:"field_prefix"`
@@ -41,7 +41,7 @@ type FTP struct {
 	NameOverride string `json:"name_override"`
 }
 
-func (f *FTP) SelfCheck() deviceAgent.Quality {
+func (f *FTP) SelfCheck() device_agent.Quality {
 	return f.quality
 }
 
@@ -55,11 +55,11 @@ func (f *FTP) SetParser(parser map[string]parsers.Parser) {
 }
 func (f *FTP) SetPointMap(map[string]points.PointDefine) {}
 
-func (*FTP) FlushPointMap(acc deviceAgent.Accumulator) error {
+func (*FTP) FlushPointMap(acc device_agent.Accumulator) error {
 	return nil
 }
 
-func (f *FTP) gatherServer(client *ftp.ServerConn, acc deviceAgent.Accumulator) error {
+func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator) error {
 	if f.DataPath == "" {
 		return errors.New("empty data_path")
 	}
@@ -71,7 +71,7 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc deviceAgent.Accumulator) 
 	defer func(ftp *FTP) {
 		if e := recover(); e != nil {
 			debug.PrintStack()
-			ftp.quality = deviceAgent.QualityDisconnect
+			ftp.quality = device_agent.QualityDisconnect
 			ftp.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
@@ -106,7 +106,7 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc deviceAgent.Accumulator) 
 	return nil
 }
 
-func (f *FTP) Gather(acc deviceAgent.Accumulator) error {
+func (f *FTP) Gather(acc device_agent.Accumulator) error {
 	if !f.connected {
 		if e := f.connect(); e != nil {
 			return e
@@ -222,10 +222,10 @@ func (f *FTP) connect() error {
 }
 
 func init() {
-	inputs.Add("ftp", func() deviceAgent.Input {
+	inputs.Add("ftp", func() device_agent.Input {
 		return &FTP{
 			pointMap: make(map[string]points.PointDefine, 0),
-			quality:  deviceAgent.QualityGood,
+			quality:  device_agent.QualityGood,
 		}
 	})
 }

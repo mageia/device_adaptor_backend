@@ -17,7 +17,7 @@ func NewSerializer(timestampUnits time.Duration) (*serializer, error) {
 	}, nil
 }
 
-func (s *serializer) Serialize(metric deviceAgent.Metric) ([]byte, error) {
+func (s *serializer) Serialize(metric device_agent.Metric) ([]byte, error) {
 	serialized, err := json.Marshal(s.createObject(metric))
 	if err != nil {
 		return []byte{}, err
@@ -26,7 +26,7 @@ func (s *serializer) Serialize(metric deviceAgent.Metric) ([]byte, error) {
 	return serialized, err
 }
 
-func (s *serializer) SerializeBatch(metrics []deviceAgent.Metric) ([]byte, error) {
+func (s *serializer) SerializeBatch(metrics []device_agent.Metric) ([]byte, error) {
 	objects := make([]map[string]interface{}, 0, len(metrics))
 	for _, metric := range metrics {
 		objects = append(objects, s.createObject(metric))
@@ -39,12 +39,12 @@ func (s *serializer) SerializeBatch(metrics []deviceAgent.Metric) ([]byte, error
 	return serialized, nil
 }
 
-func (s *serializer) SerializeMap(metric deviceAgent.Metric) (map[string]interface{}, error) {
+func (s *serializer) SerializeMap(metric device_agent.Metric) (map[string]interface{}, error) {
 	m := s.createObject(metric)
 	return m, nil
 }
 
-func (s *serializer) SerializePoints(pointMap deviceAgent.PointMap) (map[string]interface{}, error) {
+func (s *serializer) SerializePoints(pointMap device_agent.PointMap) (map[string]interface{}, error) {
 	points := make(map[string]interface{}, len(pointMap.Points))
 	for key, point := range pointMap.Points {
 		obj := make(map[string]interface{})
@@ -62,7 +62,7 @@ func (s *serializer) SerializePoints(pointMap deviceAgent.PointMap) (map[string]
 	return points, nil
 }
 
-func (s *serializer) createObject(metric deviceAgent.Metric) map[string]interface{} {
+func (s *serializer) createObject(metric device_agent.Metric) map[string]interface{} {
 	m := make(map[string]interface{}, 5)
 	m["fields"] = metric.Fields()
 	m["name"] = metric.Name()

@@ -58,7 +58,7 @@ func (f *File) Close() error {
 	return nil
 }
 
-func (f *File) Write(metrics []deviceAgent.Metric) error {
+func (f *File) Write(metrics []device_agent.Metric) error {
 	var writeErr error = nil
 	b, err := f.serializer.SerializeBatch(metrics)
 	if err != nil {
@@ -75,7 +75,7 @@ func (f *File) Write(metrics []deviceAgent.Metric) error {
 }
 
 func init() {
-	outputs.Add("file", func() deviceAgent.Output {
+	outputs.Add("file", func() device_agent.Output {
 		return &File{}
 	})
 }

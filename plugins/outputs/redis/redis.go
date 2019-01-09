@@ -34,7 +34,7 @@ type Redis struct {
 	serializer serializers.Serializer
 }
 
-func (r *Redis) Write(metrics []deviceAgent.Metric) error {
+func (r *Redis) Write(metrics []device_agent.Metric) error {
 	if r.client == nil {
 		return errors.New("disconnected")
 	}
@@ -64,7 +64,7 @@ func (r *Redis) Write(metrics []deviceAgent.Metric) error {
 	return nil
 }
 
-func (r *Redis) WritePointMap(pointMap deviceAgent.PointMap) error {
+func (r *Redis) WritePointMap(pointMap device_agent.PointMap) error {
 	if r.client == nil {
 		return errors.New("disconnected")
 	}
@@ -136,7 +136,7 @@ func (r *Redis) SetSerializer(s serializers.Serializer) {
 }
 
 func init() {
-	outputs.Add("redis", func() deviceAgent.Output {
+	outputs.Add("redis", func() device_agent.Output {
 		return &Redis{}
 	})
 }

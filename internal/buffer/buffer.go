@@ -7,7 +7,7 @@ import (
 
 type Buffer struct {
 	sync.Mutex
-	buf   []deviceAgent.Metric
+	buf   []device_agent.Metric
 	first int
 	last  int
 	size  int
@@ -16,7 +16,7 @@ type Buffer struct {
 
 func NewBuffer(size int) *Buffer {
 	return &Buffer{
-		buf:   make([]deviceAgent.Metric, size),
+		buf:   make([]device_agent.Metric, size),
 		first: 0,
 		last:  0,
 		size:  size,
@@ -37,7 +37,7 @@ func (b *Buffer) Len() int {
 	return b.size - (b.first - b.last - 1)
 }
 
-func (b *Buffer) push(m deviceAgent.Metric) {
+func (b *Buffer) push(m device_agent.Metric) {
 	if b.empty {
 		b.last = b.first
 		b.buf[b.last] = m
@@ -54,7 +54,7 @@ func (b *Buffer) push(m deviceAgent.Metric) {
 	b.buf[b.last] = m
 }
 
-func (b *Buffer) Add(metrics ...deviceAgent.Metric) {
+func (b *Buffer) Add(metrics ...device_agent.Metric) {
 	b.Lock()
 	defer b.Unlock()
 	for i := range metrics {
@@ -62,11 +62,11 @@ func (b *Buffer) Add(metrics ...deviceAgent.Metric) {
 	}
 }
 
-func (b *Buffer) Batch(batchSize int) []deviceAgent.Metric {
+func (b *Buffer) Batch(batchSize int) []device_agent.Metric {
 	b.Lock()
 	defer b.Unlock()
 	outLen := min(b.Len(), batchSize)
-	out := make([]deviceAgent.Metric, outLen)
+	out := make([]device_agent.Metric, outLen)
 	if outLen == 0 {
 		return out
 	}

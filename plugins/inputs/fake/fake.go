@@ -12,7 +12,7 @@ import (
 type Fake struct {
 	connected bool
 	pointMap  map[string]points.PointDefine
-	quality   deviceAgent.Quality
+	quality   device_agent.Quality
 	//mockKeyList map[string]interface{}
 	//mockCsvReader *csv.Reader
 
@@ -22,7 +22,7 @@ type Fake struct {
 	NameOverride string `json:"name_override"`
 }
 
-func (f *Fake) FlushPointMap(acc deviceAgent.Accumulator) error {
+func (f *Fake) FlushPointMap(acc device_agent.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range f.pointMap {
 		pointMapFields[k] = v
@@ -56,7 +56,7 @@ func (f *Fake) Start() error {
 func (f *Fake) Stop() {
 	f.connected = false
 }
-func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
+func (f *Fake) Gather(acc device_agent.Accumulator) error {
 	//if !f.connected {
 	//	f.Start()
 	//}
@@ -64,7 +64,7 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
-	f.quality = deviceAgent.QualityGood
+	f.quality = device_agent.QualityGood
 
 	defer func(fake *Fake) {
 		if e := recover(); e != nil {
@@ -104,7 +104,7 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
-func (f *Fake) SelfCheck() deviceAgent.Quality {
+func (f *Fake) SelfCheck() device_agent.Quality {
 	return f.quality
 }
 func (f *Fake) SetPointMap(pointMap map[string]points.PointDefine) {
@@ -140,10 +140,10 @@ func (f *Fake) SetValue(map[string]interface{}) error {
 }
 
 func init() {
-	inputs.Add("fake", func() deviceAgent.Input {
+	inputs.Add("fake", func() device_agent.Input {
 		return &Fake{
 			originName: "fake",
-			quality:    deviceAgent.QualityGood,
+			quality:    device_agent.QualityGood,
 		}
 	})
 }

@@ -67,7 +67,7 @@ func (s *Serial) Name() string {
 func (s *Serial) OriginName() string {
 	return s.originName
 }
-func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
+func (s *Serial) Gather(acc device_agent.Accumulator) error {
 	defer func() {
 		if err := recover(); err != nil {
 			switch e := err.(type) {
@@ -157,15 +157,15 @@ func (s *Serial) Gather(acc deviceAgent.Accumulator) error {
 
 	return nil
 }
-func (s *Serial) SelfCheck() deviceAgent.Quality {
-	return deviceAgent.QualityGood
+func (s *Serial) SelfCheck() device_agent.Quality {
+	return device_agent.QualityGood
 }
 func (s *Serial) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
 }
 
 func init() {
-	inputs.Add("serial", func() deviceAgent.Input {
+	inputs.Add("serial", func() device_agent.Input {
 		return &Serial{
 			Interactive: true,
 			Timeout:     internal.Duration{Duration: time.Second * 5},
