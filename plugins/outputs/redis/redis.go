@@ -118,6 +118,12 @@ func (r *Redis) Connect() error {
 	}
 	r.client = c
 
+	if r.PointsKey == "" {
+		r.PointsKey = "points"
+	}
+	if r.PointsVersionKey == "" {
+		r.PointsVersionKey = "points.value"
+	}
 	r.client.Del(r.PointsKey)
 	r.client.Del(r.PointsVersionKey)
 
