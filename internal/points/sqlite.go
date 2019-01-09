@@ -44,8 +44,8 @@ const (
 	_ PointType = iota
 	PointAnalog
 	PointDigital
-	PointString
 	PointInteger
+	PointString
 	PointUnknown = math.MaxUint8
 )
 

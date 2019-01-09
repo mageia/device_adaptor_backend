@@ -5,17 +5,16 @@ import (
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
 	"fmt"
-	"time"
-	"encoding/csv"
 	"math/rand"
+	"time"
 )
 
 type Fake struct {
-	connected     bool
-	pointMap      map[string]points.PointDefine
-	quality       deviceAgent.Quality
-	mockKeyList   map[string]interface{}
-	mockCsvReader *csv.Reader
+	connected bool
+	pointMap  map[string]points.PointDefine
+	quality   deviceAgent.Quality
+	//mockKeyList map[string]interface{}
+	//mockCsvReader *csv.Reader
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
@@ -67,20 +66,29 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 	tags := make(map[string]string)
 	f.quality = deviceAgent.QualityGood
 
-	f.mockKeyList = make(map[string]interface{})
-	for _, v := range f.pointMap {
-		if v.PointType == 0 {	//模拟量，模拟范围[0,200)整数
-			f.mockKeyList[v.Address] = rand.Intn(200)
-		} else {				//开关量，模拟范围[0,1]
-			f.mockKeyList[v.Address] = rand.Intn(2)
-		}
-	}
 	defer func(fake *Fake) {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
 		}
 		acc.AddFields(fake.Name(), fields, tags, f.SelfCheck())
 	}(f)
+
+	//f.mockKeyList = make(map[string]interface{})
+	for k, v := range f.pointMap {
+		//if v.PointType == 0 { //模拟量，模拟范围[0,200)整数
+		//	f.mockKeyList[v.Address] = rand.Intn(200)
+		//} else { //开关量，模拟范围[0,1]
+		//	f.mockKeyList[v.Address] = rand.Intn(2)
+		//}
+		switch v.PointType {
+		case points.PointInteger:
+			fields[k] = rand.Intn(200)
+		case points.PointDigital:
+			fields[k] = rand.Intn(2) == 1
+		default:
+			fields[k] = float64(rand.Intn(199)) + rand.Float64()
+		}
+	}
 
 	//row, e := f.mockCsvReader.Read()
 	//if e != nil {
@@ -90,9 +98,9 @@ func (f *Fake) Gather(acc deviceAgent.Accumulator) error {
 	//	panic(e)
 	//}
 	//
-	for i, k := range f.mockKeyList {
-		fields[i] = k
-	}
+	//for i, k := range f.mockKeyList {
+	//	fields[i] = k
+	//}
 
 	return nil
 }
@@ -112,7 +120,7 @@ func (f *Fake) OriginName() string {
 	return f.originName
 }
 func (f *Fake) UpdatePointMap(map[string]interface{}) error {
-	panic("implement me")
+	return nil
 }
 func (f *Fake) RetrievePointMap(keys []string) map[string]points.PointDefine {
 	if len(keys) == 0 {
