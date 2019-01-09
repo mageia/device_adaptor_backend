@@ -60,6 +60,18 @@ db40.dbx102.0:				# <required> 点名称，ASCII编码，便于跨语言使用, 
   	key2: value2
 ```
 
+## PointType
+
+```go
+const (
+	PointAnalog PointType = iota	//模拟量
+	PointDigital					//数字量
+	PointInteger					//整形量
+	PointString						//字符串
+	PointUnknown = math.MaxUint8
+)
+```
+
 
 
 # 获取点表接口
