@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
+	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
 	"net/http"
 )
@@ -110,19 +111,33 @@ func (h *HTTP) getPointMapHandler(ctx *gin.Context) {
 		return
 	}
 
-	r := make(map[string]map[string]points.PointDefine)
 	if len(getBody.Inputs) == 0 {
-		for _, iV := range h.Inputs {
-			r[iV.Name()] = iV.RetrievePointMap(nil)
-		}
-		ctx.JSON(200, r)
+		ctx.JSON(200, nil)
 		return
 	}
 
+	r := make(map[string]map[string]points.PointDefine)
 	for _, iV := range h.Inputs {
 		for _, iS := range getBody.Inputs {
 			if iS == iV.Name() || iS == iV.OriginName() {
-				r[iV.Name()] = iV.RetrievePointMap(nil)
+				//r[iV.Name()] = iV.RetrievePointMap(nil)
+				pointMap := iV.RetrievePointMap(nil)
+				for k, p := range pointMap {
+					for kp, v := range p.Extra {
+						switch eV := v.(type) {
+						case string:
+							eVV := make(map[string]interface{})
+							if e := jsoniter.Unmarshal([]byte(eV), &eVV); e != nil {
+								pointMap[kp].Extra[k] = eV
+							} else {
+								pointMap[kp].Extra[k] = eVV
+							}
+						default:
+							pointMap[kp].Extra[k] = eV
+						}
+					}
+				}
+				r[iV.Name()] = pointMap
 				break
 			}
 		}
