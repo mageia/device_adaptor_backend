@@ -75,18 +75,17 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 
 	//f.mockKeyList = make(map[string]interface{})
 	for k, v := range f.pointMap {
-		//if v.PointType == 0 { //模拟量，模拟范围[0,200)整数
-		//	f.mockKeyList[v.Address] = rand.Intn(200)
-		//} else { //开关量，模拟范围[0,1]
-		//	f.mockKeyList[v.Address] = rand.Intn(2)
-		//}
 		switch v.PointType {
-		case points.PointInteger:
-			fields[k] = rand.Intn(200)
+		case points.PointAnalog:
+			fields[k] = rand.Float64() * 100
 		case points.PointDigital:
-			fields[k] = rand.Intn(2) == 1
+			fields[k] = rand.Intn(2)
+		case points.PointInteger:
+			fields[k] = rand.Intn(100)
+		case points.PointString:
+			fields[k] = string(rand.Intn(100))
 		default:
-			fields[k] = float64(rand.Intn(199)) + rand.Float64()
+			fields[k] = "unsupported random value type"
 		}
 	}
 
