@@ -4,19 +4,17 @@ import (
 	"device_adaptor"
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
-	"encoding/csv"
 	"fmt"
-	"github.com/rakyll/statik/fs"
-	"io"
-	"strconv"
 	"time"
+	"encoding/csv"
+	"math/rand"
 )
 
 type Fake struct {
 	connected     bool
 	pointMap      map[string]points.PointDefine
 	quality       deviceAgent.Quality
-	mockKeyList   []string
+	mockKeyList   map[string]interface{}
 	mockCsvReader *csv.Reader
 
 	originName   string
