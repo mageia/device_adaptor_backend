@@ -146,6 +146,11 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 	}
 	wg.Wait()
 
+	if m.quality == device_agent.QualityDisconnect {
+		m.Stop()
+		m.Start()
+	}
+
 	for k, l := range m.addrMapKeys {
 		if len(m.addrMapKeys[k]) > len(tmpDataMap[k]) {
 			continue
