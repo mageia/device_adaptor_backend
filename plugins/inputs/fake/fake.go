@@ -58,7 +58,7 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 			if maxExist && minExist {
 				max, _ := strconv.ParseFloat(v.Extra["fakemax"].(string), 64)
 				min, _ := strconv.ParseFloat(v.Extra["fakemin"].(string), 64)
-				fields[k] = rand.Float64()*(max-min) + min	//never max
+				fields[k] = rand.Float64()*(max-min) + min //never max
 			} else {
 				fields[k] = rand.Float64() * 100 //default [0,100)
 			}
@@ -68,7 +68,15 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 				min, _ := strconv.Atoi(v.Extra["fakemin"].(string))
 				fields[k] = rand.Intn(max+1-min) + min
 			} else {
-				fields[k] = rand.Intn(2)	//default [0,1]
+				if v.Option != nil {
+					keyList := make([]string, 0, len(v.Option))
+					for key := range v.Option {
+						keyList = append(keyList, key)
+					}
+					fields[k] = keyList[rand.Intn(len(keyList))]
+				} else {
+					fields[k] = rand.Intn(2) //default [0,1]
+				}
 			}
 		case points.PointInteger:
 			fields[k] = rand.Intn(100)
