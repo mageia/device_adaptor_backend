@@ -201,24 +201,31 @@ func (f *FTP) connect() error {
 		}
 
 		go func() {
-			pointMapKeys := make([]string, len(f.pointMap))
-			i := 0
-			for _, v := range f.pointMap {
-				pointMapKeys[i] = v.PointKey
-				i += 1
-			}
-			points.SqliteDB.Unscoped().Where("input_name = ?", f.Name()).Not("point_key", pointMapKeys).Delete(points.PointDefine{})
 			timeS := time.Now()
 			begin := points.SqliteDB.Begin()
+			if r := begin.Where("input_name = ?", f.Name()).Delete(points.PointDefine{}); r.Error != nil {
+				r.Rollback()
+				log.Error().Err(r.Error).Msg("Delete")
+				return
+			}
+
 			for k, v := range f.pointMap {
 				v.InputName = f.Name()
 				if v.Name == "" {
 					v.Name = k
 				}
 				v.PointKey = k
-				begin.Unscoped().Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", f.Name(), v.PointKey)
+				if r := begin.Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", f.Name(), v.PointKey); r.Error != nil {
+					r.Rollback()
+					log.Error().Err(r.Error).Msg("FirstOrCreate")
+					return
+				}
 			}
-			begin.Commit()
+			if r := begin.Commit(); r.Error != nil {
+				r.Rollback()
+				log.Error().Err(r.Error).Msg("UpdatePointMap")
+				return
+			}
 			log.Debug().Str("TimeSince", time.Since(timeS).String()).Msg("ftp.UpdatePointMap")
 			agent.Signal <- agent.PointDefineUpdateSignal{Input: f}
 		}()

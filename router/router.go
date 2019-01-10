@@ -141,8 +141,12 @@ func putPointMap(c *gin.Context) {
 
 	timeS := time.Now()
 	begin := points.SqliteDB.Begin()
-
-	begin.Unscoped().Where("input_name = ?", inputName).Not("point_key", pointMapKeys).Delete(points.PointDefine{})
+	if r := begin.Where("input_name = ?", inputName).Delete(points.PointDefine{}); r.Error != nil {
+		r.Rollback()
+		log.Error().Err(r.Error).Msg("Delete")
+		c.Error(r.Error)
+		return
+	}
 
 	for k, v := range pointMap {
 		v.InputName = inputName
@@ -159,18 +163,18 @@ func putPointMap(c *gin.Context) {
 				v.Extra[eK] = string(b)
 			}
 		}
-		if r := begin.Unscoped().Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", inputName, v.PointKey); r.Error != nil {
+		if r := begin.Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", inputName, v.PointKey); r.Error != nil {
+			r.Rollback()
 			log.Error().Err(r.Error).Msg("FirstOrCreate")
-			begin.Rollback()
 			c.Error(r.Error)
 			return
 		}
 	}
 
-	if result := begin.Commit(); result.Error != nil {
-		result.Rollback()
-		log.Error().Err(result.Error).Msg("UpdatePointMap")
-		c.Error(result.Error)
+	if r := begin.Commit(); r.Error != nil {
+		r.Rollback()
+		log.Error().Err(r.Error).Msg("UpdatePointMap")
+		c.Error(r.Error)
 		return
 	}
 	log.Info().Str("TimeSince", time.Since(timeS).String()).Msg("UpdatePointMap")
