@@ -29,16 +29,17 @@ type FTP struct {
 	PointParser parsers.Parser `json:"point_parser"`
 	DataParser  parsers.Parser `json:"data_parser"`
 
-	originName   string
-	connected    bool
-	done         chan struct{}
-	client       *ftp.ServerConn
-	quality      device_agent.Quality
-	basePath     string
-	pointMap     map[string]points.PointDefine
-	FieldPrefix  string `json:"field_prefix"`
-	FieldSuffix  string `json:"field_suffix"`
-	NameOverride string `json:"name_override"`
+	originName        string
+	connected         bool
+	done              chan struct{}
+	client            *ftp.ServerConn
+	quality           device_agent.Quality
+	basePath          string
+	pointMap          map[string]points.PointDefine
+	pointAddressToKey map[string]string
+	FieldPrefix       string `json:"field_prefix"`
+	FieldSuffix       string `json:"field_suffix"`
+	NameOverride      string `json:"name_override"`
 }
 
 func (f *FTP) SelfCheck() device_agent.Quality {
@@ -53,7 +54,12 @@ func (f *FTP) Name() string {
 }
 func (f *FTP) SetParser(parser map[string]parsers.Parser) {
 }
-func (f *FTP) SetPointMap(map[string]points.PointDefine) {}
+func (f *FTP) SetPointMap(pointMap map[string]points.PointDefine) {
+	f.pointMap = pointMap
+	for k, v := range pointMap {
+		f.pointAddressToKey[v.Address] = k
+	}
+}
 
 func (*FTP) FlushPointMap(acc device_agent.Accumulator) error {
 	return nil
@@ -100,7 +106,9 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 			log.Error().Err(e).Msg("dataReader.Read")
 			return e
 		}
-		fields[r[0]] = r[1]
+		if a, ok := f.pointAddressToKey[r[0]]; ok {
+			fields[a] = r[1]
+		}
 	}
 
 	return nil
@@ -224,8 +232,9 @@ func (f *FTP) connect() error {
 func init() {
 	inputs.Add("ftp", func() device_agent.Input {
 		return &FTP{
-			pointMap: make(map[string]points.PointDefine, 0),
-			quality:  device_agent.QualityGood,
+			pointMap:          make(map[string]points.PointDefine, 0),
+			pointAddressToKey: make(map[string]string),
+			quality:           device_agent.QualityGood,
 		}
 	})
 }

@@ -95,6 +95,7 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 		if e := recover(); e != nil {
 			acc.AddError(fmt.Errorf("%v", e))
 			md.quality = device_agent.QualityDisconnect
+			md.Stop()
 			trace := make([]byte, 2048)
 			runtime.Stack(trace, true)
 			log.Error().Msgf("Input [modbus] panicked: %s, Stack:\n%s\n", e, trace)
@@ -145,11 +146,6 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 		}
 	}
 	wg.Wait()
-
-	if m.quality == device_agent.QualityDisconnect {
-		m.Stop()
-		m.Start()
-	}
 
 	for k, l := range m.addrMapKeys {
 		if len(m.addrMapKeys[k]) > len(tmpDataMap[k]) {
