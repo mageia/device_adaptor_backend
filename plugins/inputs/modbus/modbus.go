@@ -117,6 +117,7 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 					r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 					if e != nil {
 						m.quality = device_agent.QualityDisconnect
+						m.Stop()
 						return
 					}
 
@@ -136,6 +137,7 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 					r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 					if e != nil {
 						m.quality = device_agent.QualityDisconnect
+						m.Stop()
 						return
 					}
 					for i := 0; i < len(r); i += 2 {
@@ -202,7 +204,6 @@ func (m *Modbus) Gather(acc device_agent.Accumulator) error {
 		if e != nil {
 			acc.AddError(e)
 			m.Stop()
-			m.Start()
 		}
 	}()
 
@@ -239,7 +240,6 @@ func (m *Modbus) OriginName() string {
 	return m.originName
 }
 func (m *Modbus) Start() error {
-	m.connected = false
 	_handler := modbus.NewTCPClientHandler(m.Address)
 	_handler.SlaveId = uint8(m.SlaveId)
 	_handler.IdleTimeout = defaultTimeout.Duration * 100
