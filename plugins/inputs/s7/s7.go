@@ -87,7 +87,7 @@ func (s *S7) gatherServer(acc device_agent.Accumulator) error {
 		if e := recover(); e != nil {
 			debug.PrintStack()
 			s7.quality = device_agent.QualityDisconnect
-			s7.connected = false
+			s7.Stop()
 			acc.AddError(fmt.Errorf("%v", e))
 		}
 		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
@@ -145,11 +145,10 @@ func (s *S7) gatherServer1(acc device_agent.Accumulator) error {
 		if e := recover(); e != nil {
 			debug.PrintStack()
 			s7.quality = device_agent.QualityDisconnect
-			s7.connected = false
+			s7.Stop()
 			acc.AddError(fmt.Errorf("%v", e))
 		}
 		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
-		//log.Debug().Interface("fields", fields).Msg("fields")
 	}(s)
 
 	for areaType, v := range s.addrMap1 {

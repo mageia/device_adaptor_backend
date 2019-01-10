@@ -31,7 +31,6 @@ type FTP struct {
 
 	originName        string
 	connected         bool
-	done              chan struct{}
 	client            *ftp.ServerConn
 	quality           device_agent.Quality
 	basePath          string
@@ -131,9 +130,13 @@ func (f *FTP) Gather(acc device_agent.Accumulator) error {
 }
 
 func (f *FTP) Start() error {
-	f.done = make(chan struct{})
-	f.connected = false
 	return f.connect()
+}
+func (f *FTP) Stop() {
+	if f.connected {
+		f.client.Quit()
+		f.connected = false
+	}
 }
 
 func (f *FTP) connect() error {

@@ -20,13 +20,10 @@ type Input interface {
 	Gather(Accumulator) error
 	SelfCheck() Quality
 	SetPointMap(map[string]points.PointDefine)
-	//FlushPointMap(Accumulator) error
 }
 
 type InteractiveInput interface {
-	Name() string
-	Gather(Accumulator) error
-	SetPointMap(map[string]points.PointDefine)
+	Input
 	Start() error
 	Stop()
 }
