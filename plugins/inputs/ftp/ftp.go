@@ -162,7 +162,7 @@ func (f *FTP) connect() error {
 	}
 
 	//解析并保存点表
-	if f.PointPath != "" {
+	if f.PointPath != "" && len(f.pointMap) == 0 {
 		if f.PointDecode == "" {
 			f.PointDecode = "utf-8"
 		}
