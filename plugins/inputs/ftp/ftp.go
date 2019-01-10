@@ -64,7 +64,6 @@ func (f *FTP) SetPointMap(pointMap map[string]points.PointDefine) {
 func (*FTP) FlushPointMap(acc device_agent.Accumulator) error {
 	return nil
 }
-
 func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator) error {
 	if f.DataPath == "" {
 		return errors.New("empty data_path")
@@ -198,6 +197,10 @@ func (f *FTP) connect() error {
 				return e
 			}
 			f.pointMap[r[0]] = points.PointDefine{Label: r[0], Name: r[1], Address: r[0]}
+		}
+
+		for k, v := range f.pointMap {
+			f.pointAddressToKey[v.Address] = k
 		}
 
 		go func() {
