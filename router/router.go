@@ -84,19 +84,6 @@ func getPointMap(c *gin.Context) {
 	pointMap := make(map[string]points.PointDefine)
 	points.SqliteDB.Where("input_name = ?", iC["name_override"]).Find(&pointArray)
 	for _, p := range pointArray {
-		for k, v := range p.Extra {
-			switch eV := v.(type) {
-			case string:
-				eVV := make(map[string]interface{})
-				if e := jsoniter.Unmarshal([]byte(eV), &eVV); e != nil {
-					p.Extra[k] = eV
-				} else {
-					p.Extra[k] = eVV
-				}
-			default:
-				p.Extra[k] = eV
-			}
-		}
 		pointMap[p.PointKey] = p
 	}
 
@@ -154,15 +141,6 @@ func putPointMap(c *gin.Context) {
 			v.Name = k
 		}
 		v.PointKey = k
-		for eK, eV := range v.Extra {
-			switch eVV := eV.(type) {
-			case string, []interface{}:
-				v.Extra[eK] = eVV
-			default:
-				b, _ := jsoniter.Marshal(eVV)
-				v.Extra[eK] = string(b)
-			}
-		}
 		if r := begin.Assign(v).FirstOrCreate(&v, "input_name = ? AND point_key = ?", inputName, v.PointKey); r.Error != nil {
 			r.Rollback()
 			log.Error().Err(r.Error).Msg("FirstOrCreate")
