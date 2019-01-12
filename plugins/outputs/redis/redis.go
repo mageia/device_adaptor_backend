@@ -122,7 +122,7 @@ func (r *Redis) Connect() error {
 		r.PointsKey = "points"
 	}
 	if r.PointsVersionKey == "" {
-		r.PointsVersionKey = "points.value"
+		r.PointsVersionKey = "points:version"
 	}
 	r.client.Del(r.PointsKey)
 	r.client.Del(r.PointsVersionKey)
