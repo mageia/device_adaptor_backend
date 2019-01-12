@@ -25,16 +25,15 @@ type S7 struct {
 	Rack    int    `json:"rack"`
 	Slot    int    `json:"slot"`
 
-	client    gos7.Client
-	_handler  *gos7.TCPClientHandler
-	buf       map[string][]byte
-	connected bool
-	pointMap  map[string]points.PointDefine
-	addrMap   map[string]map[string][][2]int
-	addrMap1  map[string]map[int]map[string]utils.OffsetBitPair
-	quality   device_agent.Quality
-	acc       device_agent.Accumulator
-
+	client     gos7.Client
+	handler    *gos7.TCPClientHandler
+	buf        map[string][]byte
+	connected  bool
+	pointMap   map[string]points.PointDefine
+	addrMapOld map[string]map[string][][2]int
+	addrMap    map[string]map[int]map[string]utils.OffsetBitPair
+	quality    device_agent.Quality
+	acc        device_agent.Accumulator
 	originName string
 
 	FieldPrefix  string `json:"field_prefix"`
@@ -49,7 +48,7 @@ func (s *S7) getParamList() map[string][3]int {
 	var result = make(map[string][3]int)
 	var endOffset = 4
 
-	for areaType, o := range s.addrMap {
+	for areaType, o := range s.addrMapOld {
 		if strings.HasPrefix(strings.ToLower(areaType), "db") {
 			areaNumber, _ = strconv.Atoi(areaType[2:])
 			for k, v := range o {
@@ -78,7 +77,7 @@ func (s *S7) getParamList() map[string][3]int {
 
 	return result
 }
-func (s *S7) gatherServer(acc device_agent.Accumulator) error {
+func (s *S7) gatherServerOld(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	s.quality = device_agent.QualityGood
@@ -107,7 +106,7 @@ func (s *S7) gatherServer(acc device_agent.Accumulator) error {
 		}
 	}
 
-	for area, o := range s.addrMap {
+	for area, o := range s.addrMapOld {
 		if strings.HasPrefix(strings.ToLower(area), "db") {
 			for dataType, addrList := range o {
 				for _, addr := range addrList {
@@ -136,7 +135,7 @@ func (s *S7) gatherServer(acc device_agent.Accumulator) error {
 
 	return nil
 }
-func (s *S7) gatherServer1(acc device_agent.Accumulator) error {
+func (s *S7) gatherServer(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	s.quality = device_agent.QualityGood
@@ -151,7 +150,7 @@ func (s *S7) gatherServer1(acc device_agent.Accumulator) error {
 		acc.AddFields(s7.Name(), fields, tags, s7.SelfCheck())
 	}(s)
 
-	for areaType, v := range s.addrMap1 {
+	for areaType, v := range s.addrMap {
 		for areaIndex, vv := range v {
 			for valueType, vvv := range vv {
 				sort.Sort(vvv)
@@ -161,9 +160,7 @@ func (s *S7) gatherServer1(acc device_agent.Accumulator) error {
 				endAddr := vvv[len(vvv)-1][0].(int)
 
 				switch strings.ToLower(valueType) {
-				case "":
-				case "dbb", "b":
-				case "dbx", "x":
+				case "", "dbb", "b", "dbx", "x":
 					readOffset = 1
 				case "dbd", "d":
 					readOffset = 4
@@ -172,38 +169,49 @@ func (s *S7) gatherServer1(acc device_agent.Accumulator) error {
 				}
 
 				bufKey := fmt.Sprintf("%s_%d_%s", areaType, areaIndex, valueType)
-				if s.buf[bufKey] == nil || len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
+				if len(s.buf[bufKey]) != endAddr+readOffset-startAddr {
 					s.buf[bufKey] = make([]byte, endAddr+readOffset-startAddr)
 				}
 
+				//log.Debug().Str("bufKey", bufKey).Int("startAddr", startAddr).Int("endAddr", endAddr).Int("readOffset", readOffset).Msg("parse")
 				switch strings.ToLower(areaType) {
+				case "i":
+				case "q":
 				case "m":
-					s.client.AGReadMB(startAddr, endAddr-startAddr+readOffset, s.buf[bufKey])
+					if e := s.client.AGReadMB(startAddr, endAddr-startAddr+readOffset, s.buf[bufKey]); e != nil {
+						log.Error().Err(e).Msg("AGReadMB")
+						return e
+					}
 				case "db":
-					s.client.AGReadDB(areaIndex, startAddr, endAddr+readOffset-startAddr, s.buf[bufKey])
+					if e := s.client.AGReadDB(areaIndex, startAddr, endAddr+readOffset-startAddr, s.buf[bufKey]); e != nil {
+						log.Error().Err(e).Msg("AGReadDB")
+						return e
+					}
 				}
 
 				for _, offsetBitPair := range vvv {
 					valueByteArr := s.buf[bufKey][offsetBitPair[0].(int)-startAddr : offsetBitPair[0].(int)-startAddr+readOffset]
-
+					//log.Debug().Bytes("buf", s.buf[bufKey]).Bytes("valueByteArr", valueByteArr).Msg("valueByteArr")
 					switch strings.ToLower(valueType) {
-					case "":
-					case "dbb", "b":
-					case "dbx", "x":
+					case "", "dbx", "x":
 						fields[offsetBitPair[2].(string)] = utils.GetBit(valueByteArr, uint(offsetBitPair[1].(int))) == 1
+					case "dbb", "b":
+						var val uint8
+						binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &val)
+						fields[offsetBitPair[2].(string)] = val
+					case "dbw", "w":
+						fields[offsetBitPair[2].(string)] = binary.BigEndian.Uint16(valueByteArr)
 					case "dbd", "d":
 						switch s.pointMap[offsetBitPair[2].(string)].PointType {
 						case points.PointInteger:
-							var v uint32
-							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
-							fields[offsetBitPair[2].(string)] = v
+							var val uint32
+							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &val)
+							fields[offsetBitPair[2].(string)] = val
 						default:
-							var v float32
-							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &v)
-							fields[offsetBitPair[2].(string)] = v
+							var val float32
+							binary.Read(bytes.NewReader(valueByteArr), binary.BigEndian, &val)
+							fields[offsetBitPair[2].(string)] = val
 						}
-					case "dbw", "w":
-						fields[offsetBitPair[2].(string)] = binary.BigEndian.Uint16(valueByteArr)
 					}
 				}
 			}
@@ -232,10 +240,9 @@ func (s *S7) Gather(acc device_agent.Accumulator) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if e := s.gatherServer1(acc); e != nil {
+		if e := s.gatherServer(acc); e != nil {
 			acc.AddError(e)
 			s.Stop()
-			s.Start()
 		}
 	}()
 	wg.Wait()
@@ -245,7 +252,8 @@ func (s *S7) Start() error {
 	handler := gos7.NewTCPClientHandler(s.Address, s.Rack, s.Slot)
 	handler.IdleTimeout = defaultTimeout.Duration * 100
 	handler.Timeout = defaultTimeout.Duration
-	s._handler = handler
+	//handler.Logger = log2.New(os.Stdout, "tcp: ", log2.LstdFlags)
+	s.handler = handler
 
 	if e := handler.Connect(); e != nil {
 		return e
@@ -256,7 +264,7 @@ func (s *S7) Start() error {
 }
 func (s *S7) Stop() {
 	if s.connected {
-		s._handler.Close()
+		s.handler.Close()
 		s.connected = false
 	}
 }
@@ -290,14 +298,14 @@ func (s *S7) parseAddress(pointKey, addr string) bool {
 		bit = -1
 	}
 
-	if _, ok := s.addrMap1[areaType]; !ok {
-		s.addrMap1[areaType] = make(map[int]map[string]utils.OffsetBitPair)
+	if _, ok := s.addrMap[areaType]; !ok {
+		s.addrMap[areaType] = make(map[int]map[string]utils.OffsetBitPair)
 	}
-	if _, ok := s.addrMap1[areaType][areaIndex]; !ok {
-		s.addrMap1[areaType][areaIndex] = make(map[string]utils.OffsetBitPair)
+	if _, ok := s.addrMap[areaType][areaIndex]; !ok {
+		s.addrMap[areaType][areaIndex] = make(map[string]utils.OffsetBitPair)
 	}
 
-	s.addrMap1[areaType][areaIndex][valueType] = append(s.addrMap1[areaType][areaIndex][valueType], [3]interface{}{offset, bit, pointKey})
+	s.addrMap[areaType][areaIndex][valueType] = append(s.addrMap[areaType][areaIndex][valueType], [3]interface{}{offset, bit, pointKey})
 
 	return true
 }
@@ -379,9 +387,9 @@ func init() {
 		return &S7{
 			originName: "s7",
 			buf:        make(map[string][]byte),
-			addrMap:    make(map[string]map[string][][2]int),
-			addrMap1:   make(map[string]map[int]map[string]utils.OffsetBitPair),
-			quality:    device_agent.QualityGood,
+			//addrMapOld: make(map[string]map[string][][2]int),
+			addrMap: make(map[string]map[int]map[string]utils.OffsetBitPair),
+			quality: device_agent.QualityGood,
 		}
 	})
 }

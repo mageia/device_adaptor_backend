@@ -2,11 +2,11 @@ package points
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"log"
+	"github.com/json-iterator/go"
+	"github.com/rs/zerolog/log"
 	"math"
 	"os"
 	"path"
@@ -37,7 +37,7 @@ type PointDefine struct {
 	Option    HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text"`
 	Control   HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text"`
 	Tags      ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text"`
-	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`	//网关在存储extra时可能会序列化，使用时请注意
+	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"` //网关在存储extra时可能会序列化，使用时请注意
 }
 
 const (
@@ -51,16 +51,16 @@ const (
 func (hs *HashStringType) Scan(val interface{}) error {
 	switch val := val.(type) {
 	case string:
-		return json.Unmarshal([]byte(val), hs)
+		return jsoniter.Unmarshal([]byte(val), hs)
 	case []byte:
-		return json.Unmarshal(val, hs)
+		return jsoniter.Unmarshal(val, hs)
 	default:
 		return errors.New("not support")
 	}
 	return nil
 }
 func (hs HashStringType) Value() (driver.Value, error) {
-	bytes, err := json.Marshal(hs)
+	bytes, err := jsoniter.Marshal(hs)
 	return string(bytes), err
 }
 
@@ -84,17 +84,16 @@ func (as ArrayStringType) Value() (driver.Value, error) {
 func (hs *HashMapType) Scan(val interface{}) error {
 	switch val := val.(type) {
 	case string:
-		return json.Unmarshal([]byte(val), hs)
+		return jsoniter.Unmarshal([]byte(val), hs)
 	case []byte:
-		return json.Unmarshal(val, hs)
+		return jsoniter.Unmarshal(val, hs)
 	default:
 		return errors.New("not support")
 	}
 	return nil
 }
 func (hs HashMapType) Value() (driver.Value, error) {
-	bytes, err := json.Marshal(hs)
-	return string(bytes), err
+	return jsoniter.Marshal(hs)
 }
 
 func init() {
@@ -113,8 +112,7 @@ func init() {
 
 	SqliteDB, err = gorm.Open("sqlite3", dbPath)
 	if err != nil {
-		log.Printf("failed to connect database: %v", err)
-		//panic("failed to connect database")
+		log.Error().Err(err).Msg("Connect database")
 	}
 
 	SqliteDB.LogMode(false)
