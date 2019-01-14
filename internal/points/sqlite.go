@@ -37,11 +37,11 @@ type PointDefine struct {
 	Option    HashStringType  `json:"option,omitempty" yaml:"option" gorm:"type:text"`
 	Control   HashStringType  `json:"control,omitempty" yaml:"control" gorm:"type:text"`
 	Tags      ArrayStringType `json:"tags,omitempty" yaml:"tags" gorm:"type:text"`
-	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"`	//网关在存储extra时可能会序列化，使用时请注意
+	Extra     HashMapType     `json:"extra,omitempty" yaml:"extra" gorm:"type:text"` //网关在存储extra时可能会序列化，使用时请注意
 }
 
 const (
-	PointAnalog PointType = iota
+	PointAnalog  PointType = iota
 	PointDigital
 	PointInteger
 	PointString
@@ -100,9 +100,13 @@ func (hs HashMapType) Value() (driver.Value, error) {
 func init() {
 	var err error
 	dbPath := "point_map.db"
-
+	
 	if runtime.GOOS == "linux" {
-		dbPath = "/var/device_adaptor/"
+		if runtime.GOARCH == "arm" {
+			dbPath = "./"
+		} else {
+			dbPath = "/var/device_adaptor/"
+		}
 		if _, e := os.Stat(dbPath); e != nil {
 			if os.IsNotExist(err) {
 				os.Mkdir(dbPath, 0777)
