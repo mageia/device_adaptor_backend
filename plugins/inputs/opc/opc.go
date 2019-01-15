@@ -217,7 +217,7 @@ func (t *OPC) Start() error {
 	}
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 1)
+		ticker := time.NewTicker(time.Second * 30)
 		for {
 			select {
 			case <-ticker.C:
