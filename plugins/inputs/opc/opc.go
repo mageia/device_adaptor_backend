@@ -150,6 +150,8 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 		return e
 	}
 
+	//log.Debug().Interface("tmpResp", tmpResp).Msg("tmpResp")
+
 	if !tmpResp.Success {
 		if tmpResp.Cmd == "real_time_data" {
 			go t.sendCommand("init", nil)
@@ -215,7 +217,7 @@ func (t *OPC) Start() error {
 	}
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 60)
+		ticker := time.NewTicker(time.Second * 1)
 		for {
 			select {
 			case <-ticker.C:
