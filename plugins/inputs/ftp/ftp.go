@@ -87,6 +87,7 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 	rData, e := f.client.Retr(_dataEncode.ConvertString(path.Join(f.basePath, f.DataPath)))
 	if e != nil {
 		log.Error().Err(e).Str("data_path", path.Join(f.basePath, f.DataPath)).Msg("Retrieve")
+		//TODO: process broken pipe
 		return e
 	}
 	defer rData.Close()
@@ -122,7 +123,10 @@ func (f *FTP) Gather(acc device_agent.Accumulator) error {
 	wg.Add(1)
 	go func(client *ftp.ServerConn) {
 		defer wg.Done()
-		acc.AddError(f.gatherServer(f.client, acc))
+		if e := f.gatherServer(f.client, acc); e != nil {
+			acc.AddError(e)
+			f.Stop()
+		}
 	}(f.client)
 	wg.Wait()
 
