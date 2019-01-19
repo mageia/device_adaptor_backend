@@ -177,7 +177,7 @@ func (f *FTP) connect() error {
 
 	//解析并保存点表
 	if f.PointPath != "" && len(f.pointMap) == 0 {
-		rDev, e := c.Retr(mahonia.NewDecoder(f.PointDecode).ConvertString(path.Join(f.basePath, f.PointPath)))
+		rDev, e := c.Retr(mahonia.NewEncoder(f.PointDecode).ConvertString(path.Join(f.basePath, f.PointPath)))
 		if e != nil {
 			log.Error().Err(e).Str("pointPath", path.Join(f.basePath, f.PointPath)).Msg("Retrieve")
 			return e
@@ -185,7 +185,7 @@ func (f *FTP) connect() error {
 		defer rDev.Close()
 
 		//TODO: csv parser
-		devReader := csv.NewReader( mahonia.NewDecoder(f.PointDecode).NewReader(rDev))
+		devReader := csv.NewReader(mahonia.NewDecoder(f.PointDecode).NewReader(rDev))
 		devReader.FieldsPerRecord = -1
 		devReader.TrimLeadingSpace = true
 
