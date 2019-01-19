@@ -69,9 +69,11 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 				fields[k] = rand.Intn(max+1-min) + min
 			} else {
 				if v.Option != nil {
-					keyList := make([]string, 0, len(v.Option))
+					keyList := make([]int, 0, len(v.Option))
 					for key := range v.Option {
-						keyList = append(keyList, key)
+						if idx, err := strconv.Atoi(key); err == nil {
+							keyList = append(keyList, idx)
+						}
 					}
 					fields[k] = keyList[rand.Intn(len(keyList))]
 				} else {
