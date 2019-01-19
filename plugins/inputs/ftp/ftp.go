@@ -82,18 +82,15 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 		acc.AddFields(ftp.Name(), fields, nil, ftp.SelfCheck())
 	}(f)
 
-	_dataEncode := mahonia.NewDecoder(f.PointDecode)
-	_dataDecode := mahonia.NewDecoder(f.PointDecode)
-	rData, e := f.client.Retr(_dataEncode.ConvertString(path.Join(f.basePath, f.DataPath)))
+	rData, e := f.client.Retr(mahonia.NewEncoder(f.DataDecode).ConvertString(path.Join(f.basePath, f.DataPath)))
 	if e != nil {
-		log.Error().Err(e).Str("data_path", path.Join(f.basePath, f.DataPath)).Msg("Retrieve")
-		//TODO: process broken pipe
+		log.Error().Err(e).Str("code", f.DataDecode).Str("data_path", path.Join(f.basePath, f.DataPath)).Msg("Retrieve")
 		return e
 	}
 	defer rData.Close()
 
 	//TODO: csv parser
-	dataReader := csv.NewReader(_dataDecode.NewReader(rData))
+	dataReader := csv.NewReader(mahonia.NewDecoder(f.DataDecode).NewReader(rData))
 	dataReader.FieldsPerRecord = -1
 	dataReader.TrimLeadingSpace = true
 
@@ -164,12 +161,15 @@ func (f *FTP) connect() error {
 		return e
 	}
 
+	if f.PointDecode == "" {
+		f.PointDecode = "utf-8"
+	}
+
 	//校验并保存Path
 	if _url.Path != "" {
 		f.basePath = _url.Path
-
-		if e := c.ChangeDir(_url.Path); e != nil {
-			log.Error().Err(e).Msg("ChangeDir")
+		if e := c.ChangeDir(mahonia.NewEncoder(f.PointDecode).ConvertString(_url.Path)); e != nil {
+			log.Error().Err(e).Str("path", _url.Path).Msg("ChangeDir")
 			c.Logout()
 			return e
 		}
@@ -177,13 +177,7 @@ func (f *FTP) connect() error {
 
 	//解析并保存点表
 	if f.PointPath != "" && len(f.pointMap) == 0 {
-		if f.PointDecode == "" {
-			f.PointDecode = "utf-8"
-		}
-
-		_devEncode := mahonia.NewDecoder(f.PointDecode)
-		_devDecode := mahonia.NewDecoder(f.PointDecode)
-		rDev, e := c.Retr(_devEncode.ConvertString(path.Join(f.basePath, f.PointPath)))
+		rDev, e := c.Retr(mahonia.NewDecoder(f.PointDecode).ConvertString(path.Join(f.basePath, f.PointPath)))
 		if e != nil {
 			log.Error().Err(e).Str("pointPath", path.Join(f.basePath, f.PointPath)).Msg("Retrieve")
 			return e
@@ -191,7 +185,7 @@ func (f *FTP) connect() error {
 		defer rDev.Close()
 
 		//TODO: csv parser
-		devReader := csv.NewReader(_devDecode.NewReader(rDev))
+		devReader := csv.NewReader( mahonia.NewDecoder(f.PointDecode).NewReader(rDev))
 		devReader.FieldsPerRecord = -1
 		devReader.TrimLeadingSpace = true
 
