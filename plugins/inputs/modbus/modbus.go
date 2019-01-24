@@ -178,7 +178,7 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 							}
 						} else {
 							if key, ok := m._pointAddressToKey[fmt.Sprintf("%s.%d", pA, bit)]; ok {
-								fields[m.FieldPrefix+key+m.FieldSuffix] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1 == 1
+								fields[m.FieldPrefix+key+m.FieldSuffix] = (tmpDataMap[k][i+x4].(int16)>>uint(bit))&1
 							}
 						}
 					}
