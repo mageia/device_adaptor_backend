@@ -174,6 +174,12 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 					switch vf := v.(type) {
 					case float64:
 						fields[pKey] = utils.Round(vf, 6)
+					case bool:
+						if vf {
+							fields[pKey] = 1
+						} else {
+							fields[pKey] = 0
+						}
 					default:
 						fields[pKey] = v
 					}
