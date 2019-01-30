@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"path"
 	"runtime/debug"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -103,7 +104,11 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 			return e
 		}
 		if a, ok := f.pointAddressToKey[r[0]]; ok {
-			fields[a] = r[1]
+			if num, err := strconv.Atoi(r[1]); err == nil {
+				fields[a] = num
+			} else {
+				fields[a] = r[1]
+			}
 		}
 	}
 
