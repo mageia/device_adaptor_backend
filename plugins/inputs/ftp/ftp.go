@@ -106,6 +106,8 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 		if a, ok := f.pointAddressToKey[r[0]]; ok {
 			if num, err := strconv.Atoi(r[1]); err == nil {
 				fields[a] = num
+			} else if num, err := strconv.ParseFloat(r[1], 64); err == nil {
+				fields[a] = num
 			} else {
 				fields[a] = r[1]
 			}
