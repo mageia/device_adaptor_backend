@@ -68,7 +68,7 @@ func (f *Fake) Gather(acc device_agent.Accumulator) error {
 				min, _ := strconv.Atoi(v.Extra["fakemin"].(string))
 				fields[k] = rand.Intn(max+1-min) + min
 			} else {
-				if v.Option != nil {
+				if v.Option != nil && len(v.Option) > 0 {
 					keyList := make([]int, 0, len(v.Option))
 					for key := range v.Option {
 						if idx, err := strconv.Atoi(key); err == nil {
