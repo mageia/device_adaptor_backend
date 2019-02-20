@@ -88,7 +88,8 @@ func (m *Modbus) parseAddress(address string) (area, base, bit string, err error
 func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
-	tmpDataMap := make(map[string][]interface{})
+	rawData := make(map[string][][]interface{})
+	rawDataMux := sync.Mutex{}
 	m.quality = device_agent.QualityGood
 
 	defer func(md *Modbus) {
@@ -109,9 +110,10 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 		switch k {
 		case "0", "1":
 			pList := getParamList(m.addrMapKeys[k], HoleWidth, 1500)
+			rawData[k] = make([][]interface{}, len(pList))
 			wg.Add(len(pList))
-			for _, param := range pList {
-				go func(k string, param [2]int) {
+			for taskIdx, param := range pList {
+				go func(taskIdx int, k string, param [2]int) {
 					defer wg.Done()
 
 					r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
@@ -121,17 +123,20 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 						return
 					}
 
+					rawDataMux.Lock()
 					for i := 0; i < utils.MinInt(len(r)*8, param[1]); i++ {
-						tmpDataMap[k] = append(tmpDataMap[k], utils.GetBit(r, uint(i)))
+						rawData[k][taskIdx] = append(rawData[k][taskIdx], utils.GetBit(r, uint(i)))
 					}
-				}(k, param)
+					rawDataMux.Unlock()
+				}(taskIdx, k, param)
 			}
 
 		case "4":
 			pList := getParamList(m.addrMapKeys[k], HoleWidth, 100)
+			rawData[k] = make([][]interface{}, len(pList))
 			wg.Add(len(pList))
-			for _, param := range pList {
-				go func(k string, param [2]int) {
+			for taskIdx, param := range pList {
+				go func(taskIdx int, k string, param [2]int) {
 					defer wg.Done()
 
 					r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
@@ -140,14 +145,23 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 						m.Stop()
 						return
 					}
+					rawDataMux.Lock()
 					for i := 0; i < len(r); i += 2 {
-						tmpDataMap[k] = append(tmpDataMap[k], int16(binary.BigEndian.Uint16(r[i:i+2])))
+						rawData[k][taskIdx] = append(rawData[k][taskIdx], int16(binary.BigEndian.Uint16(r[i:i+2])))
 					}
-				}(k, param)
+					rawDataMux.Unlock()
+				}(taskIdx, k, param)
 			}
 		}
 	}
+
 	wg.Wait()
+	tmpDataMap := make(map[string][]interface{})
+	for k := range rawData {
+		for _, taskResult := range rawData[k] {
+			tmpDataMap[k] = append(tmpDataMap[k], taskResult...)
+		}
+	}
 
 	for k, l := range m.addrMapKeys {
 		if len(m.addrMapKeys[k]) > len(tmpDataMap[k]) {
