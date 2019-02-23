@@ -79,6 +79,8 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 			ftp.quality = device_agent.QualityDisconnect
 			ftp.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
+		} else {
+			ftp.quality = device_agent.QualityGood
 		}
 		acc.AddFields(ftp.Name(), fields, nil, ftp.SelfCheck())
 	}(f)
