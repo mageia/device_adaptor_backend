@@ -118,6 +118,8 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 
 					r, e := m.client.ReadDiscreteInputs(uint16(param[0]), uint16(param[1]))
 					if e != nil {
+						log.Error().Err(e)
+
 						m.quality = device_agent.QualityDisconnect
 						m.Stop()
 						return
@@ -141,6 +143,8 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 
 					r, e := m.client.ReadHoldingRegisters(uint16(param[0]), uint16(param[1]))
 					if e != nil {
+						log.Error().Err(e)
+
 						m.quality = device_agent.QualityDisconnect
 						m.Stop()
 						return
