@@ -10,4 +10,5 @@ import (
 	_ "device_adaptor/plugins/inputs/opc"
 	_ "device_adaptor/plugins/inputs/s7"
 	_ "device_adaptor/plugins/inputs/serial"
+	_ "device_adaptor/plugins/inputs/snmp"
 )

@@ -104,6 +104,13 @@ var InputSample = map[string]map[string]ConfigSample{
 		"basic_username": ConfigSample{"basic_username", "认证账户", "", nil, "input", 7},
 		"basic_password": ConfigSample{"basic_password", "认证密码", "", nil, "input", 8},
 	},
+	"snmp": {
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "snmp", nil, "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "snmp", nil, "input", 2},
+		"address":       ConfigSample{"address", "数据源地址", "192.168.123.253:161", nil, "input", 3},
+		"version":       ConfigSample{"version", "版本", "v2c", map[string]interface{}{"v1": 0, "v2c": 1, "v3": 2}, "select", 3},
+		"interval":      ConfigSample{"interval", "采集周期", "3s", nil, "combine", 20},
+	},
 }
 var OutputSample = map[string]map[string]ConfigSample{
 	"_base": {
@@ -128,8 +135,8 @@ var OutputSample = map[string]map[string]ConfigSample{
 		"exchange_name": ConfigSample{"exchange_name", "交换器名称", "red_gateway", nil, "input", 5},
 	},
 	"mqtt": {
-		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "mqtt", nil, "select", 1},
-		"url_address":   ConfigSample{"url_address", "地址URL", "mqtt://guest:guest@localhost:1883/", nil, "input", 2},
+		"plugin_name": ConfigSample{"plugin_name", "插件名称", "mqtt", nil, "select", 1},
+		"url_address": ConfigSample{"url_address", "地址URL", "mqtt://guest:guest@localhost:1883/", nil, "input", 2},
 	},
 }
 var ControllerSample = map[string]map[string]ConfigSample{

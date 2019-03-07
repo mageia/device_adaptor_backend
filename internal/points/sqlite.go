@@ -57,7 +57,6 @@ func (hs *HashStringType) Scan(val interface{}) error {
 	default:
 		return errors.New("not support")
 	}
-	return nil
 }
 func (hs HashStringType) Value() (driver.Value, error) {
 	bytes, err := jsoniter.Marshal(hs)
@@ -75,7 +74,6 @@ func (as *ArrayStringType) Scan(val interface{}) error {
 	default:
 		return errors.New("not support")
 	}
-	return nil
 }
 func (as ArrayStringType) Value() (driver.Value, error) {
 	return []byte(strings.Join(as, ",")), nil
@@ -90,7 +88,6 @@ func (hs *HashMapType) Scan(val interface{}) error {
 	default:
 		return errors.New("not support")
 	}
-	return nil
 }
 func (hs HashMapType) Value() (driver.Value, error) {
 	return jsoniter.Marshal(hs)

@@ -172,7 +172,7 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 			for k, v := range r {
 				if pKey, ok := t._pointAddressToKey[k]; ok {
 					switch vf := v.(type) {
-					case float64:
+					case float64:	//TODO: float32
 						fields[pKey] = utils.Round(vf, 6)
 					case bool:
 						if vf {

@@ -249,8 +249,6 @@ func (a *Agent) flusher(inMetricC chan device_agent.Metric, outMetricC chan devi
 			}()
 		}
 	}
-
-	return nil
 }
 
 func (a *Agent) Run() error {
