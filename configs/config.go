@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
@@ -185,12 +186,10 @@ func GetConfigContent() []byte {
 	}
 
 	result := gjson.GetManyBytes(CurrentConfig, "agent", "inputs", "outputs", "controllers")
-	json.Unmarshal([]byte(result[0].Raw), &MemoryConfig.Agent)
-	json.Unmarshal([]byte(result[1].Raw), &MemoryConfig.Inputs)
-	json.Unmarshal([]byte(result[2].Raw), &MemoryConfig.Outputs)
-	json.Unmarshal([]byte(result[3].Raw), &MemoryConfig.Controllers)
-
-	log.Debug().Interface("inputs", string(result[1].Raw)).Msg("inputs.bytes")
+	jsoniter.Unmarshal([]byte(result[0].Raw), &MemoryConfig.Agent)
+	jsoniter.Unmarshal([]byte(result[1].Raw), &MemoryConfig.Inputs)
+	jsoniter.Unmarshal([]byte(result[2].Raw), &MemoryConfig.Outputs)
+	jsoniter.Unmarshal([]byte(result[3].Raw), &MemoryConfig.Controllers)
 
 	ioutil.WriteFile(jsonConfigPath, CurrentConfig, 0644)
 

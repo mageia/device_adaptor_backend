@@ -299,8 +299,6 @@ func (a *Agent) Run() error {
 		log.Info().Str("plugin", o.Name).Msg("output start success")
 	}
 
-	log.Debug().Interface("inputs", a.Config.Inputs).Msg("Inputs")
-
 	wg.Add(len(a.Config.Inputs))
 	for _, input := range a.Config.Inputs {
 		switch p := input.Input.(type) {
