@@ -41,7 +41,7 @@ type PointDefine struct {
 }
 
 const (
-	PointAnalog PointType = iota
+	PointAnalog  PointType = iota
 	PointDigital
 	PointInteger
 	PointString
@@ -96,9 +96,13 @@ func (hs HashMapType) Value() (driver.Value, error) {
 func init() {
 	var err error
 	dbPath := "point_map.db"
-
+	
 	if runtime.GOOS == "linux" {
-		dbPath = "/var/device_adaptor/"
+		if runtime.GOARCH == "arm" {
+			dbPath = "./"
+		} else {
+			dbPath = "/var/device_adaptor/"
+		}
 		if _, e := os.Stat(dbPath); e != nil {
 			if os.IsNotExist(err) {
 				os.Mkdir(dbPath, 0777)

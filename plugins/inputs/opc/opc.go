@@ -174,6 +174,12 @@ func (t *OPC) sendCommand(cmdId string, param interface{}) error {
 					switch vf := v.(type) {
 					case float64:	//TODO: float32
 						fields[pKey] = utils.Round(vf, 6)
+					case bool:
+						if vf {
+							fields[pKey] = 1
+						} else {
+							fields[pKey] = 0
+						}
 					default:
 						fields[pKey] = v
 					}
@@ -217,7 +223,7 @@ func (t *OPC) Start() error {
 	}
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 1)
+		ticker := time.NewTicker(time.Second * 30)
 		for {
 			select {
 			case <-ticker.C:

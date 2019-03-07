@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"path"
 	"runtime/debug"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -103,7 +104,13 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 			return e
 		}
 		if a, ok := f.pointAddressToKey[r[0]]; ok {
-			fields[a] = r[1]
+			if num, err := strconv.Atoi(r[1]); err == nil {
+				fields[a] = num
+			} else if num, err := strconv.ParseFloat(r[1], 64); err == nil {
+				fields[a] = num
+			} else {
+				fields[a] = r[1]
+			}
 		}
 	}
 
@@ -174,7 +181,7 @@ func (f *FTP) Start() error {
 
 	//解析并保存点表
 	if f.PointPath != "" && len(f.pointMap) == 0 {
-		rDev, e := c.Retr(mahonia.NewDecoder(f.PointDecode).ConvertString(path.Join(f.basePath, f.PointPath)))
+		rDev, e := c.Retr(mahonia.NewEncoder(f.PointDecode).ConvertString(path.Join(f.basePath, f.PointPath)))
 		if e != nil {
 			log.Error().Err(e).Str("pointPath", path.Join(f.basePath, f.PointPath)).Msg("Retrieve")
 			return e

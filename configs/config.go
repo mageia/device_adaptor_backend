@@ -199,6 +199,10 @@ func GetConfigContent() []byte {
 
 func init() {
 	if runtime.GOOS == "linux" {
-		jsonConfigPath = "/var/device_adaptor/device_adaptor.json"
+		if runtime.GOARCH == "arm" {
+			jsonConfigPath = "./device_adaptor.json"
+		} else {
+			jsonConfigPath = "/var/device_adaptor/device_adaptor.json"
+		}
 	}
 }
