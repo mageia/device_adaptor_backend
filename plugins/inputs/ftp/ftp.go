@@ -112,7 +112,7 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 
 func (f *FTP) Gather(acc device_agent.Accumulator) error {
 	if !f.connected {
-		if e := f.connect(); e != nil {
+		if e := f.Start(); e != nil {
 			return e
 		}
 	}
@@ -130,9 +130,6 @@ func (f *FTP) Gather(acc device_agent.Accumulator) error {
 	return nil
 }
 
-func (f *FTP) Start() error {
-	return f.connect()
-}
 func (f *FTP) Stop() {
 	if f.connected {
 		f.client.Quit()
@@ -140,7 +137,7 @@ func (f *FTP) Stop() {
 	}
 }
 
-func (f *FTP) connect() error {
+func (f *FTP) Start() error {
 	_url, e := url.Parse(f.Address)
 	if e != nil || _url.Scheme != "ftp" {
 		return e
@@ -185,7 +182,7 @@ func (f *FTP) connect() error {
 		defer rDev.Close()
 
 		//TODO: csv parser
-		devReader := csv.NewReader( mahonia.NewDecoder(f.PointDecode).NewReader(rDev))
+		devReader := csv.NewReader(mahonia.NewDecoder(f.PointDecode).NewReader(rDev))
 		devReader.FieldsPerRecord = -1
 		devReader.TrimLeadingSpace = true
 

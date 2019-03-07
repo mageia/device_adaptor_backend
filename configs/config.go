@@ -190,6 +190,8 @@ func GetConfigContent() []byte {
 	json.Unmarshal([]byte(result[2].Raw), &MemoryConfig.Outputs)
 	json.Unmarshal([]byte(result[3].Raw), &MemoryConfig.Controllers)
 
+	log.Debug().Interface("inputs", string(result[1].Raw)).Msg("inputs.bytes")
+
 	ioutil.WriteFile(jsonConfigPath, CurrentConfig, 0644)
 
 	return CurrentConfig

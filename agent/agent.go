@@ -249,8 +249,6 @@ func (a *Agent) flusher(inMetricC chan device_agent.Metric, outMetricC chan devi
 			}()
 		}
 	}
-
-	return nil
 }
 
 func (a *Agent) Run() error {
@@ -300,6 +298,8 @@ func (a *Agent) Run() error {
 		}
 		log.Info().Str("plugin", o.Name).Msg("output start success")
 	}
+
+	log.Debug().Interface("inputs", a.Config.Inputs).Msg("Inputs")
 
 	wg.Add(len(a.Config.Inputs))
 	for _, input := range a.Config.Inputs {

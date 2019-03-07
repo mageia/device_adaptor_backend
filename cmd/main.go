@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/yuin/gopher-lua"
 	"net/http"
 	"os"
 	"runtime"
@@ -76,4 +77,10 @@ func main() {
 			}
 		}
 	}
+}
+
+func init() {
+	L := lua.NewState()
+	defer L.Close()
+	L.DoString(`print("reg-gateway lua test")`)
 }
