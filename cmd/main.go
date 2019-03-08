@@ -20,15 +20,6 @@ import (
 )
 
 func main() {
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{
-		Out:        os.Stderr,
-		TimeFormat: time.RFC3339,
-		FormatCaller: func(i interface{}) string {
-			l := strings.Split(i.(string), "/")
-			return "[" + fmt.Sprintf("%-20s", l[len(l)-1]) + "]"
-		},
-	}).With().Caller().Timestamp().Logger()
-
 	go func() {
 		address := ":8080"
 		if runtime.GOOS == "linux" {
@@ -80,7 +71,16 @@ func main() {
 }
 
 func init() {
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: time.RFC3339,
+		FormatCaller: func(i interface{}) string {
+			l := strings.Split(i.(string), "/")
+			return "[" + fmt.Sprintf("%-20s", l[len(l)-1]) + "]"
+		},
+	}).With().Caller().Timestamp().Logger()
+
 	L := lua.NewState()
 	defer L.Close()
-	L.DoString(`print("reg-gateway lua test")`)
+	//L.DoString(`print("reg-gateway lua test")`)
 }
