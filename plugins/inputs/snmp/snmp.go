@@ -23,6 +23,9 @@ type S struct {
 	originName   string
 	quality      device_agent.Quality
 	pointMap     map[string]points.PointDefine
+	oidMap       map[string]*snmpgo.Oid
+	oidList      []*snmpgo.Oid
+	oidBulkList  []*snmpgo.Oid
 }
 
 func (s *S) Name() string {
@@ -50,22 +53,29 @@ func (s *S) Gather(acc device_agent.Accumulator) error {
 		acc.AddFields(snmp.Name(), fields, nil, snmp.SelfCheck())
 	}(s)
 
-	oid, e := snmpgo.NewOids([]string{
-		"1.3.6.1.2.1.1.1.0",
-	})
-	if e != nil {
-		return e
+	for k, v := range s.pointMap {
+		switch v.PointType {
+		case points.PointArray:
+			pdu, e := s.client.GetBulkRequest(s.oidBulkList, int(v.Extra["nonRepeaters"].(float64)), int(v.Extra["maxRepetitions"].(float64)))
+			if e != nil || pdu.ErrorStatus() != snmpgo.NoError {
+				log.Error().Err(e).Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Error")
+				return e
+			}
+			value := make([]string, 0)
+			for _, v := range pdu.VarBinds().MatchBaseOids(s.oidMap[k]) {
+				value = append(value, v.Variable.String())
+			}
+			fields[k] = value
+
+		default:
+			pdu, e := s.client.GetRequest(s.oidList)
+			if e != nil || pdu.ErrorStatus() != snmpgo.NoError {
+				log.Error().Err(e).Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Error")
+				return e
+			}
+			fields[k] = pdu.VarBinds().MatchOid(s.oidMap[k]).Variable.String()
+		}
 	}
-	pdu, e := s.client.GetRequest(oid)
-	if e != nil {
-		return e
-	}
-	if pdu.ErrorStatus() != snmpgo.NoError {
-		log.Error().Err(e).Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Error")
-		return e
-	}
-	log.Debug().Str("var", pdu.VarBinds()[0].Variable.String()).Msg("var")
-	fields["hostname"] = pdu.VarBinds()[0].Variable.String()
 	return nil
 }
 
@@ -75,11 +85,23 @@ func (s *S) SelfCheck() device_agent.Quality {
 
 func (s *S) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
+	for k, v := range s.pointMap {
+		if o, e := snmpgo.NewOid(v.Address); e == nil {
+			s.oidMap[k] = o
+			switch v.PointType {
+			case points.PointArray:
+				s.oidBulkList = append(s.oidBulkList, o)
+			default:
+				s.oidList = append(s.oidList, o)
+			}
+
+		}
+	}
 }
 
 func (s *S) Start() error {
 	snmp, e := snmpgo.NewSNMP(snmpgo.SNMPArguments{
-		Version:   snmpgo.V1,
+		Version:   snmpgo.V2c,
 		Address:   s.Address,
 		Retries:   1,
 		Community: "public",
@@ -107,6 +129,7 @@ func init() {
 		return &S{
 			originName: "snmp",
 			quality:    device_agent.QualityGood,
+			oidMap:     make(map[string]*snmpgo.Oid),
 		}
 	})
 }
