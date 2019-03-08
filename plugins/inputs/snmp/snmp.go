@@ -94,7 +94,6 @@ func (s *S) SetPointMap(pointMap map[string]points.PointDefine) {
 			default:
 				s.oidList = append(s.oidList, o)
 			}
-
 		}
 	}
 }
