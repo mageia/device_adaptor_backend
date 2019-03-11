@@ -56,9 +56,20 @@ func (s *S) Gather(acc device_agent.Accumulator) error {
 	for k, v := range s.pointMap {
 		switch v.PointType {
 		case points.PointArray:
-			pdu, e := s.client.GetBulkRequest(s.oidBulkList, int(v.Extra["nonRepeaters"].(float64)), int(v.Extra["maxRepetitions"].(float64)))
-			if e != nil || pdu.ErrorStatus() != snmpgo.NoError {
-				log.Error().Err(e).Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Error")
+			nonRepeaters, maxRepetitions := 0.0, 10.0
+			if v.Extra["nonRepeaters"] != nil {
+				nonRepeaters = v.Extra["nonRepeaters"].(float64)
+			}
+			if v.Extra["maxRepetitions"] != nil {
+				maxRepetitions = v.Extra["maxRepetitions"].(float64)
+			}
+
+			pdu, e := s.client.GetBulkWalk(s.oidBulkList, int(nonRepeaters), int(maxRepetitions))
+			if e != nil {
+				return fmt.Errorf("%s: %v", "GetBulkRequest", e)
+			}
+			if pdu.ErrorStatus() != snmpgo.NoError {
+				log.Error().Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Check Failed")
 				return e
 			}
 			value := make([]string, 0)

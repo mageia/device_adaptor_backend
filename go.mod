@@ -33,6 +33,7 @@ require (
 	github.com/rs/zerolog v1.12.0
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
+	github.com/soniah/gosnmp v0.0.0-20190220004421-68e8beac0db9 // indirect
 	github.com/streadway/amqp v0.0.0-20190225234609-30f8ed68076e
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/tidwall/gjson v1.2.1
