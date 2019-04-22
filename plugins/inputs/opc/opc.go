@@ -2,20 +2,17 @@ package opc
 
 import (
 	"bytes"
-	"context"
 	"device_adaptor"
 	"device_adaptor/internal"
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
-	"device_adaptor/utils"
-	"encoding/binary"
-	"errors"
-	"fmt"
-	"github.com/json-iterator/go"
-	"github.com/rs/zerolog/log"
-	"io"
-	"net"
+	"io/ioutil"
+	"os/exec"
+	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
+	"golang.org/x/net/context"
 )
 
 type OPC struct {
@@ -32,212 +29,93 @@ type OPC struct {
 	_pointAddressToKey map[string]string
 	ctx                context.Context
 	cancel             context.CancelFunc
+	_baseParamList     []string
+	paramList          []string
 }
 
-func (t *OPC) OriginName() string {
-	return t.originName
+func (o *OPC) Name() string {
+	if o.NameOverride != "" {
+		return o.NameOverride
+	}
+	return o.originName
 }
 
-func (t *OPC) SetValue(kv map[string]interface{}) error {
-	return t.sendCommand("control", kv)
-}
+func (o *OPC) Gather(acc device_agent.Accumulator) error {
+	cmd := exec.Command("opc", o.paramList...)
+	outPipe, _ := cmd.StdoutPipe()
 
-func (t *OPC) UpdatePointMap(map[string]interface{}) error {
-	return nil
-}
-
-func (t *OPC) RetrievePointMap(keys []string) map[string]points.PointDefine {
-	if len(keys) == 0 {
-		return t.pointMap
-	}
-	result := make(map[string]points.PointDefine, len(keys))
-	for _, key := range keys {
-		if p, ok := t.pointMap[key]; ok {
-			result[key] = p
-		}
-	}
-	return result
-}
-
-type opcServerResponse struct {
-	Cmd     string      `json:"cmd"`
-	Success bool        `json:"success"`
-	Result  interface{} `json:"result"`
-}
-
-func (t *OPC) sendCommand(cmdId string, param interface{}) error {
-	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
-	if e != nil {
-		log.Error().Err(e).Msg("sendInitMsg.DialTimeout")
-		return e
-	}
-	l.SetReadDeadline(time.Now().Add(t.Timeout.Duration * 2))
-	defer l.Close()
-
-	body := make(map[string]interface{})
-
-	switch cmdId {
-	case "init":
-		i := 0
-		keyList := make([]string, len(t.pointMap))
-		for k := range t._pointAddressToKey {
-			keyList[i] = k
-			i++
-		}
-		body = map[string]interface{}{
-			"cmd":             cmdId,
-			"opc_server_host": "localhost",
-			"opc_server_name": t.OPCServerName,
-			"opc_key_list":    keyList,
-		}
-	case "real_time_data":
-		body = map[string]interface{}{
-			"cmd":             cmdId,
-			"opc_server_host": "localhost",
-			"opc_server_name": t.OPCServerName,
-		}
-	case "control":
-		controlPairs := make([]map[string]interface{}, 0)
-		pairs, ok := param.(map[string]interface{})
-		if !ok {
-			return errors.New("invalid control paris format")
-		}
-
-		for k, v := range pairs {
-			if _, ok := t._pointAddressToKey[k]; ok {
-				controlPairs = append(controlPairs, map[string]interface{}{"key": k, "value": v})
-			} else {
-				if pM, ok := t.pointMap[k]; ok {
-					controlPairs = append(controlPairs, map[string]interface{}{"key": pM.Address, "value": v})
-				}
-			}
-		}
-
-		body = map[string]interface{}{
-			"cmd":             "control",
-			"opc_server_host": "localhost",
-			"opc_server_name": t.OPCServerName,
-			"control_pair":    controlPairs,
-		}
-	default:
-		return errors.New("unsupported cmd: " + cmdId)
-	}
-
-	b, e := jsoniter.Marshal(body)
-	if e != nil {
-		return e
-	}
-	writeBuf := new(bytes.Buffer)
-	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)+4))
-	binary.Write(writeBuf, binary.LittleEndian, b)
-	if n, e := l.Write(writeBuf.Bytes()); e != nil || n != len(b)+4 {
-		log.Error().Int("len(n)", n).Int("len(b)", len(b)).Msg("write error")
-		return errors.New("write command " + cmdId + " failed")
-	}
-
-	var totalLen uint32
-	binary.Read(l, binary.LittleEndian, &totalLen)
-	if totalLen <= 4 {
-		return errors.New("can't get response")
-	}
-	buf := make([]byte, totalLen-4)
-	if _, err := io.ReadFull(l, buf); err != nil {
+	if err := cmd.Start(); err != nil {
+		log.Error().Err(err).Msg("Start")
 		return err
 	}
 
-	tmpResp := opcServerResponse{}
-	if e := jsoniter.Unmarshal(buf, &tmpResp); e != nil {
-		return e
-	}
+	slurp, _ := ioutil.ReadAll(outPipe)
 
-	//log.Debug().Interface("tmpResp", tmpResp).Msg("tmpResp")
-
-	if !tmpResp.Success {
-		if tmpResp.Cmd == "real_time_data" {
-			go t.sendCommand("init", nil)
-		}
-		return fmt.Errorf("parse response failed, success == false")
-	}
-
-	switch tmpResp.Cmd {
-	case "init":
-	case "control":
-	case "real_time_data":
-		fields := make(map[string]interface{})
-		acc, ok := param.(device_agent.Accumulator)
-		if !ok {
-			return errors.New("invalid real_time_data acc format")
-		}
-		if r, ok := tmpResp.Result.(map[string]interface{}); ok {
-			for k, v := range r {
-				if pKey, ok := t._pointAddressToKey[k]; ok {
-					switch vf := v.(type) {
-					case float64:	//TODO: float32
-						fields[pKey] = utils.Round(vf, 6)
-					case bool:
-						if vf {
-							fields[pKey] = 1
-						} else {
-							fields[pKey] = 0
-						}
-					default:
-						fields[pKey] = v
-					}
-				}
+	fields := make(map[string]interface{})
+	for _, r := range bytes.Split(slurp, []byte{'\n'}) {
+		if len(r) > 0 {
+			item := bytes.Split(r, []byte{','})
+			if len(item) != 4 {
+				continue
 			}
-			acc.AddFields(t.NameOverride, fields, nil, t.SelfCheck())
-		}
-	default:
-		return fmt.Errorf("parse response failed")
-	}
-
-	return nil
-}
-
-func (t *OPC) SelfCheck() device_agent.Quality {
-	return t.quality
-}
-func (t *OPC) Name() string {
-	if t.NameOverride != "" {
-		return t.NameOverride
-	}
-	return t.originName
-}
-func (t *OPC) Gather(acc device_agent.Accumulator) error {
-	if e := t.sendCommand("real_time_data", acc); e != nil {
-		return e
-	}
-
-	return nil
-}
-func (t *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
-	t.pointMap = pointMap
-	t._pointAddressToKey = make(map[string]string, len(t.pointMap))
-	for k, v := range t.pointMap {
-		t._pointAddressToKey[v.Address] = k
-	}
-}
-func (t *OPC) Start() error {
-	if e := t.sendCommand("init", nil); e != nil {
-		return e
-	}
-
-	go func() {
-		ticker := time.NewTicker(time.Second * 30)
-		for {
-			select {
-			case <-ticker.C:
-				t.sendCommand("init", nil)
-			case <-t.ctx.Done():
-				return
+			if pKey, ok := o._pointAddressToKey[string(item[0])]; ok {
+				fields[pKey] = string(item[1])
 			}
 		}
-	}()
+	}
+	acc.AddFields(o.NameOverride, fields, nil, o.SelfCheck())
+
+	if err := cmd.Wait(); err != nil {
+		log.Error().Err(err).Msg("Wait")
+		return err
+	}
 
 	return nil
 }
-func (t *OPC) Stop() {
-	t.cancel()
+
+func (o *OPC) SelfCheck() device_agent.Quality {
+	return o.quality
+}
+
+func (o *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
+	o.pointMap = pointMap
+	o._pointAddressToKey = make(map[string]string, len(o.pointMap))
+	for k, v := range o.pointMap {
+		o._pointAddressToKey[v.Address] = k
+	}
+
+	var paramList = o._baseParamList
+	for _, p := range o.pointMap {
+		paramList = append(paramList, "-r")
+		paramList = append(paramList, p.Address)
+	}
+	o.paramList = paramList
+}
+
+func (o *OPC) Start() error {
+	address := strings.Split(o.Address, ":")
+	host := "localhost"
+	port := "7766"
+	if len(address) == 1 {
+		host = address[0]
+	} else if len(address) == 2 {
+		host = address[0]
+		port = address[1]
+	}
+
+	o._baseParamList = []string{"-o", "csv", "-H", host, "-P", port, "-s", o.OPCServerName}
+	var paramList = o._baseParamList
+	for _, p := range o.pointMap {
+		paramList = append(paramList, "-r")
+		paramList = append(paramList, p.Address)
+	}
+	o.paramList = paramList
+
+	return nil
+}
+
+func (o *OPC) Stop() {
+	o.cancel()
 }
 
 func init() {

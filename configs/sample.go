@@ -51,8 +51,8 @@ var InputSample = map[string]map[string]ConfigSample{
 	"opc": {
 		"plugin_name":     ConfigSample{"plugin_name", "插件名称", "opc", nil, "select", 1},
 		"name_override":   ConfigSample{"name_override", "数据源名称", "opc", nil, "input", 2},
-		"address":         ConfigSample{"address", "数据源地址", "10.211.55.4:2048", nil, "input", 3},
-		"opc_server_name": ConfigSample{"opc_server_name", "OPC名称", "Kepware.KepServerEx.V5", nil, "input", 4},
+		"address":         ConfigSample{"address", "数据源地址", "10.211.55.3:7766", nil, "input", 3},
+		"opc_server_name": ConfigSample{"opc_server_name", "OPC名称", "Matrikon.OPC.Simulation.1", nil, "input", 4},
 		"interval":        ConfigSample{"interval", "采集周期", "5s", nil, "combine", 20},
 	},
 	"modbus": {
