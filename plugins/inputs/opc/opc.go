@@ -41,7 +41,7 @@ func (o *OPC) Name() string {
 }
 
 func (o *OPC) Gather(acc device_agent.Accumulator) error {
-	cmd := exec.Command("./opc", o.paramList...)
+	cmd := exec.Command("opc", o.paramList...)
 	outPipe, _ := cmd.StdoutPipe()
 
 	if err := cmd.Start(); err != nil {
