@@ -4,6 +4,7 @@ import (
 	"device_adaptor"
 	"device_adaptor/selfstat"
 	"github.com/rs/zerolog/log"
+	"runtime"
 	"time"
 )
 
@@ -44,6 +45,9 @@ func (ac *accumulator) AddError(err error) {
 		return
 	}
 	NErrors.Incr(1)
+	a, b, c, d := runtime.Caller(1)
+	println(a, b, c, d)
+
 	log.Error().Err(err).Str("plugin", ac.maker.Name()).Msg("ACC ERROR")
 }
 

@@ -6,6 +6,7 @@ require (
 	git.leaniot.cn/publicLib/go-eip v0.0.0-20181225124431-b59064aed464
 	git.leaniot.cn/publicLib/go-modbus v0.0.0-20180328164922-c15c68297f4f
 	git.leaniot.cn/publicLib/go-modbus-serial v0.0.0-20171003201852-5efbe925ecf7 // indirect
+	git.leaniot.cn/publicLib/go-snmp v0.0.0-20180410082236-3975b03c08fe
 	github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705 // indirect
 	github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

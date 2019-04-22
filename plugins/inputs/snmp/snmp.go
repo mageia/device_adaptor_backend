@@ -6,8 +6,9 @@ import (
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
 	"fmt"
-	"github.com/k-sone/snmpgo"
+	g "git.leaniot.cn/publicLib/go-snmp"
 	"github.com/rs/zerolog/log"
+	"time"
 )
 
 type S struct {
@@ -18,14 +19,14 @@ type S struct {
 	FieldPrefix  string            `json:"field_prefix"`
 	FieldSuffix  string            `json:"field_suffix"`
 	NameOverride string            `json:"name_override"`
-	client       *snmpgo.SNMP
+	client       *g.GoSNMP
 	connected    bool
 	originName   string
 	quality      device_agent.Quality
 	pointMap     map[string]points.PointDefine
-	oidMap       map[string]*snmpgo.Oid
-	oidList      []*snmpgo.Oid
-	oidBulkList  []*snmpgo.Oid
+	oidList      []string
+	oidBulkList  []string
+	oidMap       map[string]string
 }
 
 func (s *S) Name() string {
@@ -43,7 +44,6 @@ func (s *S) Gather(acc device_agent.Accumulator) error {
 	}
 	fields := make(map[string]interface{})
 	s.quality = device_agent.QualityGood
-
 	defer func(snmp *S) {
 		if e := recover(); e != nil {
 			snmp.quality = device_agent.QualityDisconnect
@@ -53,40 +53,37 @@ func (s *S) Gather(acc device_agent.Accumulator) error {
 		acc.AddFields(snmp.Name(), fields, nil, snmp.SelfCheck())
 	}(s)
 
-	for k, v := range s.pointMap {
-		switch v.PointType {
-		case points.PointArray:
-			nonRepeaters, maxRepetitions := 0.0, 10.0
-			if v.Extra["nonRepeaters"] != nil {
-				nonRepeaters = v.Extra["nonRepeaters"].(float64)
+	if r, e := s.client.Get(s.oidList); e == nil {
+		for _, v := range r.Variables {
+			pointKey := s.oidMap[v.Name]
+			switch v.Type {
+			case g.OctetString:
+				fields[pointKey] = v.Value.([]byte)
+			default:
+				fields[pointKey] = g.ToBigInt(v.Value)
 			}
-			if v.Extra["maxRepetitions"] != nil {
-				maxRepetitions = v.Extra["maxRepetitions"].(float64)
-			}
-
-			pdu, e := s.client.GetBulkWalk(s.oidBulkList, int(nonRepeaters), int(maxRepetitions))
-			if e != nil {
-				return fmt.Errorf("%s: %v", "GetBulkRequest", e)
-			}
-			if pdu.ErrorStatus() != snmpgo.NoError {
-				log.Error().Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Check Failed")
-				return e
-			}
-			value := make([]string, 0)
-			for _, v := range pdu.VarBinds().MatchBaseOids(s.oidMap[k]) {
-				value = append(value, v.Variable.String())
-			}
-			fields[k] = value
-
-		default:
-			pdu, e := s.client.GetRequest(s.oidList)
-			if e != nil || pdu.ErrorStatus() != snmpgo.NoError {
-				log.Error().Err(e).Interface("errorStatus", pdu.ErrorStatus()).Interface("errorIndex", pdu.ErrorIndex()).Msg("PDU Error")
-				return e
-			}
-			fields[k] = pdu.VarBinds().MatchOid(s.oidMap[k]).Variable.String()
 		}
 	}
+
+	for _, v := range s.oidBulkList {
+		walkResult := make(map[string]interface{})
+		if r, e := s.client.WalkAll(v); e == nil {
+			for _, pV := range r {
+				switch pV.Type {
+				case g.OctetString:
+					walkResult[pV.Name] = pV.Value.([]byte)
+
+					//log.Debug().Str("name", pV.Name).Interface("v", net.HardwareAddr(pV.Value.([]byte)).String()).Msg("name")
+				case g.IPAddress:
+					walkResult[pV.Name] = pV.Value.(string)
+				default:
+					walkResult[pV.Name] = g.ToBigInt(pV.Value)
+				}
+			}
+			fields[s.oidMap[v]] = walkResult
+		}
+	}
+
 	return nil
 }
 
@@ -96,42 +93,44 @@ func (s *S) SelfCheck() device_agent.Quality {
 
 func (s *S) SetPointMap(pointMap map[string]points.PointDefine) {
 	s.pointMap = pointMap
-	for k, v := range s.pointMap {
-		if o, e := snmpgo.NewOid(v.Address); e == nil {
-			s.oidMap[k] = o
-			switch v.PointType {
-			case points.PointArray:
-				s.oidBulkList = append(s.oidBulkList, o)
-			default:
-				s.oidList = append(s.oidList, o)
-			}
+	for _, v := range s.pointMap {
+		s.oidMap[v.Address] = v.PointKey
+		switch v.PointType {
+		case points.PointArray:
+			s.oidBulkList = append(s.oidBulkList, v.Address)
+		default:
+			s.oidList = append(s.oidList, v.Address)
 		}
 	}
 }
 
 func (s *S) Start() error {
-	snmp, e := snmpgo.NewSNMP(snmpgo.SNMPArguments{
-		Version:   snmpgo.V2c,
-		Address:   s.Address,
-		Retries:   1,
+	s.client = &g.GoSNMP{
+		Target:    s.Address,
+		Port:      161,
 		Community: "public",
-	})
-	if e != nil {
+		Version:   g.Version2c,
+		Timeout:   time.Second * 2,
+		Retries:   3,
+		MaxOids:   g.MaxOids,
+	}
+	if e := s.client.Connect(); e != nil {
 		return e
 	}
-	if e := snmp.Open(); e != nil {
-		return e
-	}
-	s.client = snmp
 	s.connected = true
 	return nil
 }
 
 func (s *S) Stop() {
 	if s.connected {
-		s.client.Close()
+		s.client.Conn.Close()
 		s.connected = false
 	}
+}
+
+func (s *S) walkCallback(p g.SnmpPDU) error {
+	log.Debug().Str("name", p.Name).Interface("type", p.Type).Interface("value", p.Value).Msg("pdu")
+	return nil
 }
 
 func init() {
@@ -139,7 +138,7 @@ func init() {
 		return &S{
 			originName: "snmp",
 			quality:    device_agent.QualityGood,
-			oidMap:     make(map[string]*snmpgo.Oid),
+			oidMap:     make(map[string]string),
 		}
 	})
 }
