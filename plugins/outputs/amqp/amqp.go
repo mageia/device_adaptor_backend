@@ -67,6 +67,7 @@ func (r *RabbitMQ) Connect() error {
 	if e := ch.QueueBind(r.QueueName, "", r.ExchangeName, r.NoWait, nil); e != nil {
 		log.Error().Err(e).Msg("QueueBind")
 	}
+
 	r.channel = ch
 	r.connected = true
 
@@ -100,7 +101,7 @@ func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
 		if err != nil {
 			return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
 		}
-		err = r.channel.Publish(r.ExchangeName, "", r.Mandatory, r.Immediate, amqp.Publishing{
+		err = r.channel.Publish(r.ExchangeName, metric.Name(), r.Mandatory, r.Immediate, amqp.Publishing{
 			ContentType: "application/json",
 			Body:        pV,
 		})
