@@ -113,7 +113,10 @@ func (a *Agent) Close() error {
 		switch p := input.Input.(type) {
 		case device_agent.InteractiveInput:
 			p.Stop()
-			log.Info().Msgf("Successfully closed input: %s", p.Name())
+			log.Info().Str("plugin", p.Name()).Msg("Successfully closed input")
+		case device_agent.PassiveInput:
+			p.DisConnect()
+			log.Info().Str("plugin", p.Name()).Msg("Successfully closed input")
 		}
 	}
 
@@ -128,14 +131,14 @@ func panicRecover(input *models.RunningInput) {
 	}
 }
 
-func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc device_agent.Accumulator, timeout time.Duration) {
+func CheckGatherWithTimeout(ctx context.Context, input *models.RunningInput, acc device_agent.Accumulator, timeout time.Duration) {
 	ticker := time.NewTicker(timeout)
 	defer ticker.Stop()
 
 	done := make(chan error)
 	go func() {
 		//start := time.Now()
-		done <- input.Input.Gather(acc)
+		done <- input.Input.CheckGather(acc)
 		//elapsed := time.Since(start)
 		//log.Debug().Msg(time.Since(start).String())
 	}()
@@ -155,16 +158,22 @@ func gatherWithTimeout(ctx context.Context, input *models.RunningInput, acc devi
 	}
 }
 
-func (a *Agent) gatherer(input *models.RunningInput, interval time.Duration, metricC chan device_agent.Metric) {
+func (a *Agent) CheckGatherer(input *models.RunningInput, interval time.Duration, metricC chan device_agent.Metric) {
 	defer panicRecover(input)
 
 	acc := NewAccumulator(input, metricC)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	switch i := input.Input.(type) {
+	case device_agent.PassiveInput:
+		go i.Listen(a.Ctx, acc)
+		//return
+	}
+
 	for {
 		internal.RandomSleep(a.Config.Global.CollectionJitter.Duration, a.Ctx)
-		gatherWithTimeout(a.Ctx, input, acc, interval)
+		CheckGatherWithTimeout(a.Ctx, input, acc, interval)
 		select {
 		case <-a.Ctx.Done():
 			return
@@ -315,6 +324,12 @@ func (a *Agent) Run() error {
 					c.Controller.RegisterInput(pC.Name(), pC)
 				}
 			}
+		case device_agent.PassiveInput:
+			if err := p.Connect(); err != nil {
+				log.Error().Err(err).Str("plugin", input.Name()).Msg("PassiveInput start failed")
+				break
+			}
+			log.Info().Str("plugin", input.Name()).Msg("PassiveInput start success")
 		}
 
 		// 启动时点表有可能已变更，需通知点表更新
@@ -326,7 +341,7 @@ func (a *Agent) Run() error {
 		}
 		go func(in *models.RunningInput, interval time.Duration) {
 			defer wg.Done()
-			a.gatherer(in, interval, metricC)
+			a.CheckGatherer(in, interval, metricC)
 		}(input, inter)
 	}
 

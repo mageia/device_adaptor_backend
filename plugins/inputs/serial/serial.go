@@ -67,7 +67,7 @@ func (s *Serial) Name() string {
 func (s *Serial) OriginName() string {
 	return s.originName
 }
-func (s *Serial) Gather(acc device_agent.Accumulator) error {
+func (s *Serial) CheckGather(acc device_agent.Accumulator) error {
 	defer func() {
 		if err := recover(); err != nil {
 			switch e := err.(type) {
@@ -87,7 +87,7 @@ func (s *Serial) Gather(acc device_agent.Accumulator) error {
 		}
 	}
 
-	//log.Debug().Interface("pointMap", s.pointMap).Bool("interactive", s.Interactive).Int("parse_count", len(s.parsers)).Msg("Gather")
+	//log.Debug().Interface("pointMap", s.pointMap).Bool("interactive", s.Interactive).Int("parse_count", len(s.parsers)).Msg("CheckGather")
 
 	if s.Interactive {
 		fields := make(map[string]interface{})

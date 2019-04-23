@@ -85,7 +85,7 @@ func (m *Modbus) parseAddress(address string) (area, base, bit string, err error
 	return
 }
 
-func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
+func (m *Modbus) CheckGatherServer(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	rawData := make(map[string][][]interface{})
@@ -207,7 +207,7 @@ func (m *Modbus) gatherServer(acc device_agent.Accumulator) error {
 
 	return nil
 }
-func (m *Modbus) Gather(acc device_agent.Accumulator) error {
+func (m *Modbus) CheckGather(acc device_agent.Accumulator) error {
 	if !m.connected {
 		if e := m.Start(); e != nil {
 			return e
@@ -218,7 +218,7 @@ func (m *Modbus) Gather(acc device_agent.Accumulator) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		e := m.gatherServer(acc)
+		e := m.CheckGatherServer(acc)
 		if e != nil {
 			acc.AddError(e)
 			m.Stop()

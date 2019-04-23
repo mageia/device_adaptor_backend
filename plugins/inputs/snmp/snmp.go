@@ -36,7 +36,7 @@ func (s *S) Name() string {
 	return s.originName
 }
 
-func (s *S) Gather(acc device_agent.Accumulator) error {
+func (s *S) CheckGather(acc device_agent.Accumulator) error {
 	if !s.connected {
 		if e := s.Start(); e != nil {
 			return e

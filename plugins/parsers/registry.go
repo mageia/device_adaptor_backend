@@ -2,6 +2,7 @@ package parsers
 
 import (
 	"device_adaptor/plugins/parsers/csv"
+	"device_adaptor/plugins/parsers/kj66"
 	"device_adaptor/plugins/parsers/vibration"
 	"fmt"
 )
@@ -116,3 +117,8 @@ func (*ParserBlob) BuildParserCsv(tbl map[string]interface{}) (Parser, error) {
 func (*ParserBlob) BuildParserVibration(tbl map[string]interface{}) (Parser, error) {
 	return &vibration.Parser{}, nil
 }
+
+func (*ParserBlob) BuildParserKj66(tbl map[string]interface{}) (Parser, error) {
+	return &kj66.Parser{}, nil
+}
+

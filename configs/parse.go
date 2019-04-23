@@ -193,8 +193,6 @@ func buildParserByName(name string, table map[string]interface{}) (parsers.Parse
 		}
 		return result[0].Interface().(parsers.Parser), nil
 	}
-
-	return nil, nil
 }
 func buildParserMapJson(name string, table map[string]interface{}) (map[string]parsers.Parser, error) {
 	r := make(map[string]parsers.Parser)

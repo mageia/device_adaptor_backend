@@ -73,7 +73,7 @@ func (h *HTTPListener) OriginName() string {
 	return h.originName
 }
 
-func (h *HTTPListener) Gather(acc device_agent.Accumulator) (err error) {
+func (h *HTTPListener) CheckGather(acc device_agent.Accumulator) (err error) {
 	if len(h.parsers) == 0 {
 		return errors.New("parsers is not set")
 	}

@@ -42,7 +42,7 @@ type S7 struct {
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
-func (s *S7) gatherServer(acc device_agent.Accumulator) error {
+func (s *S7) CheckGatherServer(acc device_agent.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
 	s.quality = device_agent.QualityGood
@@ -136,7 +136,7 @@ func (s *S7) Name() string {
 func (s *S7) OriginName() string {
 	return s.originName
 }
-func (s *S7) Gather(acc device_agent.Accumulator) error {
+func (s *S7) CheckGather(acc device_agent.Accumulator) error {
 	if !s.connected {
 		if e := s.Start(); e != nil {
 			return e
@@ -147,7 +147,7 @@ func (s *S7) Gather(acc device_agent.Accumulator) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if e := s.gatherServer(acc); e != nil {
+		if e := s.CheckGatherServer(acc); e != nil {
 			acc.AddError(e)
 			s.Stop()
 		}

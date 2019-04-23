@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var GlobalMetricsGathered = selfstat.Register("agent", "metrics_gathered", map[string]string{})
+var GlobalMetricsCheckGathered = selfstat.Register("agent", "metrics_CheckGathered", map[string]string{})
 
 type InputConfig struct {
 	Name            string
@@ -22,14 +22,14 @@ type RunningInput struct {
 	Config          *InputConfig
 	Input           device_agent.Input
 	PointMap        map[string]points.PointDefine
-	MetricsGathered selfstat.Stat
+	MetricsCheckGathered selfstat.Stat
 }
 
 func NewRunningInput(input device_agent.Input, config *InputConfig) *RunningInput {
 	return &RunningInput{
 		Input:  input,
 		Config: config,
-		MetricsGathered: selfstat.Register(
+		MetricsCheckGathered: selfstat.Register(
 			input.Name(),
 			"metric_count",
 			map[string]string{"input": config.Name},
@@ -55,7 +55,7 @@ func (r *RunningInput) MakeMetric(
 		return nil
 	}
 
-	r.MetricsGathered.Incr(1)
-	GlobalMetricsGathered.Incr(1)
+	r.MetricsCheckGathered.Incr(1)
+	GlobalMetricsCheckGathered.Incr(1)
 	return m
 }

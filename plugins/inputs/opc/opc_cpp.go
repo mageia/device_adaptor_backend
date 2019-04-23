@@ -202,7 +202,7 @@ func (t *OPC_CPP) Name() string {
 	}
 	return t.originName
 }
-func (t *OPC_CPP) Gather(acc device_agent.Accumulator) error {
+func (t *OPC_CPP) CheckGather(acc device_agent.Accumulator) error {
 	if e := t.sendCommand("real_time_data", acc); e != nil {
 		return e
 	}

@@ -36,7 +36,7 @@ func (f *Fake) Start() error {
 func (f *Fake) Stop() {
 	f.connected = false
 }
-func (f *Fake) Gather(acc device_agent.Accumulator) error {
+func (f *Fake) CheckGather(acc device_agent.Accumulator) error {
 	rand.Seed(time.Now().Unix())
 
 	fields := make(map[string]interface{})

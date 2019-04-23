@@ -40,7 +40,7 @@ func (o *OPC) Name() string {
 	return o.originName
 }
 
-func (o *OPC) Gather(acc device_agent.Accumulator) error {
+func (o *OPC) CheckGather(acc device_agent.Accumulator) error {
 	cmd := exec.Command("opc", o.paramList...)
 	outPipe, _ := cmd.StdoutPipe()
 

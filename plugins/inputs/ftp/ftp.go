@@ -64,7 +64,7 @@ func (f *FTP) SetPointMap(pointMap map[string]points.PointDefine) {
 func (*FTP) FlushPointMap(acc device_agent.Accumulator) error {
 	return nil
 }
-func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator) error {
+func (f *FTP) CheckGatherServer(client *ftp.ServerConn, acc device_agent.Accumulator) error {
 	if f.DataPath == "" {
 		return errors.New("empty data_path")
 	}
@@ -119,7 +119,7 @@ func (f *FTP) gatherServer(client *ftp.ServerConn, acc device_agent.Accumulator)
 	return nil
 }
 
-func (f *FTP) Gather(acc device_agent.Accumulator) error {
+func (f *FTP) CheckGather(acc device_agent.Accumulator) error {
 	if !f.connected {
 		if e := f.Start(); e != nil {
 			return e
@@ -129,7 +129,7 @@ func (f *FTP) Gather(acc device_agent.Accumulator) error {
 	wg.Add(1)
 	go func(client *ftp.ServerConn) {
 		defer wg.Done()
-		if e := f.gatherServer(f.client, acc); e != nil {
+		if e := f.CheckGatherServer(f.client, acc); e != nil {
 			acc.AddError(e)
 			f.Stop()
 		}

@@ -38,7 +38,7 @@ func (e *EIP) Name() string {
 	return e.originName
 }
 
-func (e *EIP) Gather(acc device_agent.Accumulator) error {
+func (e *EIP) CheckGather(acc device_agent.Accumulator) error {
 	if !e.connected {
 		if err := e.Start(); err != nil {
 			return err

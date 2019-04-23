@@ -111,6 +111,12 @@ var InputSample = map[string]map[string]ConfigSample{
 		"version":       ConfigSample{"version", "版本", "v2c", map[string]interface{}{"v1": 0, "v2c": 1, "v3": 2}, "select", 3},
 		"interval":      ConfigSample{"interval", "采集周期", "3s", nil, "combine", 20},
 	},
+	"ws": {
+		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "ws", nil, "select", 1},
+		"name_override": ConfigSample{"name_override", "数据源名称", "ws", nil, "input", 2},
+		"address":       ConfigSample{"address", "数据源地址", "ws://localhost:8888", nil, "input", 3},
+		"parser":        ConfigSample{"parser", "解析器", map[string]interface{}{"kj66": map[string]interface{}{}}, nil, "text", 6},
+	},
 }
 var OutputSample = map[string]map[string]ConfigSample{
 	"_base": {
