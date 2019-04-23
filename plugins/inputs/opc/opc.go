@@ -103,11 +103,10 @@ func (o *OPC) Start() error {
 		port = address[1]
 	}
 
-	o._baseParamList = []string{"-o", "csv", "-H", host, "-P", port, "-s", o.OPCServerName}
+	o._baseParamList = []string{"-o", "csv", "-H", host, "-P", port, "-s", o.OPCServerName, "-r"}
 	var paramList = o._baseParamList
-	for _, p := range o.pointMap {
-		paramList = append(paramList, "-r")
-		paramList = append(paramList, p.Address)
+	for k := range o._pointAddressToKey {
+		paramList = append(paramList, k)
 	}
 	o.paramList = paramList
 
