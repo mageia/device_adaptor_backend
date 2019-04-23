@@ -1,4 +1,4 @@
-package rabbitmq
+package amqp
 
 import (
 	"device_adaptor"
@@ -100,9 +100,8 @@ func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
 		if err != nil {
 			return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
 		}
-
 		err = r.channel.Publish(r.ExchangeName, "", r.Mandatory, r.Immediate, amqp.Publishing{
-			ContentType: "text/plain",
+			ContentType: "application/json",
 			Body:        pV,
 		})
 		if err != nil {
@@ -115,7 +114,7 @@ func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
 }
 
 func init() {
-	outputs.Add("rabbitmq", func() device_agent.Output {
+	outputs.Add("amqp", func() device_agent.Output {
 		return &RabbitMQ{}
 	})
 }
