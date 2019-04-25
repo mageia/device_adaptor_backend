@@ -56,18 +56,6 @@ func (r *RabbitMQ) Connect() error {
 		log.Error().Err(e).Msg("ExchangeDeclarePassive")
 	}
 
-	//_, err = ch.QueueDeclare(r.QueueName, r.Durable, r.AutoDelete, r.Exclusive, r.NoWait, nil)
-	//if err != nil {
-	//	log.Error().Err(err).Msg("RabbitMQ QueueDeclare")
-	//	ch.Close()
-	//	conn.Close()
-	//	return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
-	//}
-	//
-	//if e := ch.QueueBind(r.QueueName, "", r.ExchangeName, r.NoWait, nil); e != nil {
-	//	log.Error().Err(e).Msg("QueueBind")
-	//}
-
 	r.channel = ch
 	r.connected = true
 
@@ -116,6 +104,9 @@ func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
 
 func init() {
 	outputs.Add("amqp", func() device_agent.Output {
-		return &RabbitMQ{}
+		return &RabbitMQ{
+			AutoDelete: true,
+			Immediate:  true,
+		}
 	})
 }
