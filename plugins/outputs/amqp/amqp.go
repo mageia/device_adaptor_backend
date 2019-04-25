@@ -52,21 +52,21 @@ func (r *RabbitMQ) Connect() error {
 		conn.Close()
 		return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
 	}
-	if e := ch.ExchangeDeclare(r.ExchangeName, "fanout", r.Durable, r.AutoDelete, false, r.NoWait, nil); e != nil {
+	if e := ch.ExchangeDeclare(r.ExchangeName, "topic", r.Durable, r.AutoDelete, false, r.NoWait, nil); e != nil {
 		log.Error().Err(e).Msg("ExchangeDeclarePassive")
 	}
 
-	_, err = ch.QueueDeclare(r.QueueName, r.Durable, r.AutoDelete, r.Exclusive, r.NoWait, nil)
-	if err != nil {
-		log.Error().Err(err).Msg("RabbitMQ QueueDeclare")
-		ch.Close()
-		conn.Close()
-		return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
-	}
-
-	if e := ch.QueueBind(r.QueueName, "", r.ExchangeName, r.NoWait, nil); e != nil {
-		log.Error().Err(e).Msg("QueueBind")
-	}
+	//_, err = ch.QueueDeclare(r.QueueName, r.Durable, r.AutoDelete, r.Exclusive, r.NoWait, nil)
+	//if err != nil {
+	//	log.Error().Err(err).Msg("RabbitMQ QueueDeclare")
+	//	ch.Close()
+	//	conn.Close()
+	//	return fmt.Errorf("[%s]: %s", utils.GetLineNo(), err.Error())
+	//}
+	//
+	//if e := ch.QueueBind(r.QueueName, "", r.ExchangeName, r.NoWait, nil); e != nil {
+	//	log.Error().Err(e).Msg("QueueBind")
+	//}
 
 	r.channel = ch
 	r.connected = true
