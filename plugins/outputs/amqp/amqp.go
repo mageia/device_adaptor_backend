@@ -16,7 +16,6 @@ type RabbitMQ struct {
 	URLAddress   string `json:"url_address"`
 	ExchangeName string `json:"exchange_name"`
 
-	QueueName  string `json:"queue_name"`
 	Durable    bool   `json:"durable"`
 	AutoDelete bool   `json:"auto_delete"`
 	Exclusive  bool   `json:"exclusive"`

@@ -137,7 +137,6 @@ var OutputSample = map[string]map[string]ConfigSample{
 	"amqp": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "amqp", nil, "select", 1},
 		"url_address":   ConfigSample{"url_address", "地址URL", "amqp://guest:guest@localhost:5672/", nil, "input", 2},
-		"queue_name":    ConfigSample{"queue_name", "队列名称", "red_gateway", nil, "input", 4},
 		"exchange_name": ConfigSample{"exchange_name", "交换器名称", "red_gateway", nil, "input", 5},
 	},
 	"mqtt": {
