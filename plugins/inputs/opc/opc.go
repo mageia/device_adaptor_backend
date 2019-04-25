@@ -41,6 +41,9 @@ func (o *OPC) Name() string {
 }
 
 func (o *OPC) CheckGather(acc device_agent.Accumulator) error {
+	if len(o.pointMap) <= 0 {
+		return nil
+	}
 	cmd := exec.Command("opc", o.paramList...)
 	outPipe, _ := cmd.StdoutPipe()
 
@@ -86,7 +89,6 @@ func (o *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
 
 	var paramList = o._baseParamList
 	for _, p := range o.pointMap {
-		paramList = append(paramList, "-r")
 		paramList = append(paramList, p.Address)
 	}
 	o.paramList = paramList
