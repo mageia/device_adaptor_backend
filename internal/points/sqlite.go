@@ -8,6 +8,7 @@ import (
 	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
 	"math"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -95,15 +96,15 @@ func init() {
 	var err error
 	dbPath := "point_map.db"
 
-	//if runtime.GOOS == "linux" {
-	//	dbPath = "./point_map.db"
+	if runtime.GOOS == "linux" {
+		dbPath = "/etc/device_adaptor/point_map.db"
 		//if _, e := os.Stat(dbPath); e != nil {
 		//	if os.IsNotExist(err) {
 		//		os.Mkdir(dbPath, 0777)
 		//	}
 		//}
 		//dbPath = path.Join(dbPath, "point_map.db")
-	//}
+	}
 
 	SqliteDB, err = gorm.Open("sqlite3", dbPath)
 	if err != nil {

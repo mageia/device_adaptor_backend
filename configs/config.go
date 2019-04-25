@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
+	"runtime"
 	"sort"
 	"time"
 )
@@ -196,11 +197,11 @@ func GetConfigContent() []byte {
 }
 
 func init() {
-	//if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" {
 		//if runtime.GOARCH == "arm" {
 		//jsonConfigPath = "device_adaptor.json"
 		//} else {
-		//	jsonConfigPath = "/var/device_adaptor/device_adaptor.json"
+		jsonConfigPath = "/etc/device_adaptor/device_adaptor.json"
 		//}
-	//}
+	}
 }
