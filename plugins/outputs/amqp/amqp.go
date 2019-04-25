@@ -105,7 +105,6 @@ func init() {
 	outputs.Add("amqp", func() device_agent.Output {
 		return &RabbitMQ{
 			AutoDelete: true,
-			Immediate:  true,
 		}
 	})
 }
