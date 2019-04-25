@@ -8,6 +8,8 @@ import (
 	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
 	"math"
+	"os"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -93,19 +95,19 @@ func (hs HashMapType) Value() (driver.Value, error) {
 }
 
 func init() {
-	var err error
 	dbPath := "point_map.db"
 
 	if runtime.GOOS == "linux" {
-		dbPath = "/etc/device_adaptor/point_map.db"
-		//if _, e := os.Stat(dbPath); e != nil {
-		//	if os.IsNotExist(err) {
-		//		os.Mkdir(dbPath, 0777)
-		//	}
-		//}
-		//dbPath = path.Join(dbPath, "point_map.db")
+		dbBase := "/etc/device_adaptor"
+		if _, e := os.Stat(dbBase); e != nil {
+			if os.IsNotExist(e) {
+				os.Mkdir(dbBase, 0777)
+			}
+		}
+		dbPath = path.Join(dbBase, "point_map.db")
 	}
 
+	var err error
 	SqliteDB, err = gorm.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Connect database")

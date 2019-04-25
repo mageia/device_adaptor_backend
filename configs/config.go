@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
+	"os"
+	"path"
 	"runtime"
 	"sort"
 	"time"
@@ -198,10 +200,12 @@ func GetConfigContent() []byte {
 
 func init() {
 	if runtime.GOOS == "linux" {
-		//if runtime.GOARCH == "arm" {
-		//jsonConfigPath = "device_adaptor.json"
-		//} else {
-		jsonConfigPath = "/etc/device_adaptor/device_adaptor.json"
-		//}
+		dbBase := "/etc/device_adaptor"
+		if _, e := os.Stat(dbBase); e != nil {
+			if os.IsNotExist(e) {
+				os.Mkdir(dbBase, 0777)
+			}
+		}
+		jsonConfigPath = path.Join(dbBase, "device_adaptor.json")
 	}
 }
