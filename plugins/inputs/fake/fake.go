@@ -13,7 +13,7 @@ import (
 type Fake struct {
 	connected bool
 	pointMap  map[string]points.PointDefine
-	quality   device_agent.Quality
+	quality   device_adaptor.Quality
 
 	originName   string
 	FieldPrefix  string `json:"field_prefix"`
@@ -21,7 +21,7 @@ type Fake struct {
 	NameOverride string `json:"name_override"`
 }
 
-func (f *Fake) FlushPointMap(acc device_agent.Accumulator) error {
+func (f *Fake) FlushPointMap(acc device_adaptor.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range f.pointMap {
 		pointMapFields[k] = v
@@ -36,12 +36,12 @@ func (f *Fake) Start() error {
 func (f *Fake) Stop() {
 	f.connected = false
 }
-func (f *Fake) CheckGather(acc device_agent.Accumulator) error {
+func (f *Fake) CheckGather(acc device_adaptor.Accumulator) error {
 	rand.Seed(time.Now().Unix())
 
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
-	f.quality = device_agent.QualityGood
+	f.quality = device_adaptor.QualityGood
 
 	defer func(fake *Fake) {
 		if e := recover(); e != nil {
@@ -91,7 +91,7 @@ func (f *Fake) CheckGather(acc device_agent.Accumulator) error {
 
 	return nil
 }
-func (f *Fake) SelfCheck() device_agent.Quality {
+func (f *Fake) SelfCheck() device_adaptor.Quality {
 	return f.quality
 }
 func (f *Fake) SetPointMap(pointMap map[string]points.PointDefine) {
@@ -127,10 +127,10 @@ func (f *Fake) SetValue(map[string]interface{}) error {
 }
 
 func init() {
-	inputs.Add("fake", func() device_agent.Input {
+	inputs.Add("fake", func() device_adaptor.Input {
 		return &Fake{
 			originName: "fake",
-			quality:    device_agent.QualityGood,
+			quality:    device_adaptor.QualityGood,
 		}
 	})
 }

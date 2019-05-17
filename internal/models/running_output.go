@@ -10,7 +10,7 @@ import (
 
 type RunningOutput struct {
 	Name              string
-	Output            device_agent.Output
+	Output            device_adaptor.Output
 	MetricBufferLimit int `json:"metric_buffer_limit"`
 	MetricBatchSize   int `json:"metric_batch_size"`
 
@@ -20,7 +20,7 @@ type RunningOutput struct {
 	writeMutex sync.Mutex
 }
 
-func NewRunningOutput(name string, output device_agent.Output, batchSize int, bufferLimit int) *RunningOutput {
+func NewRunningOutput(name string, output device_adaptor.Output, batchSize int, bufferLimit int) *RunningOutput {
 	if bufferLimit == 0 {
 		bufferLimit = 1
 	}
@@ -38,7 +38,7 @@ func NewRunningOutput(name string, output device_agent.Output, batchSize int, bu
 	return ro
 }
 
-func (ro *RunningOutput) AddMetric(m device_agent.Metric) {
+func (ro *RunningOutput) AddMetric(m device_adaptor.Metric) {
 	if m == nil {
 		return
 	}
@@ -57,7 +57,7 @@ func (ro *RunningOutput) WriteCached() error {
 	return nil
 }
 
-func (ro *RunningOutput) Write(metrics []device_agent.Metric) error {
+func (ro *RunningOutput) Write(metrics []device_adaptor.Metric) error {
 	if len(metrics) == 0 {
 		return nil
 	}
@@ -75,13 +75,13 @@ func (ro *RunningOutput) Write(metrics []device_agent.Metric) error {
 
 // 判断当前 output 是否支持点表输出
 func (ro *RunningOutput) SupportsWritePointDefine() bool {
-	_, ok := ro.Output.(device_agent.RichOutput)
+	_, ok := ro.Output.(device_adaptor.RichOutput)
 	return ok
 }
 
 // 输出指定 input 的点表
-func (ro *RunningOutput) WritePointDefine(pointMap device_agent.PointMap) {
-	if o, ok := ro.Output.(device_agent.RichOutput); ok {
+func (ro *RunningOutput) WritePointDefine(pointMap device_adaptor.PointMap) {
+	if o, ok := ro.Output.(device_adaptor.RichOutput); ok {
 		ro.writeMutex.Lock()
 		defer ro.writeMutex.Unlock()
 		start := time.Now()

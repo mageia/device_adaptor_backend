@@ -2,7 +2,7 @@ package controllers
 
 import "device_adaptor"
 
-type Creator func() device_agent.Controller
+type Creator func() device_adaptor.Controller
 
 var Controllers = map[string]Creator{}
 

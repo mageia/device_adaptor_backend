@@ -22,7 +22,7 @@ type S struct {
 	client       *g.GoSNMP
 	connected    bool
 	originName   string
-	quality      device_agent.Quality
+	quality      device_adaptor.Quality
 	pointMap     map[string]points.PointDefine
 	oidList      []string
 	oidBulkList  []string
@@ -36,17 +36,17 @@ func (s *S) Name() string {
 	return s.originName
 }
 
-func (s *S) CheckGather(acc device_agent.Accumulator) error {
+func (s *S) CheckGather(acc device_adaptor.Accumulator) error {
 	if !s.connected {
 		if e := s.Start(); e != nil {
 			return e
 		}
 	}
 	fields := make(map[string]interface{})
-	s.quality = device_agent.QualityGood
+	s.quality = device_adaptor.QualityGood
 	defer func(snmp *S) {
 		if e := recover(); e != nil {
-			snmp.quality = device_agent.QualityDisconnect
+			snmp.quality = device_adaptor.QualityDisconnect
 			snmp.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
@@ -87,7 +87,7 @@ func (s *S) CheckGather(acc device_agent.Accumulator) error {
 	return nil
 }
 
-func (s *S) SelfCheck() device_agent.Quality {
+func (s *S) SelfCheck() device_adaptor.Quality {
 	return s.quality
 }
 
@@ -134,10 +134,10 @@ func (s *S) walkCallback(p g.SnmpPDU) error {
 }
 
 func init() {
-	inputs.Add("snmp", func() device_agent.Input {
+	inputs.Add("snmp", func() device_adaptor.Input {
 		return &S{
 			originName: "snmp",
-			quality:    device_agent.QualityGood,
+			quality:    device_adaptor.QualityGood,
 			oidMap:     make(map[string]string),
 		}
 	})

@@ -8,12 +8,12 @@ import (
 type Vibration struct {
 }
 
-func (v *Vibration) Apply(in ...device_agent.Metric) []device_agent.Metric {
+func (v *Vibration) Apply(in ...device_adaptor.Metric) []device_adaptor.Metric {
 	return nil
 }
 
 func init() {
-	processors.Add("vibration", func() device_agent.Processor {
+	processors.Add("vibration", func() device_adaptor.Processor {
 		return &Vibration{}
 	})
 }

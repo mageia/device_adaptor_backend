@@ -12,10 +12,10 @@ type SerializerOutput interface {
 }
 
 type Serializer interface {
-	Serialize(metric device_agent.Metric) ([]byte, error)
-	SerializeBatch(metrics []device_agent.Metric) ([]byte, error)
-	SerializeMap(metric device_agent.Metric) (map[string]interface{}, error)
-	SerializePoints(pointMap device_agent.PointMap) (map[string]interface{}, error)
+	Serialize(metric device_adaptor.Metric) ([]byte, error)
+	SerializeBatch(metrics []device_adaptor.Metric) ([]byte, error)
+	SerializeMap(metric device_adaptor.Metric) (map[string]interface{}, error)
+	SerializePoints(pointMap device_adaptor.PointMap) (map[string]interface{}, error)
 }
 
 type Config struct {

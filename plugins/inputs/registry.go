@@ -2,7 +2,7 @@ package inputs
 
 import "device_adaptor"
 
-type Creator func() device_agent.Input
+type Creator func() device_adaptor.Input
 
 var Inputs = map[string]Creator{}
 

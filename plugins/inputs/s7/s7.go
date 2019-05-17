@@ -31,8 +31,8 @@ type S7 struct {
 	connected  bool
 	pointMap   map[string]points.PointDefine
 	addrMap    map[string]map[int]map[string]utils.OffsetBitPair
-	quality    device_agent.Quality
-	acc        device_agent.Accumulator
+	quality    device_adaptor.Quality
+	acc        device_adaptor.Accumulator
 	originName string
 
 	FieldPrefix  string `json:"field_prefix"`
@@ -42,15 +42,15 @@ type S7 struct {
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
-func (s *S7) CheckGatherServer(acc device_agent.Accumulator) error {
+func (s *S7) CheckGatherServer(acc device_adaptor.Accumulator) error {
 	fields := make(map[string]interface{})
 	tags := make(map[string]string)
-	s.quality = device_agent.QualityGood
+	s.quality = device_adaptor.QualityGood
 
 	defer func(s7 *S7) {
 		if e := recover(); e != nil {
 			debug.PrintStack()
-			s7.quality = device_agent.QualityDisconnect
+			s7.quality = device_adaptor.QualityDisconnect
 			s7.Stop()
 			acc.AddError(fmt.Errorf("%v", e))
 		}
@@ -136,7 +136,7 @@ func (s *S7) Name() string {
 func (s *S7) OriginName() string {
 	return s.originName
 }
-func (s *S7) CheckGather(acc device_agent.Accumulator) error {
+func (s *S7) CheckGather(acc device_adaptor.Accumulator) error {
 	if !s.connected {
 		if e := s.Start(); e != nil {
 			return e
@@ -226,7 +226,7 @@ func (s *S7) SetPointMap(pointMap map[string]points.PointDefine) {
 		}
 	}
 }
-func (s *S7) FlushPointMap(acc device_agent.Accumulator) error {
+func (s *S7) FlushPointMap(acc device_adaptor.Accumulator) error {
 	pointMapFields := make(map[string]interface{})
 	for k, v := range s.pointMap {
 		pointMapFields[k] = v
@@ -234,7 +234,7 @@ func (s *S7) FlushPointMap(acc device_agent.Accumulator) error {
 	acc.AddFields("s7_point_map", pointMapFields, nil, s.SelfCheck())
 	return nil
 }
-func (s *S7) SelfCheck() device_agent.Quality {
+func (s *S7) SelfCheck() device_adaptor.Quality {
 	return s.quality
 }
 func (s *S7) SetValue(map[string]interface{}) error {
@@ -290,12 +290,12 @@ func (s *S7) RetrievePointMap(keys []string) map[string]points.PointDefine {
 }
 
 func init() {
-	inputs.Add("s7", func() device_agent.Input {
+	inputs.Add("s7", func() device_adaptor.Input {
 		return &S7{
 			originName: "s7",
 			buf:        make(map[string][]byte),
 			addrMap:    make(map[string]map[int]map[string]utils.OffsetBitPair),
-			quality:    device_agent.QualityGood,
+			quality:    device_adaptor.QualityGood,
 		}
 	})
 }

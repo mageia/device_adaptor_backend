@@ -15,14 +15,14 @@ import (
 
 type Command struct {
 	cmdId string
-	input device_agent.ControllerInput
+	input device_adaptor.ControllerInput
 	kv    map[string]interface{}
 }
 
 type HTTP struct {
 	Address string
 	Server  *http.Server
-	Inputs  map[string]device_agent.ControllerInput
+	Inputs  map[string]device_adaptor.ControllerInput
 	ASync   bool
 	chanCmd chan *Command
 }
@@ -35,7 +35,7 @@ func (h *HTTP) Name() string {
 	return "http"
 }
 
-func (h *HTTP) RegisterInput(name string, input device_agent.ControllerInput) {
+func (h *HTTP) RegisterInput(name string, input device_adaptor.ControllerInput) {
 	h.Inputs[name] = input
 }
 
@@ -181,9 +181,9 @@ func (h *HTTP) setPointValueHandler(ctx *gin.Context) {
 }
 
 func init() {
-	controllers.Add("http", func() device_agent.Controller {
+	controllers.Add("http", func() device_adaptor.Controller {
 		return &HTTP{
-			Inputs:  make(map[string]device_agent.ControllerInput),
+			Inputs:  make(map[string]device_adaptor.ControllerInput),
 			chanCmd: make(chan *Command, 1000),
 		}
 	})

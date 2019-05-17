@@ -16,7 +16,7 @@ type WebSocket struct {
 	Address      string `json:"address"`
 	client       *websocket.Conn
 	connected    bool
-	quality      device_agent.Quality
+	quality      device_adaptor.Quality
 	parser       map[string]parsers.Parser
 	msgChan      chan []byte
 	errChan      chan error
@@ -33,7 +33,7 @@ func (w *WebSocket) Name() string {
 	return w.originName
 }
 
-func (w *WebSocket) CheckGather(device_agent.Accumulator) error {
+func (w *WebSocket) CheckGather(device_adaptor.Accumulator) error {
 	if !w.connected {
 		if e := w.Connect(); e != nil {
 			w.errChan <- e
@@ -43,7 +43,7 @@ func (w *WebSocket) CheckGather(device_agent.Accumulator) error {
 	return nil
 }
 
-func (w *WebSocket) SelfCheck() device_agent.Quality {
+func (w *WebSocket) SelfCheck() device_adaptor.Quality {
 	return w.quality
 }
 
@@ -90,7 +90,7 @@ func (w *WebSocket) receiveMsg() {
 	}
 }
 
-func (w *WebSocket) Listen(ctx context.Context, acc device_agent.Accumulator) error {
+func (w *WebSocket) Listen(ctx context.Context, acc device_adaptor.Accumulator) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -108,7 +108,7 @@ func (w *WebSocket) Listen(ctx context.Context, acc device_agent.Accumulator) er
 }
 
 func init() {
-	inputs.Add("ws", func() device_agent.Input {
+	inputs.Add("ws", func() device_adaptor.Input {
 		return &WebSocket{
 			msgChan: make(chan []byte),
 			errChan: make(chan error),

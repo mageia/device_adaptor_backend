@@ -70,7 +70,7 @@ func (r *RabbitMQ) Close() error {
 	return nil
 }
 
-func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
+func (r *RabbitMQ) Write(metrics []device_adaptor.Metric) error {
 	if len(metrics) == 0 {
 		return nil
 	}
@@ -102,7 +102,7 @@ func (r *RabbitMQ) Write(metrics []device_agent.Metric) error {
 }
 
 func init() {
-	outputs.Add("amqp", func() device_agent.Output {
+	outputs.Add("amqp", func() device_adaptor.Output {
 		return &RabbitMQ{
 			AutoDelete: true,
 		}

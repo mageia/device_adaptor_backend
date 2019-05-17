@@ -2,7 +2,7 @@ package outputs
 
 import "device_adaptor"
 
-type Creator func() device_agent.Output
+type Creator func() device_adaptor.Output
 
 var Outputs = map[string]Creator{}
 

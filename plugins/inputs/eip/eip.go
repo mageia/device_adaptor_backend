@@ -21,13 +21,13 @@ type EIP struct {
 	client       go_eip.Client
 	connected    bool
 	originName   string
-	quality      device_agent.Quality
+	quality      device_adaptor.Quality
 	pointMap     map[string]points.PointDefine
 }
 
 var defaultTimeout = internal.Duration{Duration: 3 * time.Second}
 
-func (e *EIP) SelfCheck() device_agent.Quality {
+func (e *EIP) SelfCheck() device_adaptor.Quality {
 	return e.quality
 }
 
@@ -38,7 +38,7 @@ func (e *EIP) Name() string {
 	return e.originName
 }
 
-func (e *EIP) CheckGather(acc device_agent.Accumulator) error {
+func (e *EIP) CheckGather(acc device_adaptor.Accumulator) error {
 	if !e.connected {
 		if err := e.Start(); err != nil {
 			return err
@@ -46,11 +46,11 @@ func (e *EIP) CheckGather(acc device_agent.Accumulator) error {
 	}
 
 	fields := make(map[string]interface{})
-	e.quality = device_agent.QualityGood
+	e.quality = device_adaptor.QualityGood
 
 	defer func(eip *EIP) {
 		if e := recover(); e != nil {
-			eip.quality = device_agent.QualityDisconnect
+			eip.quality = device_adaptor.QualityDisconnect
 			eip.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		}
@@ -91,10 +91,10 @@ func (e *EIP) Stop() {
 }
 
 func init() {
-	inputs.Add("eip", func() device_agent.Input {
+	inputs.Add("eip", func() device_adaptor.Input {
 		return &EIP{
 			originName: "eip",
-			quality:    device_agent.QualityGood,
+			quality:    device_adaptor.QualityGood,
 		}
 	})
 }

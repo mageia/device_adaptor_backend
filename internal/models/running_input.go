@@ -19,13 +19,13 @@ type InputConfig struct {
 }
 
 type RunningInput struct {
-	Config          *InputConfig
-	Input           device_agent.Input
-	PointMap        map[string]points.PointDefine
+	Config               *InputConfig
+	Input                device_adaptor.Input
+	PointMap             map[string]points.PointDefine
 	MetricsCheckGathered selfstat.Stat
 }
 
-func NewRunningInput(input device_agent.Input, config *InputConfig) *RunningInput {
+func NewRunningInput(input device_adaptor.Input, config *InputConfig) *RunningInput {
 	return &RunningInput{
 		Input:  input,
 		Config: config,
@@ -45,10 +45,10 @@ func (r *RunningInput) MakeMetric(
 	measurement string,
 	fields map[string]interface{},
 	tags map[string]string,
-	quality device_agent.Quality,
-	mType device_agent.MetricType,
+	quality device_adaptor.Quality,
+	mType device_adaptor.MetricType,
 	t time.Time,
-) device_agent.Metric {
+) device_adaptor.Metric {
 	m, err := metric.New(measurement, tags, fields, quality, t, mType)
 	if err != nil {
 		log.Printf("Error adding point [%s]: %s", measurement, err.Error())

@@ -18,13 +18,13 @@ type MetricMaker interface {
 		measurement string,
 		fields map[string]interface{},
 		tags map[string]string,
-		quality device_agent.Quality,
-		mType device_agent.MetricType,
+		quality device_adaptor.Quality,
+		mType device_adaptor.MetricType,
 		t time.Time,
-	) device_agent.Metric
+	) device_adaptor.Metric
 }
 
-func NewAccumulator(maker MetricMaker, metrics chan device_agent.Metric) device_agent.Accumulator {
+func NewAccumulator(maker MetricMaker, metrics chan device_adaptor.Metric) device_adaptor.Accumulator {
 	acc := accumulator{
 		maker:     maker,
 		metrics:   metrics,
@@ -34,7 +34,7 @@ func NewAccumulator(maker MetricMaker, metrics chan device_agent.Metric) device_
 }
 
 type accumulator struct {
-	metrics   chan device_agent.Metric
+	metrics   chan device_adaptor.Metric
 	maker     MetricMaker
 	precision time.Duration
 }
@@ -50,8 +50,8 @@ func (ac *accumulator) AddError(err error) {
 	log.Error().Err(err).Str("plugin", ac.maker.Name()).Msg("ACC ERROR")
 }
 
-func (ac *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, quality device_agent.Quality, t ...time.Time) {
-	if m := ac.maker.MakeMetric(measurement, fields, tags, quality, device_agent.Untyped, ac.getTime(t)); m != nil {
+func (ac *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, quality device_adaptor.Quality, t ...time.Time) {
+	if m := ac.maker.MakeMetric(measurement, fields, tags, quality, device_adaptor.Untyped, ac.getTime(t)); m != nil {
 		ac.metrics <- m
 	}
 	MetricFieldsCount.Incr(int64(len(fields)))

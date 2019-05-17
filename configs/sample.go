@@ -55,6 +55,20 @@ var InputSample = map[string]map[string]ConfigSample{
 		"opc_server_name": ConfigSample{"opc_server_name", "OPC名称", "Matrikon.OPC.Simulation.1", nil, "input", 4},
 		"interval":        ConfigSample{"interval", "采集周期", "5s", nil, "combine", 20},
 	},
+	"opc_tcp": {
+		"plugin_name":     ConfigSample{"plugin_name", "插件名称", "opc_tcp", nil, "select", 1},
+		"name_override":   ConfigSample{"name_override", "数据源名称", "opc_tcp", nil, "input", 2},
+		"address":         ConfigSample{"address", "数据源地址", "10.211.55.18:8090", nil, "input", 3},
+		"opc_server_name": ConfigSample{"opc_server_name", "OPC名称", "Matrikon.OPC.Simulation.1", nil, "input", 4},
+		"interval":        ConfigSample{"interval", "采集周期", "5s", nil, "combine", 20},
+	},
+	"opc_ws": {
+		"plugin_name":     ConfigSample{"plugin_name", "插件名称", "opc_ws", nil, "select", 1},
+		"name_override":   ConfigSample{"name_override", "数据源名称", "opc_ws", nil, "input", 2},
+		"address":         ConfigSample{"address", "数据源地址", "ws://localhost:9090", nil, "input", 3},
+		"opc_server_name": ConfigSample{"opc_server_name", "OPC名称", "Matrikon.OPC.Simulation.1", nil, "input", 4},
+		"interval":        ConfigSample{"interval", "采集周期", "5s", nil, "combine", 20},
+	},
 	"modbus": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "modbus", nil, "select", 1},
 		"name_override": ConfigSample{"name_override", "数据源名称", "modbus", nil, "input", 2},

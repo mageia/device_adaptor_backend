@@ -20,6 +20,6 @@ func (r *Redis) Stop(context.Context) error {
 	panic("implement me")
 }
 
-func (r *Redis) RegisterInput(string, device_agent.ControllerInput) {
+func (r *Redis) RegisterInput(string, device_adaptor.ControllerInput) {
 	panic("implement me")
 }

@@ -33,7 +33,7 @@ type FTP struct {
 	originName        string
 	connected         bool
 	client            *ftp.ServerConn
-	quality           device_agent.Quality
+	quality           device_adaptor.Quality
 	basePath          string
 	pointMap          map[string]points.PointDefine
 	pointAddressToKey map[string]string
@@ -42,7 +42,7 @@ type FTP struct {
 	NameOverride      string `json:"name_override"`
 }
 
-func (f *FTP) SelfCheck() device_agent.Quality {
+func (f *FTP) SelfCheck() device_adaptor.Quality {
 	return f.quality
 }
 
@@ -61,10 +61,10 @@ func (f *FTP) SetPointMap(pointMap map[string]points.PointDefine) {
 	}
 }
 
-func (*FTP) FlushPointMap(acc device_agent.Accumulator) error {
+func (*FTP) FlushPointMap(acc device_adaptor.Accumulator) error {
 	return nil
 }
-func (f *FTP) CheckGatherServer(client *ftp.ServerConn, acc device_agent.Accumulator) error {
+func (f *FTP) CheckGatherServer(client *ftp.ServerConn, acc device_adaptor.Accumulator) error {
 	if f.DataPath == "" {
 		return errors.New("empty data_path")
 	}
@@ -76,11 +76,11 @@ func (f *FTP) CheckGatherServer(client *ftp.ServerConn, acc device_agent.Accumul
 	defer func(ftp *FTP) {
 		if e := recover(); e != nil {
 			debug.PrintStack()
-			ftp.quality = device_agent.QualityDisconnect
+			ftp.quality = device_adaptor.QualityDisconnect
 			ftp.connected = false
 			acc.AddError(fmt.Errorf("%v", e))
 		} else {
-			ftp.quality = device_agent.QualityGood
+			ftp.quality = device_adaptor.QualityGood
 		}
 		acc.AddFields(ftp.Name(), fields, nil, ftp.SelfCheck())
 	}(f)
@@ -119,7 +119,7 @@ func (f *FTP) CheckGatherServer(client *ftp.ServerConn, acc device_agent.Accumul
 	return nil
 }
 
-func (f *FTP) CheckGather(acc device_agent.Accumulator) error {
+func (f *FTP) CheckGather(acc device_adaptor.Accumulator) error {
 	if !f.connected {
 		if e := f.Start(); e != nil {
 			return e
@@ -247,11 +247,11 @@ func (f *FTP) Start() error {
 }
 
 func init() {
-	inputs.Add("ftp", func() device_agent.Input {
+	inputs.Add("ftp", func() device_adaptor.Input {
 		return &FTP{
 			pointMap:          make(map[string]points.PointDefine, 0),
 			pointAddressToKey: make(map[string]string),
-			quality:           device_agent.QualityGood,
+			quality:           device_adaptor.QualityGood,
 		}
 	})
 }

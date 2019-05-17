@@ -1,23 +1,22 @@
-package opc
+package opc_ws
 
 import (
-	"bytes"
+	"bufio"
 	"context"
 	"device_adaptor"
 	"device_adaptor/internal"
 	"device_adaptor/internal/points"
+	"device_adaptor/plugins/inputs"
 	"device_adaptor/utils"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
-	"io"
 	"net"
 	"time"
 )
 
-type OPC_CPP struct {
+type OpcTcp struct {
 	Address            string            `json:"address"`
 	Interval           internal.Duration `json:"interval"`
 	Timeout            internal.Duration `json:"timeout"`
@@ -26,26 +25,26 @@ type OPC_CPP struct {
 	FieldSuffix        string            `json:"field_suffix"`
 	NameOverride       string            `json:"name_override"`
 	originName         string
-	quality            device_agent.Quality
+	quality            device_adaptor.Quality
 	pointMap           map[string]points.PointDefine
 	_pointAddressToKey map[string]string
 	ctx                context.Context
 	cancel             context.CancelFunc
 }
 
-func (t *OPC_CPP) OriginName() string {
+func (t *OpcTcp) OriginName() string {
 	return t.originName
 }
 
-func (t *OPC_CPP) SetValue(kv map[string]interface{}) error {
+func (t *OpcTcp) SetValue(kv map[string]interface{}) error {
 	return t.sendCommand("control", kv)
 }
 
-func (t *OPC_CPP) UpdatePointMap(map[string]interface{}) error {
+func (t *OpcTcp) UpdatePointMap(map[string]interface{}) error {
 	return nil
 }
 
-func (t *OPC_CPP) RetrievePointMap(keys []string) map[string]points.PointDefine {
+func (t *OpcTcp) RetrievePointMap(keys []string) map[string]points.PointDefine {
 	if len(keys) == 0 {
 		return t.pointMap
 	}
@@ -64,7 +63,25 @@ type opcServerResponse struct {
 	Result  interface{} `json:"result"`
 }
 
-func (t *OPC_CPP) sendCommand(cmdId string, param interface{}) error {
+//
+//func (t *OpcTcp) receiveCommand() {
+//	var totalLen uint32
+//
+//	for {
+//		binary.Read(t.client, binary.LittleEndian, &totalLen)
+//		if totalLen <= 4 {
+//			//return errors.New("can't get response")
+//		}
+//		buf := make([]byte, totalLen-4)
+//		if _, err := io.ReadFull(t.client, buf); err != nil {
+//			//return err
+//		}
+//
+//		log.Debug().Str("buf", string(buf)).Msg("buf")
+//	}
+//}
+
+func (t *OpcTcp) sendCommand(cmdId string, param interface{}) error {
 	l, e := net.DialTimeout("tcp", t.Address, t.Timeout.Duration)
 	if e != nil {
 		log.Error().Err(e).Msg("sendInitMsg.DialTimeout")
@@ -126,30 +143,22 @@ func (t *OPC_CPP) sendCommand(cmdId string, param interface{}) error {
 	if e != nil {
 		return e
 	}
-	writeBuf := new(bytes.Buffer)
-	binary.Write(writeBuf, binary.LittleEndian, uint32(len(b)+4))
-	binary.Write(writeBuf, binary.LittleEndian, b)
-	if n, e := l.Write(writeBuf.Bytes()); e != nil || n != len(b)+4 {
+	b = append(b, byte('\n'))
+	if n, e := l.Write(b); e != nil || n != len(b) {
 		log.Error().Int("len(n)", n).Int("len(b)", len(b)).Msg("write error")
 		return errors.New("write command " + cmdId + " failed")
 	}
 
-	var totalLen uint32
-	binary.Read(l, binary.LittleEndian, &totalLen)
-	if totalLen <= 4 {
-		return errors.New("can't get response")
-	}
-	buf := make([]byte, totalLen-4)
-	if _, err := io.ReadFull(l, buf); err != nil {
-		return err
-	}
+	r := bufio.NewReader(l)
+	buf, _ := r.ReadBytes(byte('\n'))
+	log.Debug().Str("buf", string(buf)).Msg("buf")
 
 	tmpResp := opcServerResponse{}
 	if e := jsoniter.Unmarshal(buf, &tmpResp); e != nil {
 		return e
 	}
 
-	//log.Debug().Interface("tmpResp", tmpResp).Msg("tmpResp")
+	log.Debug().Interface("tmpResp", tmpResp).Msg("tmpResp")
 
 	if !tmpResp.Success {
 		if tmpResp.Cmd == "real_time_data" {
@@ -163,7 +172,7 @@ func (t *OPC_CPP) sendCommand(cmdId string, param interface{}) error {
 	case "control":
 	case "real_time_data":
 		fields := make(map[string]interface{})
-		acc, ok := param.(device_agent.Accumulator)
+		acc, ok := param.(device_adaptor.Accumulator)
 		if !ok {
 			return errors.New("invalid real_time_data acc format")
 		}
@@ -171,7 +180,7 @@ func (t *OPC_CPP) sendCommand(cmdId string, param interface{}) error {
 			for k, v := range r {
 				if pKey, ok := t._pointAddressToKey[k]; ok {
 					switch vf := v.(type) {
-					case float64:	//TODO: float32
+					case float64: //TODO: float32
 						fields[pKey] = utils.Round(vf, 6)
 					case bool:
 						if vf {
@@ -193,36 +202,33 @@ func (t *OPC_CPP) sendCommand(cmdId string, param interface{}) error {
 	return nil
 }
 
-func (t *OPC_CPP) SelfCheck() device_agent.Quality {
+func (t *OpcTcp) SelfCheck() device_adaptor.Quality {
 	return t.quality
 }
-func (t *OPC_CPP) Name() string {
+func (t *OpcTcp) Name() string {
 	if t.NameOverride != "" {
 		return t.NameOverride
 	}
 	return t.originName
 }
-func (t *OPC_CPP) CheckGather(acc device_agent.Accumulator) error {
+func (t *OpcTcp) CheckGather(acc device_adaptor.Accumulator) error {
 	if e := t.sendCommand("real_time_data", acc); e != nil {
+		t.Stop()
 		return e
 	}
 
 	return nil
 }
-func (t *OPC_CPP) SetPointMap(pointMap map[string]points.PointDefine) {
+func (t *OpcTcp) SetPointMap(pointMap map[string]points.PointDefine) {
 	t.pointMap = pointMap
 	t._pointAddressToKey = make(map[string]string, len(t.pointMap))
 	for k, v := range t.pointMap {
 		t._pointAddressToKey[v.Address] = k
 	}
 }
-func (t *OPC_CPP) Start() error {
-	if e := t.sendCommand("init", nil); e != nil {
-		return e
-	}
-
+func (t *OpcTcp) Start() error {
 	go func() {
-		ticker := time.NewTicker(time.Second * 30)
+		ticker := time.NewTicker(time.Second * 2)
 		for {
 			select {
 			case <-ticker.C:
@@ -235,19 +241,19 @@ func (t *OPC_CPP) Start() error {
 
 	return nil
 }
-func (t *OPC_CPP) Stop() {
+func (t *OpcTcp) Stop() {
 	t.cancel()
 }
 
 func init() {
-	//ctx, cancel := context.WithCancel(context.Background())
-	//inputs.Add("opc", func() device_agent.Input {
-	//	return &OPC_CPP{
-	//		originName: "opc",
-	//		quality:    device_agent.QualityGood,
-	//		ctx:        ctx,
-	//		cancel:     cancel,
-	//		Timeout:    internal.Duration{Duration: time.Second * 5},
-	//	}
-	//})
+	ctx, cancel := context.WithCancel(context.Background())
+	inputs.Add("opc_tcp", func() device_adaptor.Input {
+		return &OpcTcp{
+			originName: "opc_tcp",
+			quality:    device_adaptor.QualityGood,
+			ctx:        ctx,
+			cancel:     cancel,
+			Timeout:    internal.Duration{Duration: time.Second * 5},
+		}
+	})
 }

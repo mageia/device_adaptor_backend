@@ -12,7 +12,7 @@ func (i *Interactive) Name() string {
 	panic("implement me")
 }
 
-func (i *Interactive) CheckGather(device_agent.Accumulator) error {
+func (i *Interactive) CheckGather(device_adaptor.Accumulator) error {
 	panic("implement me")
 }
 

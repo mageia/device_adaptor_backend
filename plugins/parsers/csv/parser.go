@@ -47,7 +47,7 @@ func (p *Parser) initReader(r *bytes.Reader) (*csv.Reader, error) {
 	return csvReader, nil
 }
 
-func (p *Parser) parseRecord(record []string) (device_agent.Metric, error) {
+func (p *Parser) parseRecord(record []string) (device_adaptor.Metric, error) {
 	recordFields := make(map[string]interface{})
 	tags := make(map[string]string)
 
@@ -104,14 +104,14 @@ outer:
 		}
 	}
 
-	m, err := metric.New(measurementName, tags, recordFields, device_agent.QualityGood, metricTime, device_agent.Untyped)
+	m, err := metric.New(measurementName, tags, recordFields, device_adaptor.QualityGood, metricTime, device_adaptor.Untyped)
 	if err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (p *Parser) Parse2(line []byte) ([]device_agent.Metric, error) {
+func (p *Parser) Parse2(line []byte) ([]device_adaptor.Metric, error) {
 	r := bytes.NewReader([]byte(line))
 	csvReader, err := p.initReader(r)
 	if err != nil {
@@ -150,7 +150,7 @@ func (p *Parser) Parse2(line []byte) ([]device_agent.Metric, error) {
 	if err != nil {
 		return nil, err
 	}
-	metrics := make([]device_agent.Metric, 0)
+	metrics := make([]device_adaptor.Metric, 0)
 	for _, record := range table {
 		m, err := p.parseRecord(record)
 		if err != nil {
@@ -161,7 +161,7 @@ func (p *Parser) Parse2(line []byte) ([]device_agent.Metric, error) {
 	return metrics, nil
 }
 
-func (p *Parser) ParseLine(line string) (device_agent.Metric, error) {
+func (p *Parser) ParseLine(line string) (device_adaptor.Metric, error) {
 	r := bytes.NewReader([]byte(line))
 	csvReader, err := p.initReader(r)
 	if err != nil {

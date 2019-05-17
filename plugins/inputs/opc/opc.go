@@ -9,6 +9,7 @@ import (
 	"device_adaptor/plugins/inputs"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ type OPC struct {
 	FieldSuffix        string            `json:"field_suffix"`
 	NameOverride       string            `json:"name_override"`
 	originName         string
-	quality            device_agent.Quality
+	quality            device_adaptor.Quality
 	pointMap           map[string]points.PointDefine
 	connected          bool
 	_opcCmd            *exec.Cmd
@@ -41,7 +42,7 @@ func (o *OPC) Name() string {
 	return o.originName
 }
 
-func (o *OPC) CheckGather(acc device_agent.Accumulator) error {
+func (o *OPC) CheckGather(acc device_adaptor.Accumulator) error {
 	if len(o._fields) > 0 {
 		acc.AddFields("opc", o._fields, nil, o.quality)
 	}
@@ -49,7 +50,7 @@ func (o *OPC) CheckGather(acc device_agent.Accumulator) error {
 	return nil
 }
 
-func (o *OPC) SelfCheck() device_agent.Quality {
+func (o *OPC) SelfCheck() device_adaptor.Quality {
 	return o.quality
 }
 
@@ -61,7 +62,7 @@ func (o *OPC) SetPointMap(pointMap map[string]points.PointDefine) {
 	}
 }
 
-func (o *OPC) Listen(ctx context.Context, acc device_agent.Accumulator) error {
+func (o *OPC) Listen(ctx context.Context, acc device_adaptor.Accumulator) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -128,17 +129,21 @@ func (o *OPC) DisConnect() error {
 		log.Error().Err(e).Msg("Process.Kill")
 		return e
 	}
+	log.Debug().Interface("s", o._opcCmd.Process.Pid)
 	o.connected = false
 
 	return nil
 }
 
 func init() {
-	inputs.Add("opc", func() device_agent.Input {
+	if runtime.GOOS == "darwin" {
+		return
+	}
+	inputs.Add("opc", func() device_adaptor.Input {
 		return &OPC{
 			originName: "opc",
 			_fields:    make(map[string]interface{}),
-			quality:    device_agent.QualityGood,
+			quality:    device_adaptor.QualityGood,
 			Interval:   internal.Duration{Duration: time.Second * 3},
 		}
 	})
