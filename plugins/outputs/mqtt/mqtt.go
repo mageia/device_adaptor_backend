@@ -4,6 +4,7 @@ import (
 	"device_adaptor"
 	"device_adaptor/plugins/outputs"
 	"device_adaptor/plugins/serializers"
+	"errors"
 	"fmt"
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
@@ -36,9 +37,12 @@ func (mt *Mqtt) Connect() error {
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s", opt.Host))
 	opts.SetUsername(opt.User.Username())
 	opts.SetPassword(p)
-	// TODO: check this
 	opts.SetClientID(uuid.New().String())
 	_client := mqtt.NewClient(opts)
+
+	if token := _client.Connect(); token.Wait() && token.Error() != nil {
+		return token.Error()
+	}
 	if _client.IsConnected() {
 		mt.client = _client
 		mt.connected = true
@@ -48,15 +52,18 @@ func (mt *Mqtt) Connect() error {
 
 func (mt *Mqtt) Close() error {
 	if mt.connected {
-		mt.client.Disconnect(3000)
+		mt.client.Disconnect(0)
 		mt.connected = false
 	}
 	return nil
 }
 
 func (mt *Mqtt) Write(metrics []device_adaptor.Metric) error {
-	if len(metrics) == 0 || !mt.connected {
-		return mt.Connect()
+	if !mt.connected {
+		return errors.New("disconnected")
+	}
+	if len(metrics) == 0 {
+		return nil
 	}
 
 	for _, metric := range metrics {
@@ -65,16 +72,14 @@ func (mt *Mqtt) Write(metrics []device_adaptor.Metric) error {
 			return fmt.Errorf("failed to serialize message: %s", err)
 		}
 
-		sV, err := jsoniter.MarshalToString(m)
+		sV, err := jsoniter.Marshal(m)
 		if err != nil {
 			return err
 		}
 
-		token := mt.client.Publish(metric.Name(), 2, true, sV)
+		token := mt.client.Publish(metric.Name(), 0, true, sV)
 		if token.Error() != nil {
 			log.Error().Err(token.Error()).Msg("mqtt.Publish")
-			mt.Close()
-			mt.Connect()
 			return err
 		}
 	}
@@ -84,6 +89,9 @@ func (mt *Mqtt) Write(metrics []device_adaptor.Metric) error {
 
 func (mt *Mqtt) SetSerializer(s serializers.Serializer) {
 	mt.serializer = s
+}
+func (mt *Mqtt) WritePointMap(pointMap device_adaptor.PointMap) error {
+	return nil
 }
 
 func init() {

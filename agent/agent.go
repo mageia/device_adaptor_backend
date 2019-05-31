@@ -226,12 +226,8 @@ func (a *Agent) flusher(inMetricC chan device_adaptor.Metric, outMetricC chan de
 			case <-a.Ctx.Done():
 				return
 			case metric := <-outMetricC:
-				for i, o := range a.Config.Outputs {
-					if i == len(a.Config.Outputs)-1 {
-						o.AddMetric(metric)
-					} else {
-						o.AddMetric(metric.Copy())
-					}
+				for _, o := range a.Config.Outputs {
+					o.AddMetric(metric)
 				}
 			}
 		}

@@ -19,6 +19,10 @@ type ServiceOutput interface {
 	Stop()
 }
 
+//type SerializerOutput interface {
+//	SetSerializer(serializer serializers.Serializer)
+//}
+
 //type AggregatingOutput interface {
 //	Connect() error
 //	Close() error

@@ -5,10 +5,10 @@
     以 Redis PUB/SUB 形式发布，Channel 名字就是 Input 名字。
 
     点表信息
-    1. 会将每个 Input 的点表 HSET 到 Redis 中，键通过 PointsKey 配置，Field 就是 Input 名字；
-    2. 会将每个 Input 的点表版本（时间戳）HSET 到 Redis 中，键通过 PointsVersionKey 配置，Field 就是 Input 名字；
+    1. 会将每个 Input 的点表 HSet 到 Redis 中，键通过 PointsKey 配置，Field 就是 Input 名字；
+    2. 会将每个 Input 的点表版本（时间戳）HSet 到 Redis 中，键通过 PointsVersionKey 配置，Field 就是 Input 名字；
     3. 点表变更时，会将对应的 Input 名字通过 PUB/SUB 形式发布出来，Channel 通过 PointsKey 配置。
- */
+*/
 package redis
 
 import (
@@ -21,24 +21,23 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/json-iterator/go"
-	"log"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
 type Redis struct {
-	UrlAddress string            `json:"url_address"`
-	Timeout    internal.Duration `json:"timeout"`
-	PointsKey  string            `json:"points_key"`
-	PointsVersionKey string      `json:"points_version_key"`
-	client     *redis.Client
-	serializer serializers.Serializer
+	UrlAddress       string            `json:"url_address"`
+	Timeout          internal.Duration `json:"timeout"`
+	PointsKey        string            `json:"points_key"`
+	PointsVersionKey string            `json:"points_version_key"`
+	client           *redis.Client
+	serializer       serializers.Serializer
 }
 
 func (r *Redis) Write(metrics []device_adaptor.Metric) error {
 	if r.client == nil {
 		return errors.New("disconnected")
 	}
-
 	if len(metrics) == 0 {
 		return nil
 	}
@@ -55,7 +54,7 @@ func (r *Redis) Write(metrics []device_adaptor.Metric) error {
 		}
 
 		if err := r.client.Publish(metric.Name(), sV).Err(); err != nil {
-			log.Println(err)
+			log.Error().Err(err).Msg("Publish")
 			return err
 		}
 		alarm.ChanRealTime <- alarm.RealTime{PluginName: metric.Name(), Metric: m}
@@ -81,19 +80,19 @@ func (r *Redis) WritePointMap(pointMap device_adaptor.PointMap) error {
 
 	// 将点表内容覆盖到指定键（用于同步查询）
 	if err := r.client.HSet(r.PointsKey, pointMap.InputName, str).Err(); err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("HSet")
 		return err
 	}
 
 	// 将点表的版本（时间戳）覆盖到指定键
-	if err := r.client.HSet(r.PointsVersionKey, pointMap.InputName, pointMap.Time.UnixNano() / 1e6).Err(); err != nil {
-		log.Println(err)
+	if err := r.client.HSet(r.PointsVersionKey, pointMap.InputName, pointMap.Time.UnixNano()/1e6).Err(); err != nil {
+		log.Error().Err(err).Msg("HSet")
 		return err
 	}
 
 	// 将发送变更的 Input 名称发布到 redis 通道（用于异步通知）
 	if err := r.client.Publish(r.PointsKey, pointMap.InputName).Err(); err != nil {
-		log.Println(err)
+		log.Error().Err(err).Msg("Publish")
 		return err
 	}
 

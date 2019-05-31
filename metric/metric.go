@@ -37,7 +37,6 @@ func New(name string,
 		}
 	}
 	m.fields = make([]*device_adaptor.Field, 0, len(fields))
-
 	for k, v := range fields {
 		m.AddField(k, v)
 	}

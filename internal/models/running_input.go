@@ -5,7 +5,7 @@ import (
 	"device_adaptor/internal/points"
 	"device_adaptor/metric"
 	"device_adaptor/selfstat"
-	"log"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -51,7 +51,7 @@ func (r *RunningInput) MakeMetric(
 ) device_adaptor.Metric {
 	m, err := metric.New(measurement, tags, fields, quality, t, mType)
 	if err != nil {
-		log.Printf("Error adding point [%s]: %s", measurement, err.Error())
+		log.Error().Str("measurement", measurement).Err(err).Msg("metric.New")
 		return nil
 	}
 

@@ -6,8 +6,8 @@ import (
 	"device_adaptor/plugins/inputs"
 	"fmt"
 	"math/rand"
-	"time"
 	"strconv"
+	"time"
 )
 
 type Fake struct {
@@ -51,22 +51,19 @@ func (f *Fake) CheckGather(acc device_adaptor.Accumulator) error {
 	}(f)
 
 	for k, v := range f.pointMap {
-		_, maxExist := v.Extra["fakemax"]
-		_, minExist := v.Extra["fakemin"]
+		fakeMax, fakeMaxExist := v.Extra["fakeMax"]
+		fakeMin, fakeMinExist := v.Extra["fakeMin"]
+
 		switch v.PointType {
 		case points.PointAnalog:
-			if maxExist && minExist {
-				max, _ := strconv.ParseFloat(v.Extra["fakemax"].(string), 64)
-				min, _ := strconv.ParseFloat(v.Extra["fakemin"].(string), 64)
-				fields[k] = rand.Float64()*(max-min) + min //never max
+			if fakeMaxExist && fakeMinExist {
+				fields[k] = rand.Float64()*(fakeMax.(float64)-fakeMin.(float64)) + fakeMin.(float64) //never max
 			} else {
 				fields[k] = rand.Float64() * 100 //default [0,100)
 			}
 		case points.PointDigital:
-			if maxExist && minExist {
-				max, _ := strconv.Atoi(v.Extra["fakemax"].(string))
-				min, _ := strconv.Atoi(v.Extra["fakemin"].(string))
-				fields[k] = rand.Intn(max+1-min) + min
+			if fakeMaxExist && fakeMinExist {
+				fields[k] = rand.Intn(int(fakeMax.(float64))-int(fakeMin.(float64))+1) + int(fakeMin.(float64))
 			} else {
 				if v.Option != nil && len(v.Option) > 0 {
 					keyList := make([]int, 0, len(v.Option))
