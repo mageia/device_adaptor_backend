@@ -5,14 +5,12 @@ import (
 	"device_adaptor"
 	"device_adaptor/internal"
 	"device_adaptor/internal/points"
-	"device_adaptor/plugins/inputs"
 	"device_adaptor/utils"
 	"errors"
 	"fmt"
 	"github.com/json-iterator/go"
 	"github.com/rs/zerolog/log"
 	"net"
-	"time"
 )
 
 type OPC struct {
@@ -219,11 +217,11 @@ func (t *OPC) Stop() {
 }
 
 func init() {
-	inputs.Add("opc_tcp", func() device_adaptor.Input {
-		return &OPC{
-			originName: "opc_tcp",
-			quality:    device_adaptor.QualityGood,
-			Timeout:    internal.Duration{Duration: time.Second * 5},
-		}
-	})
+	//inputs.Add("opc", func() device_adaptor.Input {
+	//	return &OPC{
+	//		originName: "opc",
+	//		quality:    device_adaptor.QualityGood,
+	//		Timeout:    internal.Duration{Duration: time.Second * 5},
+	//	}
+	//})
 }
