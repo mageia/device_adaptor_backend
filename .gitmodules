@@ -1,3 +1,3 @@
 [submodule "frontend"]
 	path = frontend
-	url = git@git.leaniot.cn:project/mos/data/config_frontend_cli3.git
+	url = git@git.itsneo1990.com:Bitiiot/device_adaptor_frontend.git
