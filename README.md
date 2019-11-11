@@ -134,3 +134,24 @@ Content-Type: application/json
 
 
 
+## 工程相关
+
+>  前端代码嵌入
+>
+> 
+>
+> 获取嵌入打包工具：
+>
+> ```shell
+> go get github.com/rakyll/statik
+> ```
+>
+> 
+>
+> 在后端repo根目录下执行：
+>
+> ```shell
+> cp -r frontend/dist assets/
+> statik -src=assets/dist
+> ```
+

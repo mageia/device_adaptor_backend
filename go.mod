@@ -29,7 +29,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/rakyll/statik v0.1.5
+	github.com/rakyll/statik v0.1.6
 	github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b
 	github.com/rs/zerolog v1.12.0
 	github.com/shirou/gopsutil v2.18.12+incompatible

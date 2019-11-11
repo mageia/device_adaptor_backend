@@ -39,7 +39,7 @@ type Login struct {
 }
 
 func getStatic(fs http.FileSystem, p string) ([]byte, error) {
-	pp := path.Join("/dist", p)
+	pp := path.Join("/", p)
 	x, e := fs.Open(pp)
 	if e != nil {
 		return nil, e
@@ -76,7 +76,7 @@ func getPointMap(c *gin.Context) {
 	id := c.Param("id")
 	iC, ok := configs.GetInputConfigById(id)
 	if !ok {
-		c.Error(fmt.Errorf("can't find input plugin by id: %s", id))
+		_ = c.Error(fmt.Errorf("can't find input plugin by id: %s", id))
 		return
 	}
 
@@ -96,7 +96,7 @@ func putPointMap(c *gin.Context) {
 	id := c.Param("id")
 	iC, ok := configs.GetInputConfigById(id)
 	if !ok {
-		c.Error(fmt.Errorf("can't find input plugin by id: %s", id))
+		_ = c.Error(fmt.Errorf("can't find input plugin by id: %s", id))
 		return
 	}
 
@@ -107,14 +107,14 @@ func putPointMap(c *gin.Context) {
 		PointMapContent string `json:"point_map_content"`
 	}
 	if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	pointMap := make(map[string]points.PointDefine)
 	if e := yaml.UnmarshalStrict([]byte(body.PointMapContent), &pointMap); e != nil {
 		if e = jsoniter.Unmarshal([]byte(body.PointMapContent), &pointMap); e != nil {
-			c.Error(fmt.Errorf("point_map_content is neither json nor yaml format: %v", e))
+			_ = c.Error(fmt.Errorf("point_map_content is neither json nor yaml format: %v", e))
 			return
 		}
 	}
@@ -131,7 +131,7 @@ func putPointMap(c *gin.Context) {
 	if r := begin.Where("input_name = ?", inputName).Delete(points.PointDefine{}); r.Error != nil {
 		r.Rollback()
 		log.Error().Err(r.Error).Msg("Delete")
-		c.Error(r.Error)
+		_ = c.Error(r.Error)
 		return
 	}
 
