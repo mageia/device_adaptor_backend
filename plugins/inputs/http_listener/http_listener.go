@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	DEFAULT_MAX_BODY_SIZE = 5 * 1024 * 1024 // 500 MB
-	DEFAULT_MAX_LINE_SIZE = 64 * 1024       // 64 KB
+	DefaultMaxBodySize = 5 * 1024 * 1024 // 500 MB
+	DefaultMaxLineSize = 64 * 1024       // 64 KB
 )
 
 type ContentInfo struct {
@@ -171,10 +171,10 @@ func (h *HTTPListener) Start() error {
 	defer h.mu.Unlock()
 
 	if h.MaxBodySize == 0 {
-		h.MaxBodySize = DEFAULT_MAX_BODY_SIZE
+		h.MaxBodySize = DefaultMaxBodySize
 	}
 	if h.MaxLineSize == 0 {
-		h.MaxLineSize = DEFAULT_MAX_LINE_SIZE
+		h.MaxLineSize = DefaultMaxLineSize
 	}
 	if h.ReadTimeout.Duration < time.Second {
 		h.ReadTimeout.Duration = time.Second * 10
