@@ -64,16 +64,16 @@ github.com/rakyll/statik/fs
 github.com/robinson/gos7
 # github.com/rs/zerolog v1.12.0
 github.com/rs/zerolog
-github.com/rs/zerolog/log
 github.com/rs/zerolog/internal/cbor
 github.com/rs/zerolog/internal/json
+github.com/rs/zerolog/log
 # github.com/shirou/gopsutil v2.18.12+incompatible
 github.com/shirou/gopsutil/cpu
 github.com/shirou/gopsutil/disk
 github.com/shirou/gopsutil/host
+github.com/shirou/gopsutil/internal/common
 github.com/shirou/gopsutil/mem
 github.com/shirou/gopsutil/net
-github.com/shirou/gopsutil/internal/common
 github.com/shirou/gopsutil/process
 # github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
 github.com/shirou/w32
@@ -96,9 +96,9 @@ github.com/yuin/gopher-lua/parse
 github.com/yuin/gopher-lua/pm
 # golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
 golang.org/x/net/context
+golang.org/x/net/internal/socks
 golang.org/x/net/proxy
 golang.org/x/net/websocket
-golang.org/x/net/internal/socks
 # golang.org/x/sys v0.0.0-20190419153524-e8e3143a4f4a
 golang.org/x/sys/unix
 golang.org/x/sys/windows
