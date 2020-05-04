@@ -67,10 +67,10 @@ func (hs HashStringType) Value() (driver.Value, error) {
 func (as *ArrayStringType) Scan(val interface{}) error {
 	switch val := val.(type) {
 	case string:
-		*as = ArrayStringType(strings.Split(val, ","))
+		*as = strings.Split(val, ",")
 		return nil
 	case []byte:
-		*as = ArrayStringType(strings.Split(string(val), ","))
+		*as = strings.Split(string(val), ",")
 		return nil
 	default:
 		return errors.New("not support")

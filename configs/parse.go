@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"device_adaptor"
 	"device_adaptor/internal"
 	"device_adaptor/internal/models"
 	"device_adaptor/internal/points"
@@ -12,6 +13,7 @@ import (
 	"device_adaptor/utils"
 	"fmt"
 	"github.com/json-iterator/go"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"reflect"
 	"time"
@@ -106,7 +108,14 @@ func (c *Config) addInputBytes(table []byte) error {
 	for _, v := range pointArray {
 		pointMap[v.PointKey] = v
 	}
-	input.SetPointMap(pointMap)
+
+	switch i := input.(type) {
+	case device_adaptor.SimpleInput:
+		pointMap = i.ProbePointMap()
+		log.Debug().Interface("pointMap", pointMap).Msg("addInputBytes")
+	default:
+		input.SetPointMap(pointMap)
+	}
 
 	if err := jsoniter.Unmarshal(table, &input); err != nil {
 		return err

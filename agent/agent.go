@@ -115,7 +115,7 @@ func (a *Agent) Close() error {
 			p.Stop()
 			log.Info().Str("plugin", p.Name()).Msg("Successfully closed input")
 		case device_adaptor.PassiveInput:
-			p.DisConnect()
+			p.Stop()
 			log.Info().Str("plugin", p.Name()).Msg("Successfully closed input")
 		}
 	}
@@ -138,6 +138,13 @@ func CheckGatherWithTimeout(ctx context.Context, input *models.RunningInput, acc
 	done := make(chan error)
 	go func() {
 		//start := time.Now()
+		switch i := input.Input.(type) {
+		case device_adaptor.PassiveInput:
+			if !i.GetListening() {
+				go i.StartListen(ctx, acc)
+			}
+		}
+
 		done <- input.Input.CheckGather(acc)
 		//elapsed := time.Since(start)
 		//log.Debug().Msg(time.Since(start).String())
@@ -164,12 +171,6 @@ func (a *Agent) CheckGatherer(input *models.RunningInput, interval time.Duration
 	acc := NewAccumulator(input, metricC)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-
-	switch i := input.Input.(type) {
-	case device_adaptor.PassiveInput:
-		go i.Listen(a.Ctx, acc)
-		//return
-	}
 
 	for {
 		internal.RandomSleep(a.Config.Global.CollectionJitter.Duration, a.Ctx)
@@ -321,14 +322,14 @@ func (a *Agent) Run() error {
 				}
 			}
 		case device_adaptor.PassiveInput:
-			if err := p.Connect(); err != nil {
+			if err := p.Start(); err != nil {
 				log.Error().Err(err).Str("plugin", input.Name()).Msg("PassiveInput start failed")
 				break
 			}
 			log.Info().Str("plugin", input.Name()).Msg("PassiveInput start success")
 		}
 
-		// 启动时点表有可能已变更，需通知点表更新
+		// 启动时点表有可能已变更，需通知点表更新，最新点表写入Output
 		a.OnPointDefineUpdate(input.Input)
 
 		inter := a.Config.Global.Interval.Duration

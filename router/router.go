@@ -92,6 +92,11 @@ func getPointMap(c *gin.Context) {
 		"point_map_path":    "", //TODO  path
 	})
 }
+func probePointMap(c *gin.Context) {
+	c.JSON(200, gin.H{
+
+	})
+}
 func putPointMap(c *gin.Context) {
 	id := c.Param("id")
 	iC, ok := configs.GetInputConfigById(id)
@@ -630,6 +635,8 @@ func InitRouter(debug bool) *gin.Engine {
 	pM := api.Group("/pointMap/", JWTAuthMiddleware)
 	pM.GET("/:id", getPointMap)
 	pM.PUT("/:id", putPointMap)
+
+	//api.GET("/probePointMap/:id", JWTAuthMiddleware, probePointMap)
 
 	if debug {
 		gin.SetMode(gin.DebugMode)

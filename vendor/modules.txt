@@ -37,6 +37,15 @@ github.com/go-redis/redis/internal/util
 github.com/golang/protobuf/proto
 # github.com/google/uuid v1.1.1
 github.com/google/uuid
+# github.com/gopcua/opcua v0.1.11
+github.com/gopcua/opcua
+github.com/gopcua/opcua/debug
+github.com/gopcua/opcua/errors
+github.com/gopcua/opcua/id
+github.com/gopcua/opcua/ua
+github.com/gopcua/opcua/uacp
+github.com/gopcua/opcua/uapolicy
+github.com/gopcua/opcua/uasc
 # github.com/gorilla/websocket v1.4.0
 github.com/gorilla/websocket
 # github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
@@ -58,7 +67,9 @@ github.com/mattn/go-sqlite3
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/rakyll/statik v0.1.5
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
+# github.com/rakyll/statik v0.1.6
 github.com/rakyll/statik/fs
 # github.com/robinson/gos7 v0.0.0-20181115081451-db01b78acb2b
 github.com/robinson/gos7
@@ -94,17 +105,17 @@ github.com/yuin/gopher-lua
 github.com/yuin/gopher-lua/ast
 github.com/yuin/gopher-lua/parse
 github.com/yuin/gopher-lua/pm
-# golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
+# golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 golang.org/x/net/context
 golang.org/x/net/internal/socks
 golang.org/x/net/proxy
 golang.org/x/net/websocket
-# golang.org/x/sys v0.0.0-20190419153524-e8e3143a4f4a
+# golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # gopkg.in/go-playground/validator.v8 v8.18.2
 gopkg.in/go-playground/validator.v8
 # gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 gopkg.in/olahol/melody.v1
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.4
 gopkg.in/yaml.v2

@@ -30,7 +30,7 @@ func (f *File) Connect() error {
 		} else {
 			var of *os.File
 			var err error
-			if _, err := os.Stat(file); os.IsNotExist(err) {
+			if _, err = os.Stat(file); os.IsNotExist(err) {
 				of, err = os.Create(file)
 			} else {
 				of, err = os.OpenFile(file, os.O_APPEND|os.O_WRONLY, os.ModeAppend)

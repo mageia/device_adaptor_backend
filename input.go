@@ -17,21 +17,24 @@ const (
 )
 
 type Input interface {
-	Name() string						//plugin name or data source name
-	CheckGather(Accumulator) error		//check connect or gather data
-	SelfCheck() Quality					//check data quality
+	Start() error
+	Stop()
+	Name() string                  //plugin name or data source name
+	CheckGather(Accumulator) error //check connect or gather data
+	SelfCheck() Quality            //check data quality
 	SetPointMap(map[string]points.PointDefine)
+}
+
+type SimpleInput interface {
+	ProbePointMap() map[string]points.PointDefine //input 尝试探测生成点表
 }
 
 type InteractiveInput interface {
 	Input
-	Start() error
-	Stop()
 }
 
 type PassiveInput interface {
 	Input
-	Connect() error
-	DisConnect() error
-	Listen(context.Context, Accumulator) error	//listen forever to obtain data from data source
+	StartListen(ctx context.Context, accumulator Accumulator) (bool, error)
+	GetListening() bool
 }
