@@ -13,7 +13,6 @@ WORKDIR /device_adaptor/
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
   && apk --no-cache --update add tzdata
 COPY --from=build-stage /go/src/device_adaptor/device_adaptor .
-COPY opc_alpine /usr/local/bin/opc
 CMD ["./device_adaptor"]
 
 EXPOSE 80
