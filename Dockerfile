@@ -1,5 +1,5 @@
 # Build Stage
-FROM golang:alpine3.8 AS build-stage
+FROM golang:alpine AS build-stage
 WORKDIR /go/src/device_adaptor/
 COPY . .
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
@@ -7,7 +7,7 @@ RUN apk add gcc musl-dev
 RUN go build -tags=jsoniter -o device_adaptor cmd/main.go
 
 # Final Stage
-FROM alpine:3.8
+FROM alpine
 ENV TZ=Asia/Shanghai
 WORKDIR /device_adaptor/
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
