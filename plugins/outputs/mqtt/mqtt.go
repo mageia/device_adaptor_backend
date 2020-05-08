@@ -77,7 +77,7 @@ func (mt *Mqtt) Write(metrics []device_adaptor.Metric) error {
 			return err
 		}
 
-		token := mt.client.Publish(metric.Name(), 0, true, sV)
+		token := mt.client.Publish("bitiiot/device_adaptor/"+metric.Name(), 0, true, sV)
 		if token.Error() != nil {
 			log.Error().Err(token.Error()).Msg("mqtt.Publish")
 			return err
