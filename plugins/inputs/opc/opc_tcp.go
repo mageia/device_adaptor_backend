@@ -19,7 +19,6 @@ import (
 
 type Opc struct {
 	Address      string            `json:"address"`
-	Interval     internal.Duration `json:"interval"`
 	Timeout      internal.Duration `json:"timeout"`
 	EnableGzip   bool              `json:"enable_gzip"`
 	FieldPrefix  string            `json:"field_prefix"`
@@ -70,6 +69,9 @@ func (t *Opc) Stop() {
 }
 
 func (t *Opc) StartListen(ctx context.Context, acc device_adaptor.Accumulator) (bool, error) {
+	if !t.connected {
+		return false, nil
+	}
 	if t.listening {
 		return true, nil
 	}

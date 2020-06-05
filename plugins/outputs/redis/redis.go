@@ -53,6 +53,10 @@ func (r *Redis) Write(metrics []device_adaptor.Metric) error {
 			return err
 		}
 
+		if err := r.client.HMSet(metric.Name(), metric.Fields()).Err(); err != nil {
+			log.Error().Err(err).Msg("HMSet")
+			return err
+		}
 		if err := r.client.Publish(metric.Name(), sV).Err(); err != nil {
 			log.Error().Err(err).Msg("Publish")
 			return err
@@ -68,21 +72,21 @@ func (r *Redis) WritePointMap(pointMap device_adaptor.PointMap) error {
 		return errors.New("disconnected")
 	}
 
-	obj, err := r.serializer.SerializePoints(pointMap)
-	if err != nil {
-		return err
-	}
+	//obj, err := r.serializer.SerializePoints(pointMap)
+	//if err != nil {
+	//	return err
+	//}
 
-	str, err := jsoniter.MarshalToString(obj)
-	if err != nil {
-		return err
-	}
+	//str, err := jsoniter.MarshalToString(obj)
+	//if err != nil {
+	//	return err
+	//}
 
 	// 将点表内容覆盖到指定键（用于同步查询）
-	if err := r.client.HSet(r.PointsKey, pointMap.InputName, str).Err(); err != nil {
-		log.Error().Err(err).Msg("HSet")
-		return err
-	}
+	//if err := r.client.HSet(r.PointsKey, pointMap.InputName, str).Err(); err != nil {
+	//	log.Error().Err(err).Msg("HSet")
+	//	return err
+	//}
 
 	// 将点表的版本（时间戳）覆盖到指定键
 	if err := r.client.HSet(r.PointsVersionKey, pointMap.InputName, pointMap.Time.UnixNano()/1e6).Err(); err != nil {

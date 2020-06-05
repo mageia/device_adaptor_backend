@@ -52,14 +52,14 @@ var InputSample = map[string]map[string]ConfigSample{
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "opc_tcp", nil, "select", 1},
 		"name_override": ConfigSample{"name_override", "数据源名称", "opc_tcp", nil, "input", 2},
 		"address":       ConfigSample{"address", "数据源地址", "10.211.55.18:8090", nil, "input", 3},
-		"interval":      ConfigSample{"interval", "采集周期", "5s", nil, "combine", 20},
-		"enable_gzip":   ConfigSample{"enable_gzip", "需要解压", true, nil, "checkbox", 21},
+		//"interval":      ConfigSample{"interval", "采集周期", "5s", nil, "combine", 19},
+		"enable_gzip": ConfigSample{"enable_gzip", "需要解压", true, nil, "radio", 20},
 	},
 	"opc_ua": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "opc_ua", nil, "select", 1},
 		"name_override": ConfigSample{"name_override", "数据源名称", "opc_ua", nil, "input", 2},
 		"endpoint":      ConfigSample{"endpoint", "数据源地址", "opc.tcp://localhost:49320", nil, "input", 3},
-		"object_id":     ConfigSample{"object_id", "ObjectID", "", nil, "input", 4},
+		"object_id":     ConfigSample{"object_id", "ObjectID", "单个或多个ObjectID，逗号分割", nil, "input", 4},
 		"interval":      ConfigSample{"interval", "采集周期", "5s", nil, "combine", 20},
 	},
 	"modbus": {
@@ -133,13 +133,18 @@ var OutputSample = map[string]map[string]ConfigSample{
 	},
 	"file": {
 		"plugin_name": ConfigSample{"plugin_name", "插件名称", "file", nil, "select", 1},
-		"files":       ConfigSample{"files", "输出地址", []string{"stdout"}, nil, "input", 2},
+		"files":       ConfigSample{"files", "输出地址", "stdout", nil, "input", 2},
 	},
 	"redis": {
 		"plugin_name":        ConfigSample{"plugin_name", "插件名称", "redis", nil, "select", 1},
 		"url_address":        ConfigSample{"url_address", "地址URL", "redis://localhost:6379/0", nil, "input", 2},
 		"points_key":         ConfigSample{"points_key", "点表内容 Key", "points", nil, "input", 3},
 		"points_version_key": ConfigSample{"points_version_key", "点表版本 Key", "points:version", nil, "input", 4},
+	},
+	"nsq": {
+		"plugin_name": ConfigSample{"plugin_name", "插件名称", "nsq", nil, "select", 1},
+		"url_address": ConfigSample{"url_address", "地址URL", "localhost:41530", nil, "input", 2},
+		"topic":       ConfigSample{"topic", "主题", "wuyang.tisheng.opc.data.effect", nil, "input", 2},
 	},
 	"amqp": {
 		"plugin_name":   ConfigSample{"plugin_name", "插件名称", "amqp", nil, "select", 1},
