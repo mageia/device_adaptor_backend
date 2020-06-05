@@ -5,7 +5,7 @@ import (
 	"device_adaptor/internal"
 	"device_adaptor/plugins/outputs"
 	"device_adaptor/plugins/serializers"
-	jsoniter "github.com/json-iterator/go"
+	"github.com/json-iterator/go"
 	"github.com/nsqio/go-nsq"
 	"github.com/rs/zerolog/log"
 )
