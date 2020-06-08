@@ -6,7 +6,7 @@ import (
 	//_ "device_adaptor/plugins/inputs/ftp"
 	//_ "device_adaptor/plugins/inputs/http_listener"
 	//_ "device_adaptor/plugins/inputs/kj66"
-	//_ "device_adaptor/plugins/inputs/modbus"
+	_ "device_adaptor/plugins/inputs/modbus"
 	_ "device_adaptor/plugins/inputs/opc"
 	_ "device_adaptor/plugins/inputs/opcua"
 	//_ "device_adaptor/plugins/inputs/s7"

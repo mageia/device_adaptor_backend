@@ -28,6 +28,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -45,6 +46,27 @@ func getStatic(fs http.FileSystem, p string) ([]byte, error) {
 		return nil, e
 	}
 	return ioutil.ReadAll(x)
+}
+
+func GetTagName(structName interface{}) []string {
+	t := reflect.TypeOf(structName)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+	fieldNum := t.NumField()
+	result := make([]string, 0, fieldNum)
+	for i := 0; i < fieldNum; i++ {
+		tagName := t.Field(i).Name
+		tags := strings.Split(string(t.Field(i).Tag), "\"")
+		if len(tags) > 1 {
+			tagName = tags[1]
+		}
+		result = append(result, tagName)
+	}
+	return result
 }
 
 func getConfigSample(c *gin.Context) {
@@ -86,10 +108,10 @@ func getPointMap(c *gin.Context) {
 	for _, p := range pointArray {
 		pointMap[p.PointKey] = p
 	}
-
 	c.JSON(200, gin.H{
 		"point_map_content": pointMap,
 		"point_map_path":    "", //TODO  path
+		"headers":           []string{"name", "label", "unit", "address", "point_type", "parameter", "option", "control", "tags", "extra"},
 	})
 }
 func probePointMap(c *gin.Context) {

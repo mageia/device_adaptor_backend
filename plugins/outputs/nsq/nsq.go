@@ -4,10 +4,10 @@ import (
 	"device_adaptor"
 	"device_adaptor/internal"
 	"device_adaptor/plugins/outputs"
-	"device_adaptor/plugins/serializers"
 	"github.com/json-iterator/go"
 	"github.com/nsqio/go-nsq"
 	"github.com/rs/zerolog/log"
+	"time"
 )
 
 type NSQ struct {
@@ -16,17 +16,12 @@ type NSQ struct {
 	Topic      string
 	client     *nsq.Producer
 	connected  bool
-	serializer serializers.Serializer
-}
-
-func (n *NSQ) SetSerializer(serializer serializers.Serializer) {
-	n.serializer = serializer
 }
 
 func (n *NSQ) Connect() error {
-	var err error
-
-	p, err := nsq.NewProducer(n.UrlAddress, nsq.NewConfig())
+	c := nsq.NewConfig()
+	c.DialTimeout = n.Timeout.Duration
+	p, err := nsq.NewProducer(n.UrlAddress, c)
 	if err != nil {
 		return err
 	}
@@ -65,6 +60,6 @@ func (n *NSQ) Write(metrics []device_adaptor.Metric) error {
 
 func init() {
 	outputs.Add("nsq", func() device_adaptor.Output {
-		return &NSQ{}
+		return &NSQ{Timeout: internal.Duration{Duration: time.Second * 5}}
 	})
 }
