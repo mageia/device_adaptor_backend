@@ -6,7 +6,7 @@ import (
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
 	"fmt"
-	"git.leaniot.cn/publicLib/go-eip"
+	"github.com/mageia/go-eip"
 	"time"
 )
 

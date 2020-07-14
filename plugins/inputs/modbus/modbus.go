@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"git.leaniot.cn/publicLib/go-modbus"
+	"github.com/goburrow/modbus"
 	"github.com/rs/zerolog/log"
 	"runtime"
 	"sort"

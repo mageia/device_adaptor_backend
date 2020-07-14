@@ -6,8 +6,8 @@ import (
 	"device_adaptor/internal/points"
 	"device_adaptor/plugins/inputs"
 	"fmt"
-	g "git.leaniot.cn/publicLib/go-snmp"
 	"github.com/rs/zerolog/log"
+	g "github.com/soniah/gosnmp"
 	"time"
 )
 
